@@ -1,0 +1,92 @@
+# RF Component Catalog & Technical Specifications
+
+This document provides a comprehensive specification of all supported RF components, their properties, parameters, physics transfer functions, and schematic symbol conventions.
+
+---
+
+## 📻 Component Groups & Catalog
+
+### 1. Sources & Generators
+
+| Type Key | Name | Ports | Default Parameters | Description & Specs |
+| :--- | :--- | :--- | :--- | :--- |
+| `source` | **Source** | 1 Out (Right) | `label: "SRC"`, `power: 0 dBm`, `freq: "1 GHz"` | CW RF Signal Source. Output power level ($dBm$) and center frequency. |
+| `lo` | **LO / Osc** | 1 Out (Top) | `label: "LO"`, `power: 10 dBm`, `freq: "0.9 GHz"` | Local Oscillator / Synthesizer. Top port feeding Mixer LO inputs. |
+| `pll` | **PLL Synthesizer** | 1 In (Ref Left), 1 Out (RF Right) | `label: "PLL"`, `power: 10 dBm`, `freq: "2.4 GHz"`, `refFreq: "10 MHz"` | Phase-Locked Loop Synthesizer. Accepts Reference Clock input on left. |
+
+---
+
+### 2. Gain & Loss
+
+| Type Key | Name | Ports | Parameters | Transfer & Compression Physics |
+| :--- | :--- | :--- | :--- | :--- |
+| `amp` | **Amplifier** | In (Left), Out (Right) | `gain: 15 dB`, `nf: 2 dB`, `p1db: 20 dBm`, `oip3: 30 dBm` | Linear gain $P_{out} = P_{in} + \text{Gain}$, capped at Output $P_{1\text{dB}}$ ($P_{out} \le P_{1\text{dB}}$). |
+| `atten` | **Attenuator** | In (Left), Out (Right) | `loss: 10 dB` | Fixed attenuation pad. Symbol renders vertical triangular resistor wave. |
+| `dsa` | **Digital Attenuator** | In (Left), Out (Right) | `loss: 10 dB` | Digital Step Attenuator (DSA). Symbol renders vertical resistor wave + 45° control arrow. |
+| `limiter` | **Limiter** | In (Left), Out (Right) | `thresh: 10 dBm`, `il: 0.5 dB` | Power clamping protection. $P_{out} = \min(P_{in}, \text{thresh}) - \text{il}$. |
+| `trace` | **Line / Trace** | In (Left), Out (Right) | `loss: 1 dB` | Microstrip line / Coaxial cable loss. |
+
+---
+
+### 3. Filtering
+
+| Type Key | Name | Ports | Parameters | Features & Symbol Structure |
+| :--- | :--- | :--- | :--- | :--- |
+| `filter` | **Filter** | In (Left), Out (Right) | `ftype: "BPF"`, `il: 1.5 dB`, `rej: 40 dB`, `band: "passband"`, `fc: ""` | Supports `LPF`, `HPF`, `BPF`, `BSF`. Renders SVG response curve. |
+| `tfilter` | **Tunable Filter** | In (Left), Out (Right) | `ftype: "BPF"`, `il: 2.0 dB`, `rej: 40 dB`, `band: "passband"`, `fc: "1-2 GHz"` | Variable/Tracking filter. Renders response curve + 45° tuning arrow. |
+
+---
+
+### 4. Frequency Conversion
+
+| Type Key | Name | Ports | Parameters | Behavior |
+| :--- | :--- | :--- | :--- | :--- |
+| `mixer` | **Mixer** | RF (Left In), IF (Right Out), LO (Bottom In) | `cl: 7 dB`, `p1db: 5 dBm`, `oip3: 15 dBm` | Frequency converter. $P_{IF} = P_{RF} - CL$, capped at Output $P_{1\text{dB}}$. Top label positioning prevents LO wire overlap. |
+| `multiplier` | **Multiplier** | In (Left), Out (Right) | `factor: "2"`, `il: 0 dB` | Frequency Multiplier ($\times 2, \times 3, \times 4, \times 8$). |
+| `divider` | **Divider / Prescaler** | In (Left), Out (Right) | `factor: "2"`, `il: 1.0 dB` | Frequency Divider ($\div 2, \div 4, \div 8, \div 16$). |
+
+---
+
+### 5. Routing & Switching
+
+| Type Key | Name | Ports | Parameters | Dynamic Properties |
+| :--- | :--- | :--- | :--- | :--- |
+| `switch` | **Switch (SPnT)** | 1 In (Left), 1 to 8 Throws (Right) | `throws: "2"`, `state: "1"`, `il: 0.4 dB`, `iso: 60 dB` | Supports **SP1T to SP8T** throws plus **`Open (Off)`** position (0 state). Displays insertion loss label. |
+| `splitter` | **Splitter** | 1 In (Left), $N$ Out (Right) | `ways: "2"`, `exloss: 0.3 dB` | 1:N Power Splitter ($N=2..8$). Power division: $10 \log_{10}(N) + \text{exloss}$. |
+| `combiner` | **Combiner** | $N$ In (Left), 1 Out (Right) | `ways: "2"`, `exloss: 0.3 dB` | N:1 Power Combiner ($N=2..8$). Power summation: $\text{sumDbm}(P_{ins}) - 10 \log_{10}(N) - \text{exloss}$. |
+| `coupler` | **Coupler** | In, Thru, Cpl / Iso | `ctype: "Directional"`, `coupling: 10 dB`, `il: 0.5 dB`, `iso: 30 dB` | Supports Directional, Power tap, Bi-directional, Resistive, 90° Hybrid, 180° Hybrid. |
+| `interconnect` | **Interconnect** | 1 Port (Send/Recv) | `tag: "A"`, `role: "receive"` | Off-page tag matching across sheets. |
+
+---
+
+### 6. Passive Components
+
+| Type Key | Name | Ports | Parameters | Symbol |
+| :--- | :--- | :--- | :--- | :--- |
+| `isolator` | **Isolator** | In (Left), Out (Right) | `il: 0.6 dB` | Non-reciprocal ferrite isolator (forward arrow symbol). |
+| `circulator` | **Circulator** | P1 (Left In), P2 (Right Out), P3 (Bottom Out) | `il: 0.5 dB`, `iso: 20 dB` | 3-Port ferrite circulator with top label positioning. |
+| `phase` | **Phase Shift** | In (Left), Out (Right) | `phase: 0°`, `il: 1 dB` | Phase shifter ($\phi$). |
+
+---
+
+### 7. Terminals & Annotations
+
+| Type Key | Name | Ports | Parameters | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| `rfin` | **In connector** | 1 Out (Right) | `power: 0 dBm`, `freq: ""` | SMA / Coaxial input connector. |
+| `rfout` | **Out connector** | 1 In (Left) | — | SMA / Coaxial output connector. |
+| `antenna` | **Antenna** | 1 Port (Tx In / Rx Out) | `role: "Tx"`, `power: -80 dBm` | Transmit or Receive antenna. |
+| `detector` | **Detector** | 1 In (Left) | — | Diode / Video power detector. |
+| `termination` | **Load 50Ω** | 1 In (Left) | — | 50Ω dummy load match (horizontal resistor + ground symbol). |
+
+---
+
+## 📐 Formulas & Units
+
+- **Power Levels**: Expressed in **$\text{dBm}$** ($0\text{ dBm} = 1\text{ mW}$ into $50\,\Omega$).
+- **Decibel Addition ($\text{sumDbm}$)**:
+  $$P_{total} = 10 \log_{10} \left( \sum_{i} 10^{P_i / 10} \right)$$
+- **$P_{1\text{dB}}$ Compression**:
+  $$P_{out} = \min(P_{in} + \text{Gain}, P_{1\text{dB}})$$
+- **Cascaded Friis Noise Figure**:
+  $$F_{total} = F_1 + \frac{F_2 - 1}{G_1} + \frac{F_3 - 1}{G_1 G_2} + \dots$$
