@@ -1,0 +1,13 @@
+{
+  "name": "rf-block-diagram",
+  "version": "3.0.0",
+  "description": "RF Chain — Block Diagram Editor",
+  "main": "index.html",
+  "scripts": {
+    "build": "node build.js"
+  },
+  "keywords": ["rf", "block-diagram", "schematic", "rf-chain"],
+  "author": "",
+  "license": "MIT"
+}
+
