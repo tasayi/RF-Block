@@ -98,11 +98,19 @@ function lumOf(hex) {
   return (0.299 * ((n >> 16) & 255) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255;
 }
 
-function blockInk(fill) { return lumOf(fill) < 0.55 ? "#f6f8fa" : null; }
+const TERMINAL_TYPES = new Set(["rfin", "rfout", "antenna", "termination", "detector"]);
+
+function blockInk(fill, type) {
+  if (type && TERMINAL_TYPES.has(type)) return "#f8fafc";
+  return lumOf(fill) >= 0.55 ? "#0f172a" : "#f8fafc";
+}
 
 function blockStyle(b) {
-  const fill = blockFill(b), ink = blockInk(fill);
-  return `--blk-fill:${fill}` + (ink ? `;--blk-stroke:${ink}` : "");
+  const fill = blockFill(b), ink = blockInk(fill, b ? b.type : null);
+  if (b && TERMINAL_TYPES.has(b.type)) {
+    return `--blk-fill:${fill};--blk-stroke:#f8fafc;--lbl-ink:#f8fafc`;
+  }
+  return `--blk-fill:${fill};--blk-stroke:${ink};--lbl-ink:${ink}`;
 }
 
 function colorLabel(b) {

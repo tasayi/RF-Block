@@ -14,50 +14,50 @@ const GROUP_TINT = {
   "Annotate": "#ffffff"
 };
 
-/* Distinct individual component block type colors (optimized for white backgrounds) */
+/* Distinct individual component block type colors (optimized for crisp schematic readability) */
 const TYPE_TINT = {
   /* Sources & Generators */
-  "source":      "#fee2e2",  // Soft Red/Coral
-  "lo":          "#fef08a",  // Soft Gold/Yellow
-  "rfin":        "#e0f2fe",  // Soft Sky Blue
+  "source":      "#fee2e2",  // Soft Rose / Coral
+  "lo":          "#fef08a",  // Soft Gold / Yellow
 
   /* Terminals & Output */
-  "rfout":       "#e2e8f0",  // Soft Slate
-  "antenna":     "#bae6fd",  // Soft Azure Blue
-  "detector":    "#ccfbf1",  // Soft Teal
-  "termination": "#f3f4f6",  // Light Neutral Gray
+  "rfin":        "#0284c7",  // Bright Azure Blue Connector
+  "rfout":       "#2563eb",  // Bright Blue Connector
+  "antenna":     "#38bdf8",  // Bright Sky Blue Antenna
+  "detector":    "#0d9488",  // Teal Detector
+  "termination": "#475569",  // Neutral Slate Load
 
   /* Gain & Loss */
-  "amp":         "#dcfce7",  // Soft Mint Green (Amplifier/LNA/PA)
-  "bamp":        "#dcfce7",  // Soft Mint Green (Bypass Amplifier)
-  "atten":       "#ffedd5",  // Soft Warm Peach/Orange (Attenuator)
-  "dsa":         "#ffedd5",  // Soft Warm Peach/Orange (Digital Attenuator)
-  "limiter":     "#fed7aa",  // Soft Amber (Limiter)
-  "trace":       "#f1f5f9",  // Soft Gray Line
+  "amp":         "#bbf7d0",  // Crisp Emerald Green (Amplifier/LNA/PA)
+  "bamp":        "#bbf7d0",  // Crisp Emerald Green (Bypass Amplifier)
+  "atten":       "#fed7aa",  // Warm Peach (Attenuator)
+  "dsa":         "#fed7aa",  // Warm Peach (Digital Attenuator)
+  "limiter":     "#fde68a",  // Warm Yellow (Limiter)
+  "trace":       "#e2e8f0",  // Light Slate Trace
 
   /* Filtering & Frequency */
-  "filter":      "#dbeafe",  // Soft Royal Blue (BPF/LPF/HPF)
-  "tfilter":     "#dbeafe",  // Soft Royal Blue (Tunable Filter)
-  "mixer":       "#f3e8ff",  // Soft Purple/Violet (Mixer)
-  "multiplier":  "#f3e8ff",  // Soft Purple/Violet (Multiplier)
-  "divider":     "#f3e8ff",  // Soft Purple/Violet (Divider)
-  "pll":         "#fef08a",  // Soft Gold/Yellow (PLL Synthesizer)
+  "filter":      "#bfdbfe",  // Royal Sky Blue (BPF/LPF/HPF)
+  "tfilter":     "#bfdbfe",  // Royal Sky Blue (Tunable Filter)
+  "mixer":       "#e9d5ff",  // Purple Lavender (Mixer)
+  "multiplier":  "#e9d5ff",  // Purple Lavender (Multiplier)
+  "divider":     "#e9d5ff",  // Purple Lavender (Divider)
+  "pll":         "#fef08a",  // Gold Yellow (PLL Synthesizer)
 
   /* Routing & Switching */
-  "splitter":    "#ecfccb",  // Soft Lime Green
-  "combiner":    "#d9f99d",  // Soft Olive Lime
-  "coupler":     "#fef3c7",  // Soft Warm Amber
-  "switch":      "#fae8ff",  // Soft Magenta/Pink (Switch)
-  "interconnect":"#e0e7ff",  // Soft Indigo (Off-page tag)
+  "splitter":    "#d9f99d",  // Lime Green
+  "combiner":    "#d9f99d",  // Lime Green
+  "coupler":     "#fef3c7",  // Warm Amber
+  "switch":      "#fbcfe8",  // Soft Magenta / Pink (Switch)
+  "interconnect":"#c7d2fe",  // Soft Indigo Tag
 
   /* Passive Components */
-  "isolator":    "#ffe4e6",  // Soft Rose
-  "circulator":  "#ede9fe",  // Soft Lavender
-  "phase":       "#cff4fc",  // Soft Cyan
+  "isolator":    "#fecdd3",  // Soft Rose
+  "circulator":  "#ddd6fe",  // Soft Violet
+  "phase":       "#a5f3fc",  // Soft Cyan
 
   /* Hierarchy & Annotation */
-  "subsystem":   "#f1f5f9",  // Soft Slate Container
-  "custom":      "#fef3c7",  // Soft Warm Cream
+  "subsystem":   "#e2e8f0",  // Light Slate Container
+  "custom":      "#fef3c7",  // Warm Cream
   "label":       "#ffffff"   // Pure White
 };
 
