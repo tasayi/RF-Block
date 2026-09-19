@@ -17,16 +17,23 @@ def build_block_network(block: Dict[str, Any], freq: skrf.Frequency) -> skrf.Net
     n_pts = len(freq)
     s_mat = np.zeros((n_pts, 2, 2), dtype=complex)
 
+    # Determine forward gain/loss (in dB)
     gain_db = float(params.get("gain", params.get("g", 0)))
-    il_db = float(params.get("il", 0))
+    il_db = float(params.get("il", params.get("atten", params.get("loss", params.get("conv_loss", 0)))))
     net_gain = gain_db - il_db
     
+    # Return Loss & Isolation
+    rl_db = float(params.get("s11", params.get("rl", -20.0))) # Default -20 dB return loss
+    iso_db = float(params.get("s12", params.get("iso", -30.0 if btype == "amp" else net_gain)))
+    
     s21_mag = 10.0 ** (net_gain / 20.0)
-    s11_mag = 10.0 ** (-20.0 / 20.0) # -20 dB return loss default match
+    s12_mag = 10.0 ** (iso_db / 20.0)
+    s11_mag = 10.0 ** (rl_db / 20.0) if rl_db < 0 else 0.0
+    s22_mag = s11_mag
 
     s_mat[:, 1, 0] = s21_mag # Forward transmission S21
-    s_mat[:, 0, 1] = s21_mag # Reverse transmission S12
+    s_mat[:, 0, 1] = s12_mag # Reverse transmission S12
     s_mat[:, 0, 0] = s11_mag # Input reflection S11
-    s_mat[:, 1, 1] = s11_mag # Output reflection S22
+    s_mat[:, 1, 1] = s22_mag # Output reflection S22
 
     return skrf.Network(frequency=freq, s=s_mat, name=label)

@@ -147,13 +147,46 @@ function toggleSParamsDrawer() {
   }
 }
 
+async function fetchBackendSParams(band) {
+  try {
+    const payload = {
+      band: band,
+      blocks: typeof blocks !== "undefined" ? blocks : [],
+      conns: typeof conns !== "undefined" ? conns : []
+    };
+    const res = await fetch("/api/v1/analyze/sparams", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    if (res.ok) {
+      const data = await res.json();
+      return data;
+    }
+  } catch (err) {
+    // Backend offline or fallback to JS solver
+  }
+  return null;
+}
+
 function runNewSParamSweep(band, tabName) {
-  const res = withAllSheets(() => computeLinearAnalysis(band));
   const name = tabName || `Sweep ${sparamsTabs.length + 1}`;
-  const newTab = { id: "sp_tab_" + Date.now(), name, band: { ...band }, res };
+  const newTab = { id: "sp_tab_" + Date.now(), name, band: { ...band }, res: null, selectedPathIdx: 0, activeMetric: "mag" };
   sparamsTabs.push(newTab);
   activeTabIdx = sparamsTabs.length - 1;
-  renderLinearAnalysis();
+
+  // Evaluate async backend analysis or JS solver
+  fetchBackendSParams(band).then(backendRes => {
+    const localRes = withAllSheets(() => computeLinearAnalysis(band));
+    if (backendRes && backendRes.status === "success" && backendRes.paths && backendRes.paths.length) {
+      // Merge portsList from local solver for UI compatibility
+      backendRes.portsList = localRes.portsList || [];
+      newTab.res = backendRes;
+    } else {
+      newTab.res = localRes;
+    }
+    renderLinearAnalysis();
+  });
 }
 
 function renderLinearAnalysis() {
