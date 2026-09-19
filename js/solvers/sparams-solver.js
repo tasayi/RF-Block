@@ -500,6 +500,32 @@ function computeLinearAnalysis(band) {
     }
   }
 
+  // Compute combined linear power transmission S_iΣ for destination ports with multiple inputs
+  for (const dstPort of portsList) {
+    const incomingKeys = [];
+    for (const srcPort of portsList) {
+      if (srcPort.num === dstPort.num) continue;
+      const sKey = `S${dstPort.num}${srcPort.num}`;
+      if (matrix[sKey] && matrix[sKey].some(v => v > -100)) {
+        incomingKeys.push(sKey);
+      }
+    }
+    if (incomingKeys.length > 1) {
+      const combArr = new Float64Array(N);
+      for (let k = 0; k < N; k++) {
+        let linSum = 0;
+        for (const key of incomingKeys) {
+          const valDb = matrix[key][k];
+          if (valDb > -120) {
+            linSum += Math.pow(10, valDb / 10);
+          }
+        }
+        combArr[k] = linSum > 0 ? 10 * Math.log10(linSum) : -120.0;
+      }
+      matrix[`S${dstPort.num}Σ`] = combArr;
+    }
+  }
+
   const uniqueWarnings = Array.from(new Set(warnings));
 
   return {

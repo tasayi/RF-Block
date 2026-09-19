@@ -282,14 +282,17 @@ def({
   fields: [{ key: "ways", label: "Ways (n : 1)", type: "select", options: ["2", "3", "4", "5", "6", "7", "8"] },
            { key: "exloss", label: "Excess loss", unit: "dB", step: 0.1, min: 0 }],
   ref: (m, p) => {
-    const v = Object.values(m).filter(x => x !== undefined); if (!v.length) return undefined;
-    return sumDbm(v) - 10 * Math.log10(cint(p.ways, 2, 8));
+    const v = Object.values(m).filter(x => x !== undefined && isFinite(x)); if (!v.length) return undefined;
+    const n = cint(p.ways, 2, 8), ex = Math.abs(p.exloss || 0);
+    return v.length === 1 ? v[0] - (10 * Math.log10(n) + ex) : sumDbm(v) - ex;
   },
   out: p => ({ out: -(10 * Math.log10(cint(p.ways, 2, 8)) + Math.abs(p.exloss || 0)) }), val: p => cint(p.ways, 2, 8) + " : 1",
   bidi: (m, p) => {
-    const n = cint(p.ways, 2, 8), d = 10 * Math.log10(n) + Math.abs(p.exloss), o = {};
-    const ins = []; for (let i = 1; i <= n; i++) { const v = m["i" + i]; if (v !== undefined) ins.push(v); }
-    if (ins.length) o.out = (ins.length === 1 ? ins[0] : sumDbm(ins)) - d;
+    const n = cint(p.ways, 2, 8), ex = Math.abs(p.exloss || 0), d = 10 * Math.log10(n) + ex, o = {};
+    const ins = []; for (let i = 1; i <= n; i++) { const v = m["i" + i]; if (v !== undefined && isFinite(v)) ins.push(v); }
+    if (ins.length) {
+      o.out = (ins.length === 1) ? (ins[0] - d) : (sumDbm(ins) - ex);
+    }
     if (m.out !== undefined) for (let i = 1; i <= n; i++) o["i" + i] = m.out - d;
     return o;
   },
