@@ -1,12 +1,25 @@
 "use strict";
 
 /* ====================================================================
-   RF Analyser Settings & Full-Stage S-Parameter Analysis Panel
+   RF Analyser Settings & Multi-Port S-Parameter Invocation Grid Panel
    ==================================================================== */
 
 let sparamsTabs = []; // Array of { id, name, band, res }
 let activeTabIdx = 0;
 let linearMarkers = [{ id: "M1", f: 0 }];
+let invokedTraces = new Set(["S21", "S11", "S22"]); // Currently invoked S-parameter trace keys
+
+// Vibrant distinct colors for multi-port traces
+const TRACE_COLORS = {
+  S21: "#2563eb", S11: "#dc2626", S22: "#16a34a", S31: "#9333ea",
+  S12: "#0d9488", S32: "#ea580c", S41: "#ca8a04", S23: "#db2777",
+  S33: "#059669", S44: "#e11d48", S51: "#7c3aed", S61: "#4f46e5"
+};
+const FALLBACK_COLORS = ["#2563eb", "#dc2626", "#16a34a", "#9333ea", "#0d9488", "#ea580c", "#ca8a04", "#db2777"];
+
+function getTraceColor(key, idx = 0) {
+  return TRACE_COLORS[key] || FALLBACK_COLORS[idx % FALLBACK_COLORS.length];
+}
 
 /* --- Analyser Settings Drawer Toggle & Renderer --- */
 function toggleAnalyserDrawer() {
@@ -29,7 +42,7 @@ function renderAnalyserSettings() {
       <span>⚙️</span> Global Analyser & Frequency Sweep Parameters
     </h3>
     <div style="font-size:12px; color:var(--txt2,#64748b); margin-bottom:16px">
-      Configure the global frequency sweep range, step resolution, and reference impedance for system-level linear S-parameter analysis.
+      Configure global frequency sweep range, resolution, and reference impedance for multi-port (up to 8 ports P1–P8) S-parameter linear analysis.
     </div>
 
     <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; background:var(--bg2,#f8fafc); padding:16px; border-radius:8px; border:1px solid var(--border,#e2e8f0); margin-bottom:16px">
@@ -113,7 +126,7 @@ function renderAnalyserSettings() {
 }
 
 
-/* --- Full-Stage S-Params Panel & Tab Management --- */
+/* --- Full-Stage Multi-Port S-Params Panel & Tab Management --- */
 function toggleSParamsDrawer() {
   const panel = $("spStagePanel");
   if (!panel) return;
@@ -148,11 +161,12 @@ function renderLinearAnalysis() {
   if (!sparamsTabs.length || activeTabIdx >= sparamsTabs.length) activeTabIdx = Math.max(0, sparamsTabs.length - 1);
   const activeTab = sparamsTabs[activeTabIdx];
 
-  // DYNAMICALLY RE-RUN LINEAR SOLVER ON CURRENT DIAGRAM STATE
-  // Ensures newly added ports (P1, P2, P3) or block edits are instantly evaluated!
+  // Data persistence: use stored snapshot result if present, or evaluate once if missing
   const band = (activeTab && activeTab.band) || settings.analysisBand || { startFreq: 1, startUnit: "GHz", stopFreq: 10, stopUnit: "GHz", points: 101, sweepType: "lin" };
-  const res = withAllSheets(() => computeLinearAnalysis(band));
-  if (activeTab) activeTab.res = res;
+  if (activeTab && !activeTab.res) {
+    activeTab.res = withAllSheets(() => computeLinearAnalysis(band));
+  }
+  const res = (activeTab && activeTab.res) || withAllSheets(() => computeLinearAnalysis(band));
 
   let html = `<div style="max-width:1200px; margin:0 auto; font-family:sans-serif; color:var(--ink,#e2e8f0)">`;
 
@@ -160,8 +174,9 @@ function renderLinearAnalysis() {
   html += `<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; border-bottom:1px solid var(--line,#334155); padding-bottom:10px">
     <div style="display:flex; align-items:center; gap:12px">
       <h3 style="margin:0; font-size:16px; display:flex; align-items:center; gap:8px">
-        <span>📈</span> Linear S-Parameter Analysis & Comparison View
+        <span>📈</span> Multi-Port Transmission Analysis & Benchmark View
       </h3>
+      <button class="btn btn-sm btn-pri" id="spRerunSweep" title="Re-evaluate sweep for current schematic state">⚡ Re-run Sweep</button>
       <button class="btn btn-sm" id="spOpenSettings" title="Open Analyser Settings">⚙️ Analyser Settings</button>
     </div>
     <button class="btn btn-sm" id="spClosePanel">✕ Close Analysis View</button>
@@ -179,10 +194,13 @@ function renderLinearAnalysis() {
   html += `<button class="btn btn-sm" id="spNewTab" style="margin-left:6px">+ New Sweep Tab</button>`;
   html += `</div>`;
 
-  // Status & Port Indicators
+  // Ports List Status Header
+  const portsList = res.portsList || [];
+  const portsStr = portsList.length ? portsList.map(p => `<b>${p.tag} (${esc(p.label)})</b>`).join(", ") : "None";
+
   html += `<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:12px">
     <div style="font-size:12.5px; color:var(--ink-dim,#94a3b8)">
-      Analysis Ports: <b>P1 (${esc(res.p1 || "None")})</b> ➔ <b>P2 (${esc(res.p2 || "None")})</b> ${res.p3 ? `& <b>P3 (${esc(res.p3)})</b>` : ""} | Active: <b>${esc(activeTab.name)}</b>
+      Defined Ports (${portsList.length}): ${portsStr} | Active Tab: <b>${esc(activeTab ? activeTab.name : "Sweep")}</b>
     </div>
 
     <!-- Export Action Buttons -->
@@ -191,7 +209,7 @@ function renderLinearAnalysis() {
       <button class="btn btn-sm" id="spExportCsv">📄 Export CSV</button>
       <button class="btn btn-sm" id="spExportSvg">📊 Export SVG</button>
       <button class="btn btn-sm" id="spExportPng">🖼️ Export PNG</button>
-      <button class="btn btn-sm" id="spExportS2p">📁 Export .s2p</button>
+      <button class="btn btn-sm" id="spExportS2p">📁 Export Touchstone (.sNp)</button>
     </div>
   </div>`;
 
@@ -199,7 +217,7 @@ function renderLinearAnalysis() {
   if (res.error) {
     html += `<div style="background:#451a1a; color:#fca5a5; padding:12px; border-radius:6px; margin-bottom:14px; font-size:12.5px; border:1px solid #7f1d1d">
       <b>⚠️ Notice:</b> ${esc(res.error)}
-      <div style="margin-top:4px; font-size:11.5px; opacity:0.85">To resolve: Select your input connector/antenna in the Inspector and set 'Analysis Port' to <b>P1</b>, then select your output connector and set 'Analysis Port' to <b>P2</b>.</div>
+      <div style="margin-top:4px; font-size:11.5px; opacity:0.85">To resolve: Select schematic terminals in the Inspector and assign Analysis Ports (P1 through P8).</div>
     </div>`;
   } else if (res.warnings && res.warnings.length) {
     html += `<div style="background:#451a03; color:#fcd34d; padding:10px; border-radius:6px; margin-bottom:14px; font-size:12px; border:1px solid #78350f">
@@ -207,17 +225,96 @@ function renderLinearAnalysis() {
     </div>`;
   }
 
-  if (!res.error) {
-    // Chart Area (Full Height & Width)
-    html += `<div style="position:relative; background:#ffffff; border:1px solid var(--border,#334155); border-radius:8px; padding:14px; margin-bottom:16px">
-      <!-- Trace Visibility Toggles & Marker Actions -->
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; font-size:12px; flex-wrap:wrap; gap:8px">
-        <div style="display:flex; gap:16px; align-items:center">
-          <label style="color:#2563eb; font-weight:600; cursor:pointer"><input type="checkbox" id="chkS21" checked/> S21 (Gain)</label>
-          ${res.path13 ? `<label style="color:#9333ea; font-weight:600; cursor:pointer"><input type="checkbox" id="chkS31" checked/> S31 (Coupled)</label>` : ""}
-          <label style="color:#dc2626; font-weight:600; cursor:pointer"><input type="checkbox" id="chkS11" checked/> S11 (P1 Match)</label>
-          <label style="color:#16a34a; font-weight:600; cursor:pointer"><input type="checkbox" id="chkS22" checked/> S22 (P2 Match)</label>
+  if (!res.error && portsList.length >= 2) {
+    // --- Interactive Transmission Trace Selector ---
+    const P = portsList.length;
+
+    // Build list of valid transmission S_ij (i != j) combinations
+    const availableTraces = [];
+    for (let i = 1; i <= P; i++) {
+      for (let j = 1; j <= P; j++) {
+        if (i === j) continue; // Focus strictly on transmission parameters
+        const sKey = `S${i}${j}`;
+        let label = sKey;
+        if (j === 1) label += ` (Forward Transmission P1 → P${i})`;
+        else label += ` (Transmission P${j} → P${i})`;
+        availableTraces.push({ key: sKey, label });
+      }
+    }
+
+    // Clean out old S_ii return loss keys if present
+    invokedTraces.forEach(k => {
+      if (/^S(\d+)\1$/.test(k)) invokedTraces.delete(k);
+    });
+    // Auto-invoke traces with active data (> -110 dB) if current selection is empty or isolated
+    let hasValidActive = false;
+    invokedTraces.forEach(sk => {
+      if (res.matrix[sk] && res.matrix[sk].some(v => v > -110)) hasValidActive = true;
+    });
+    if (!hasValidActive) {
+      for (const sk in res.matrix) {
+        if (res.matrix[sk].some(v => v > -110)) {
+          invokedTraces.add(sk);
+        }
+      }
+    }
+    if (invokedTraces.size === 0) {
+      availableTraces.forEach(tr => invokedTraces.add(tr.key));
+    }
+
+    html += `<div style="background:var(--chrome,#1e293b); border:1px solid var(--line,#334155); border-radius:8px; padding:12px; margin-bottom:14px">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:8px">
+        <h4 style="margin:0; font-size:13px; color:var(--ink,#e2e8f0); display:flex; align-items:center; gap:6px">
+          <span>🎛️</span> Transmission Parameter Selection (${P}-Port System)
+        </h4>
+        <div style="display:flex; gap:6px; flex-wrap:wrap">
+          <button class="btn btn-sm" id="spPrePrimary">Preset: Primary (S21)</button>
+          <button class="btn btn-sm" id="spPreAllOutputs">Preset: All Outputs (S_j1)</button>
+          <button class="btn btn-sm" id="spPreAllTrans">Preset: All Transmission (S_ij)</button>
+          <button class="btn btn-sm" id="spPreClearAll">Clear All</button>
         </div>
+      </div>
+
+      <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap">
+        <div style="display:flex; align-items:center; gap:6px">
+          <label style="font-size:12px; font-weight:600; color:#94a3b8">Add Trace:</label>
+          <select id="spTraceSelect" style="padding:6px 10px; font-size:12px; border-radius:6px; border:1px solid #334155; background:#0f172a; color:#e2e8f0; min-width:240px">
+            <option value="">-- Select Transmission Trace --</option>`;
+
+    availableTraces.forEach(tr => {
+      const isInv = invokedTraces.has(tr.key);
+      html += `<option value="${tr.key}"${isInv ? " disabled" : ""}>${esc(tr.label)}${isInv ? " (Active)" : ""}</option>`;
+    });
+
+    html += `</select>
+        </div>
+
+        <div style="font-size:12px; font-weight:600; color:#94a3b8">Active:</div>
+        <div id="spActiveTraceChips" style="display:flex; gap:6px; flex-wrap:wrap; align-items:center">`;
+
+    let chipIdx = 0;
+    invokedTraces.forEach(sKey => {
+      const col = getTraceColor(sKey, chipIdx++);
+      html += `<div style="display:inline-flex; align-items:center; gap:6px; padding:4px 10px; border-radius:4px; background:${col}; color:#ffffff; font-size:12px; font-weight:600; box-shadow:0 1px 2px rgba(0,0,0,0.2)">
+        <span>${sKey}</span>
+        <span class="sp-chip-del" data-skey="${sKey}" style="cursor:pointer; opacity:0.85; font-size:11px; margin-left:2px" title="Remove trace">✕</span>
+      </div>`;
+    });
+
+    html += `</div>
+      </div>
+    </div>`;
+
+    // --- Chart Area ---
+    html += `<div style="position:relative; background:#ffffff; border:1px solid var(--border,#334155); border-radius:8px; padding:14px; margin-bottom:16px">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; font-size:12px; flex-wrap:wrap; gap:8px">
+        <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap">
+          <span style="font-weight:600; color:#334155">Transmission Traces (${invokedTraces.size}):</span>`;
+    invokedTraces.forEach(sKey => {
+      const col = getTraceColor(sKey);
+      html += `<span style="color:${col}; font-weight:600; font-size:12px">■ ${sKey}</span>`;
+    });
+    html += `</div>
         <div>
           <button class="btn btn-sm" id="spAddMarker">+ Add Marker</button>
         </div>
@@ -229,7 +326,7 @@ function renderLinearAnalysis() {
 
     // Markers Table
     html += `<div style="background:var(--chrome,#1e293b); border:1px solid var(--line,#334155); border-radius:8px; padding:14px">
-      <h4 style="margin:0 0 10px 0; font-size:13px; color:var(--ink,#e2e8f0)">📌 Frequency Markers & Delta Readouts</h4>
+      <h4 style="margin:0 0 10px 0; font-size:13px; color:var(--ink,#e2e8f0)">📌 Frequency Markers & Readouts</h4>
       <div id="spMarkerTable"></div>
     </div>`;
   }
@@ -240,6 +337,66 @@ function renderLinearAnalysis() {
   // Bind Header Action Buttons
   if ($("spClosePanel")) $("spClosePanel").onclick = toggleSParamsDrawer;
   if ($("spOpenSettings")) $("spOpenSettings").onclick = toggleAnalyserDrawer;
+  if ($("spRerunSweep")) {
+    $("spRerunSweep").onclick = () => {
+      if (activeTab) {
+        activeTab.res = withAllSheets(() => computeLinearAnalysis(activeTab.band));
+        renderLinearAnalysis();
+        if (typeof hint === "function") hint(`Re-evaluated sweep for '${activeTab.name}'`);
+      }
+    };
+  }
+
+  // Bind Combobox Dropdown & Chip Event Listeners
+  const selTrace = $("spTraceSelect");
+  if (selTrace) {
+    selTrace.onchange = e => {
+      const val = e.target.value;
+      if (val) {
+        invokedTraces.add(val);
+        renderLinearAnalysis();
+      }
+    };
+  }
+
+  box.querySelectorAll(".sp-chip-del").forEach(chip => {
+    chip.onclick = () => {
+      const sk = chip.getAttribute("data-skey");
+      invokedTraces.delete(sk);
+      renderLinearAnalysis();
+    };
+  });
+
+  if ($("spPrePrimary")) {
+    $("spPrePrimary").onclick = () => {
+      invokedTraces = new Set(["S21"]);
+      renderLinearAnalysis();
+    };
+  }
+  if ($("spPreAllOutputs")) {
+    $("spPreAllOutputs").onclick = () => {
+      invokedTraces.clear();
+      for (let p = 2; p <= portsList.length; p++) invokedTraces.add(`S${p}1`);
+      renderLinearAnalysis();
+    };
+  }
+  if ($("spPreAllTrans")) {
+    $("spPreAllTrans").onclick = () => {
+      invokedTraces.clear();
+      for (let i = 1; i <= portsList.length; i++) {
+        for (let j = 1; j <= portsList.length; j++) {
+          if (i !== j) invokedTraces.add(`S${i}${j}`);
+        }
+      }
+      renderLinearAnalysis();
+    };
+  }
+  if ($("spPreClearAll")) {
+    $("spPreClearAll").onclick = () => {
+      invokedTraces.clear();
+      renderLinearAnalysis();
+    };
+  }
 
   // Bind Tab Bar Event Listeners
   box.querySelectorAll(".sp-tab-item").forEach(item => {
@@ -279,7 +436,7 @@ function renderLinearAnalysis() {
     };
   }
 
-  if (!res.error) {
+  if (!res.error && portsList.length >= 2) {
     renderSvgPlot(res);
     renderMarkerTable(res);
 
@@ -299,24 +456,16 @@ function renderLinearAnalysis() {
     if ($("spExportPng")) $("spExportPng").onclick = () => exportSParamsPng();
     if ($("spExportS2p")) $("spExportS2p").onclick = () => exportTouchstoneS2p(res);
 
-    ["chkS21", "chkS31", "chkS11", "chkS22", "chkCompare"].forEach(id => {
-      const el = $(id);
-      if (el) el.onchange = () => renderSvgPlot(res);
-    });
+    if ($("chkCompare")) $("chkCompare").onchange = () => renderSvgPlot(res);
   }
 }
 
-/* Render SVG Plotter with Traces and Optional Benchmark Comparison Overlay */
+/* Render SVG Plotter for All Invoked Traces with Dynamic Y-Axis Auto-Scaling */
 function renderSvgPlot(res) {
   const container = $("spChartContainer");
-  if (!container || !res || !res.freqs || !res.path12) return;
+  if (!container || !res || !res.freqs || !res.matrix) return;
 
-  const showS21 = $("chkS21") && $("chkS21").checked;
-  const showS31 = $("chkS31") && $("chkS31").checked;
-  const showS11 = $("chkS11") && $("chkS11").checked;
-  const showS22 = $("chkS22") && $("chkS22").checked;
   const showCompare = $("chkCompare") && $("chkCompare").checked;
-
   const freqs = res.freqs;
   const N = freqs.length;
   const fMin = freqs[0], fMax = freqs[N - 1];
@@ -327,24 +476,50 @@ function renderSvgPlot(res) {
 
   const W = container.clientWidth || 900;
   const H = 360;
-  const margin = { top: 20, right: 30, bottom: 35, left: 45 };
+  const margin = { top: 20, right: 30, bottom: 35, left: 50 };
   const pw = W - margin.left - margin.right;
   const ph = H - margin.top - margin.bottom;
 
-  let yMin = -60, yMax = 30;
+  // Compute dynamic Y-axis auto-scaling from active data (> -110 dB)
+  let dMin = Infinity, dMax = -Infinity;
+  invokedTraces.forEach(sKey => {
+    const arr = res.matrix[sKey];
+    if (arr) {
+      for (let k = 0; k < N; k++) {
+        const v = arr[k];
+        if (isFinite(v) && v > -110) {
+          if (v < dMin) dMin = v;
+          if (v > dMax) dMax = v;
+        }
+      }
+    }
+  });
+
+  let yMin, yMax;
+  if (!isFinite(dMin) || !isFinite(dMax)) {
+    yMin = -60; yMax = 30;
+  } else {
+    const span = Math.max(1, dMax - dMin);
+    yMin = Math.floor((dMin - Math.max(1, span * 0.2)) / 5) * 5;
+    yMax = Math.ceil((dMax + Math.max(1, span * 0.2)) / 5) * 5;
+    if (yMin >= yMax) { yMin = -60; yMax = 30; }
+  }
 
   const getX = f => margin.left + ((f - fMin) / (fMax - fMin || 1)) * pw;
-  const getY = val => margin.top + (1 - (val - yMin) / (yMax - yMin)) * ph;
+  const getY = val => margin.top + (1 - (val - yMin) / (yMax - yMin || 1)) * ph;
 
   let svgHtml = `<svg id="spSvgPlot" width="100%" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="user-select:none; font-family:sans-serif; background:#fff">`;
 
-  // Grid Lines & Labels
+  // Grid Lines & Axis Labels
   svgHtml += `<rect x="${margin.left}" y="${margin.top}" width="${pw}" height="${ph}" fill="#fafafa" stroke="#cbd5e1"/>`;
 
-  for (let db = -60; db <= 30; db += 15) {
+  const yStep = Math.max(2, Math.ceil((yMax - yMin) / 6 / 2) * 2);
+  for (let db = yMin; db <= yMax; db += yStep) {
     const y = getY(db);
-    svgHtml += `<line x1="${margin.left}" y1="${y}" x2="${W - margin.right}" y2="${y}" stroke="${db===0?'#94a3b8':'#e2e8f0'}" stroke-width="${db===0?1.5:1}"/>`;
-    svgHtml += `<text x="${margin.left - 6}" y="${y + 4}" font-size="10" fill="#64748b" text-anchor="end">${db} dB</text>`;
+    if (y >= margin.top && y <= H - margin.bottom) {
+      svgHtml += `<line x1="${margin.left}" y1="${y}" x2="${W - margin.right}" y2="${y}" stroke="${db===0?'#94a3b8':'#e2e8f0'}" stroke-width="${db===0?1.5:1}"/>`;
+      svgHtml += `<text x="${margin.left - 6}" y="${y + 4}" font-size="10" fill="#64748b" text-anchor="end">${db} dB</text>`;
+    }
   }
 
   for (let i = 0; i <= 5; i++) {
@@ -364,21 +539,26 @@ function renderSvgPlot(res) {
     return d;
   };
 
-  // Optional Comparative Benchmark Overlays
+  // Comparative Overlays for Benchmark Saved Tabs
   if (showCompare && sparamsTabs.length > 1) {
     sparamsTabs.forEach((tb, idx) => {
-      if (idx === activeTabIdx || !tb.res || !tb.res.path12) return;
-      if (showS21 && tb.res.path12.s21) {
-        svgHtml += `<path d="${makePath(tb.res.path12.s21)}" fill="none" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="4 3"/>`;
-      }
+      if (idx === activeTabIdx || !tb.res || !tb.res.matrix) return;
+      invokedTraces.forEach(sKey => {
+        if (tb.res.matrix[sKey]) {
+          svgHtml += `<path d="${makePath(tb.res.matrix[sKey])}" fill="none" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="4 3"/>`;
+        }
+      });
     });
   }
 
-  // Active Tab Traces
-  if (showS11 && res.path12.s11) svgHtml += `<path d="${makePath(res.path12.s11)}" fill="none" stroke="#dc2626" stroke-width="1.8"/>`;
-  if (showS22 && res.path12.s22) svgHtml += `<path d="${makePath(res.path12.s22)}" fill="none" stroke="#16a34a" stroke-width="1.8"/>`;
-  if (showS31 && res.path13 && res.path13.s21) svgHtml += `<path d="${makePath(res.path13.s21)}" fill="none" stroke="#9333ea" stroke-width="2"/>`;
-  if (showS21 && res.path12.s21) svgHtml += `<path d="${makePath(res.path12.s21)}" fill="none" stroke="#2563eb" stroke-width="2.2"/>`;
+  // Active Invoked Traces
+  let traceIdx = 0;
+  invokedTraces.forEach(sKey => {
+    if (res.matrix[sKey]) {
+      const col = getTraceColor(sKey, traceIdx++);
+      svgHtml += `<path d="${makePath(res.matrix[sKey])}" fill="none" stroke="${col}" stroke-width="2.2"/>`;
+    }
+  });
 
   // Frequency Markers
   if (linearMarkers.length) {
@@ -396,16 +576,18 @@ function renderSvgPlot(res) {
   container.innerHTML = svgHtml;
 }
 
-/* Render Table for Markers and Delta Comparisons */
+/* Render Table for Markers and Invoked S-Parameters */
 function renderMarkerTable(res) {
   const box = $("spMarkerTable");
-  if (!box || !res || !res.freqs) return;
+  if (!box || !res || !res.freqs || !res.matrix) return;
 
   const freqs = res.freqs;
   const fMin = freqs[0], fMax = freqs[freqs.length - 1];
   const useGhz = fMax >= 1e8;
   const fDiv = useGhz ? 1e9 : 1e6;
   const fUnit = useGhz ? "GHz" : "MHz";
+
+  const invKeys = Array.from(invokedTraces);
 
   const getValAt = (arr, targetF) => {
     if (!arr) return "-";
@@ -419,12 +601,14 @@ function renderMarkerTable(res) {
     <thead>
       <tr style="border-bottom:1px solid #334155; color:#94a3b8">
         <th style="padding:6px">Marker</th>
-        <th style="padding:6px">Frequency (${fUnit})</th>
-        <th style="padding:6px">S21 (Gain)</th>
-        ${res.path13 ? `<th style="padding:6px">S31 (Coupled)</th>` : ""}
-        <th style="padding:6px">S11 (Return Loss)</th>
-        <th style="padding:6px">S22 (Output RL)</th>
-        <th style="padding:6px">Action</th>
+        <th style="padding:6px">Frequency (${fUnit})</th>`;
+
+  invKeys.forEach(sKey => {
+    const col = getTraceColor(sKey);
+    h += `<th style="padding:6px; color:${col}">${sKey}</th>`;
+  });
+
+  h += `<th style="padding:6px">Action</th>
       </tr>
     </thead>
     <tbody>`;
@@ -432,11 +616,6 @@ function renderMarkerTable(res) {
   const m1F = linearMarkers.length ? linearMarkers[0].f : fMin;
 
   linearMarkers.forEach((m, idx) => {
-    const s21Val = getValAt(res.path12.s21, m.f);
-    const s31Val = res.path13 ? getValAt(res.path13.s21, m.f) : "-";
-    const s11Val = getValAt(res.path12.s11, m.f);
-    const s22Val = getValAt(res.path12.s22, m.f);
-
     const deltaF = ((m.f - m1F) / fDiv).toFixed(3);
 
     h += `<tr style="border-bottom:1px solid #334155">
@@ -444,12 +623,15 @@ function renderMarkerTable(res) {
       <td style="padding:6px">
         <input type="number" step="0.01" value="${(m.f / fDiv).toFixed(3)}" data-midx="${idx}" class="sp-mkr-input" style="width:75px; padding:3px 6px; background:#0f172a; color:#e2e8f0; border:1px solid #334155; border-radius:4px"/>
         ${idx > 0 ? `<span style="font-size:10px; color:#94a3b8; margin-left:4px">(Δ ${deltaF > 0 ? '+'+deltaF : deltaF})</span>` : ""}
-      </td>
-      <td style="padding:6px; color:#60a5fa; font-weight:600">${s21Val}</td>
-      ${res.path13 ? `<td style="padding:6px; color:#c084fc">${s31Val}</td>` : ""}
-      <td style="padding:6px; color:#f87171">${s11Val}</td>
-      <td style="padding:6px; color:#4ade80">${s22Val}</td>
-      <td style="padding:6px">
+      </td>`;
+
+    invKeys.forEach(sKey => {
+      const v = getValAt(res.matrix[sKey], m.f);
+      const col = getTraceColor(sKey);
+      h += `<td style="padding:6px; color:${col}; font-weight:600">${v}</td>`;
+    });
+
+    h += `<td style="padding:6px">
         ${idx > 0 ? `<button class="btn btn-sm btn-del sp-del-mkr" data-midx="${idx}">✕</button>` : `<span style="color:#64748b">Ref</span>`}
       </td>
     </tr>`;
@@ -480,25 +662,27 @@ function renderMarkerTable(res) {
   });
 }
 
-/* Export Graph Data as CSV */
+/* Export Multi-Port Graph Data to CSV */
 function exportSParamsCsv(res) {
-  if (!res || !res.freqs || !res.path12) return;
+  if (!res || !res.freqs || !res.matrix) return;
   const freqs = res.freqs;
-  let csv = "Frequency_Hz,S21_dB,S11_dB,S22_dB";
-  if (res.path13) csv += ",S31_dB";
-  csv += "\n";
+  const invKeys = Array.from(invokedTraces);
+  let csv = "Frequency_Hz," + invKeys.join(",") + "\n";
 
   for (let k = 0; k < freqs.length; k++) {
-    csv += `${freqs[k].toFixed(0)},${res.path12.s21[k].toFixed(4)},${res.path12.s11[k].toFixed(4)},${res.path12.s22[k].toFixed(4)}`;
-    if (res.path13) csv += `,${res.path13.s21[k].toFixed(4)}`;
-    csv += "\n";
+    const row = [freqs[k].toFixed(0)];
+    invKeys.forEach(sKey => {
+      const arr = res.matrix[sKey];
+      row.push(arr ? arr[k].toFixed(4) : "-120.0000");
+    });
+    csv += row.join(",") + "\n";
   }
 
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = "rf_linear_analysis_sparams.csv";
+  a.download = "rf_multi_port_linear_analysis.csv";
   a.click();
   URL.revokeObjectURL(url);
 }
@@ -514,7 +698,7 @@ function exportSParamsSvg() {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = "s_parameters_chart.svg";
+  a.download = "multi_port_s_parameters.svg";
   a.click();
   URL.revokeObjectURL(url);
 }
@@ -539,7 +723,7 @@ function exportSParamsPng() {
       const u = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = u;
-      a.download = "s_parameters_chart.png";
+      a.download = "multi_port_s_parameters.png";
       a.click();
       URL.revokeObjectURL(u);
     });
@@ -547,29 +731,33 @@ function exportSParamsPng() {
   img.src = url;
 }
 
-/* Export System Touchstone (.s2p) File */
+/* Export System Touchstone (.s2p / .sNp) File */
 function exportTouchstoneS2p(res) {
-  if (!res || !res.freqs || !res.path12) return;
+  if (!res || !res.freqs || !res.matrix) return;
   const freqs = res.freqs;
-  let s2p = `! RF Chain System S-Parameters Export\n`;
-  s2p += `! Date: ${new Date().toISOString()}\n`;
-  s2p += `# Hz S DB R 50\n`;
-  s2p += `! Freq_Hz    S11_dB S11_deg  S21_dB S21_deg  S12_dB S12_deg  S22_dB S22_deg\n`;
+  const P = (res.portsList && res.portsList.length) || 2;
+  let sNp = `! RF Chain System Multi-Port S-Parameters (${P}-Port Export)\n`;
+  sNp += `! Date: ${new Date().toISOString()}\n`;
+  sNp += `# Hz S DB R 50\n`;
 
   for (let k = 0; k < freqs.length; k++) {
-    const f = freqs[k].toFixed(0);
-    const s11 = res.path12.s11[k].toFixed(3);
-    const s21 = res.path12.s21[k].toFixed(3);
-    const s12 = res.path12.s12 ? res.path12.s12[k].toFixed(3) : "-120.000";
-    const s22 = res.path12.s22[k].toFixed(3);
-    s2p += `${f} ${s11} 0.00 ${s21} 0.00 ${s12} 0.00 ${s22} 0.00\n`;
+    let line = `${freqs[k].toFixed(0)}`;
+    for (let i = 1; i <= P; i++) {
+      for (let j = 1; j <= P; j++) {
+        const arr = res.matrix[`S${i}${j}`];
+        const db = arr ? arr[k].toFixed(3) : "-120.000";
+        line += ` ${db} 0.00`;
+      }
+    }
+    sNp += line + "\n";
   }
 
-  const blob = new Blob([s2p], { type: "text/plain;charset=utf-8;" });
+  const ext = P === 2 ? ".s2p" : `.s${P}p`;
+  const blob = new Blob([sNp], { type: "text/plain;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = "system_linear_analysis.s2p";
+  a.download = `system_linear_analysis${ext}`;
   a.click();
   URL.revokeObjectURL(url);
 }

@@ -104,12 +104,17 @@ $$C = \frac{1}{Z_0} \frac{(1 - S_{11})(1 - S_{22}) - S_{12}S_{21}}{2 S_{21}}, \q
 Chain multiplication across stages:
 $$[ABCD]_{total}(f_k) = [ABCD]_1(f_k) \cdot [ABCD]_2(f_k) \dots [ABCD]_N(f_k)$$
 
-### 3. Analyser Settings & Comparative Analysis Sheets
+### 2. Forward Mismatch Propagation
+- For components without explicit Touchstone `.s2p` files, the solver propagates the running input/output mismatch coefficients ($S_{11,prev}, S_{22,prev}$) forward through stage attenuation/gain, computing realistic return loss along unmodeled sections instead of defaulting to ideal zero reflection.
+
+### 3. Multi-Port Matrix Engine (Up to 8 Ports: P1–P8)
+- Supports assigning up to 8 Analysis Ports ($P_1$ through $P_8$) on schematic terminals.
+- Computes complete $N \times N$ system S-parameter matrices ($S_{11} \dots S_{NN}$).
+- **Interactive Trace Invocation Grid**: Provides an $N \times N$ selector grid allowing users to check/uncheck exact parameters ($S_{21}, S_{31}, S_{11}, S_{22} \dots$) to display on the chart, preventing trace clutter. Includes quick presets: **All Return Loss ($S_{ii}$)**, **Forward Transmission ($S_{j1}$)**, **S21/S11/S22**.
+
+### 4. Analyser Settings & Comparative Analysis Sheets
 - **`Analyser` Settings Window**: Dedicated toolbar modal window configuring Start Frequency ($f_{start}$), Stop Frequency ($f_{stop}$), Sweep Points ($N$), Linear/Logarithmic Scale, and System Impedance ($Z_0$: $50\,\Omega, 75\,\Omega, 100\,\Omega$).
-- **S-Params Results Tabs**: Stores multiple analysis runs as tabbed sheets (`Sweep 1`, `Sweep 2`). Allows renaming tabs for comparative analysis across design states (e.g. *LNA Active* vs *LNA Bypassed*).
-- **Comparative Overlay**: Superimposes benchmark sweep curves (dashed lines) on top of the active sweep curves for direct visual comparison.
-- **Graph & Data Exporters**:
-  - **CSV Export**: Raw tabular data (`.csv`).
-  - **SVG / PNG Vector & Image Export**: High-resolution chart graphics.
-  - **Touchstone `.s2p` Export**: Synthesized system 2-port Touchstone data file export.
+- **S-Params Results Tabs**: Stores multiple analysis runs as tabbed sheets (`Sweep 1`, `Sweep 2`). Allows renaming tabs for comparative analysis across design states.
+- **Comparative Overlay**: Superimposes benchmark sweep curves (dashed lines) on top of active sweep curves.
+- **Graph & Data Exporters**: CSV Export, SVG Vector Export, PNG Image Export, and Touchstone `.s2p` / `.sNp` File Export.
 

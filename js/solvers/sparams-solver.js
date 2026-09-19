@@ -1,7 +1,7 @@
 "use strict";
 
 /* ====================================================================
-   RF S-Parameter Physics Solver & Touchstone Engine
+   RF S-Parameter Physics Solver & Multi-Port Matrix Engine (Up to 8 Ports)
    ==================================================================== */
 
 /* Complex Number Math Library */
@@ -66,17 +66,13 @@ function generateFreqVector(band) {
 function parseTouchstone(text) {
   if (!text || typeof text !== "string") return null;
   const lines = text.split(/\r?\n/);
-  let freqHzMult = 1e9, format = "DB", z0 = 50, numPorts = 2;
+  let freqHzMult = 1e9, format = "DB", z0 = 50, numPorts = null;
 
-  const dataRows = [];
-  let headerFound = false;
-
+  const rawTokens = [];
   for (let line of lines) {
     line = line.trim();
-    if (!line || line.startsWith("!")) continue; // Comment line
+    if (!line || line.startsWith("!")) continue;
     if (line.startsWith("#")) {
-      // Option line e.g. # GHz S DB R 50
-      headerFound = true;
       const tokens = line.slice(1).trim().split(/\s+/);
       for (let i = 0; i < tokens.length; i++) {
         const t = tokens[i].toUpperCase();
@@ -87,41 +83,60 @@ function parseTouchstone(text) {
       continue;
     }
 
-    const nums = line.split(/\s+/).map(Number).filter(n => !isNaN(n));
-    if (nums.length >= 3) dataRows.push(nums);
+    const tokens = line.split(/\s+/);
+    for (const tok of tokens) {
+      const num = Number(tok);
+      if (!isNaN(num)) rawTokens.push(num);
+    }
   }
 
-  if (!dataRows.length) return null;
+  if (!rawTokens.length) return null;
 
-  // Infer ports if data row length matches: 2-port .s2p has 9 numbers per freq row (f, s11_1, s11_2, s21_1, s21_2, s12_1, s12_2, s22_1, s22_2)
-  if (dataRows[0].length === 9) numPorts = 2;
-  else if (dataRows[0].length === 3) numPorts = 1;
+  // Infer numPorts if not explicitly set
+  // For N-port: 1 freq + 2*N^2 vals per point
+  for (const p of [2, 3, 4, 5, 6, 7, 8, 1]) {
+    const valsPerPoint = 1 + 2 * p * p;
+    if (rawTokens.length % valsPerPoint === 0) {
+      numPorts = p;
+      break;
+    }
+  }
+  if (!numPorts) numPorts = 2;
+
+  const valsPerPoint = 1 + 2 * numPorts * numPorts;
+  const numPoints = Math.floor(rawTokens.length / valsPerPoint);
+  if (numPoints === 0) return null;
+
+  const readVal = (n1, n2) => {
+    if (format === "DB") return CMath.fromDBDeg(n1, n2);
+    if (format === "MA") return CMath.fromMADeg(n1, n2);
+    return CMath.fromRI(n1, n2);
+  };
 
   const pts = [];
-  for (const row of dataRows) {
-    const fHz = row[0] * freqHzMult;
+  let idx = 0;
+  for (let ptIdx = 0; ptIdx < numPoints; ptIdx++) {
+    const fHz = rawTokens[idx++] * freqHzMult;
     const sMat = [];
-    if (numPorts === 2 && row.length >= 9) {
-      // 2-Port: S11, S21, S12, S22
-      const readVal = (n1, n2) => {
-        if (format === "DB") return CMath.fromDBDeg(n1, n2);
-        if (format === "MA") return CMath.fromMADeg(n1, n2);
-        return CMath.fromRI(n1, n2);
-      };
-      const s11 = readVal(row[1], row[2]);
-      const s21 = readVal(row[3], row[4]);
-      const s12 = readVal(row[5], row[6]);
-      const s22 = readVal(row[7], row[8]);
+
+    if (numPorts === 2) {
+      // Touchstone 2-port token order: f, S11, S21, S12, S22
+      const s11 = readVal(rawTokens[idx++], rawTokens[idx++]);
+      const s21 = readVal(rawTokens[idx++], rawTokens[idx++]);
+      const s12 = readVal(rawTokens[idx++], rawTokens[idx++]);
+      const s22 = (rawTokens[idx] !== undefined) ? readVal(rawTokens[idx++], rawTokens[idx++]) : CMath.zero();
       sMat.push([s11, s12], [s21, s22]);
     } else {
-      // Fallback 1-port
-      const readVal = (n1, n2) => {
-        if (format === "DB") return CMath.fromDBDeg(n1, n2);
-        if (format === "MA") return CMath.fromMADeg(n1, n2);
-        return CMath.fromRI(n1, n2);
-      };
-      const s11 = readVal(row[1], row[2]);
-      sMat.push([s11]);
+      // Touchstone N-port (N >= 3) token order: row-by-row (S11, S12, S13... S21, S22, S23...)
+      for (let i = 0; i < numPorts; i++) {
+        const row = [];
+        for (let j = 0; j < numPorts; j++) {
+          const val1 = rawTokens[idx++];
+          const val2 = rawTokens[idx++];
+          row.push(readVal(val1, val2));
+        }
+        sMat.push(row);
+      }
     }
     pts.push({ f: fHz, s: sMat });
   }
@@ -136,247 +151,316 @@ function parseTouchstone(text) {
   };
 }
 
-/* Interpolate Touchstone data onto target frequency vector */
-function interpolateSParams(sData, targetFreqs) {
-  const N = targetFreqs.length;
-  const interpolated = [];
-  const pts = sData.pts;
-  const numPts = pts.length;
+/* Extract transmission magnitude vector in dB for a single block stage */
+function getSwitchThrowIndex(b, path) {
+  if (!b) return 1;
+  const allConnections = (typeof allConns === "function") ? allConns() : (typeof conns !== "undefined" ? conns : []);
+  const pathIds = new Set((path || []).map(x => x.id));
+  pathIds.delete(b.id);
 
-  let extrapolated = false;
+  for (const cn of allConnections) {
+    if (cn.from.block === b.id && pathIds.has(cn.to.block)) {
+      const m = String(cn.from.port || "").match(/^o(\d+)$/i);
+      if (m) return parseInt(m[1], 10);
+    }
+    if (cn.to.block === b.id && pathIds.has(cn.from.block)) {
+      const m = String(cn.to.port || "").match(/^o(\d+)$/i);
+      if (m) return parseInt(m[1], 10);
+    }
+  }
+  return 1;
+}
 
-  for (let k = 0; k < N; k++) {
-    const f = targetFreqs[k];
-    if (f < sData.minFreq || f > sData.maxFreq) extrapolated = true;
+function getStageTransmissionDb(b, freqs, warnings, path) {
+  const N = freqs.length;
+  const tDb = new Float64Array(N);
+  const lbl = (b.params && b.params.label) || (COMP[b.type] && COMP[b.type].name) || "Block";
 
-    let s11, s21, s12, s22;
+  if (b.type === "switch") {
+    const nThrows = parseInt(b.params && b.params.throws) || 2;
+    const stNum = swState(b.params || {}, nThrows);
+    const kThrow = getSwitchThrowIndex(b, path);
+    const isoDb = -Math.abs(+b.params.iso >= 0 ? +b.params.iso : 60);
+    const ilDb = -Math.abs(+b.params.il || 0.4);
 
-    if (f <= pts[0].f) {
-      const p = pts[0].s;
-      s11 = p[0][0]; s12 = p[0][1] || CMath.zero();
-      s21 = p[1] ? p[1][0] : CMath.zero(); s22 = p[1] ? p[1][1] : CMath.zero();
-    } else if (f >= pts[numPts - 1].f) {
-      const p = pts[numPts - 1].s;
-      s11 = p[0][0]; s12 = p[0][1] || CMath.zero();
-      s21 = p[1] ? p[1][0] : CMath.zero(); s22 = p[1] ? p[1][1] : CMath.zero();
-    } else {
-      // Find bounding interval
-      let idx = 0;
-      while (idx < numPts - 1 && pts[idx + 1].f < f) idx++;
-      const p0 = pts[idx], p1 = pts[idx + 1];
-      const t = (f - p0.f) / (p1.f - p0.f);
-
-      const interpC = (c0, c1) => CMath.fromRI(c0.r + t * (c1.r - c0.r), c0.i + t * (c1.i - c0.i));
-
-      s11 = interpC(p0.s[0][0], p1.s[0][0]);
-      s12 = interpC(p0.s[0][1] || CMath.zero(), p1.s[0][1] || CMath.zero());
-      s21 = interpC(p0.s[1] ? p0.s[1][0] : CMath.zero(), p1.s[1] ? p1.s[1][0] : CMath.zero());
-      s22 = interpC(p0.s[1] ? p0.s[1][1] : CMath.zero(), p1.s[1] ? p1.s[1][1] : CMath.zero());
+    if (stNum === 0) {
+      // Off / Open state
+      for (let k = 0; k < N; k++) tDb[k] = isoDb;
+      return tDb;
     }
 
-    interpolated.push({ s11, s21, s12, s22 });
+    // Check per-state file for active switch position stNum
+    const sRaw = (b.params && b.params[`s2pData_st${stNum}`]) || (b.params && b.params.s2pData);
+
+    if (sRaw) {
+      const parsed = parseTouchstone(sRaw);
+      if (parsed) {
+        let dstPortIdx = 1;
+        if (parsed.numPorts >= 3) {
+          // Multi-port S(N+1)P Touchstone file: Throw k = Port k+1 (row index k in sMat)
+          dstPortIdx = kThrow;
+        } else {
+          // 2-port Touchstone file:
+          // If this path goes through the active throw (kThrow === stNum), use Port 2 (index 1) S21
+          // If this path goes through an inactive throw (kThrow !== stNum), return isolation
+          if (kThrow !== stNum) {
+            for (let k = 0; k < N; k++) tDb[k] = isoDb;
+            return tDb;
+          }
+          dstPortIdx = 1;
+        }
+
+        const pts = parsed.pts, numPts = pts.length;
+
+        for (let k = 0; k < N; k++) {
+          const f = freqs[k];
+          let cVal = CMath.zero();
+          if (f <= pts[0].f) {
+            const row = pts[0].s[dstPortIdx];
+            cVal = row ? row[0] : CMath.zero();
+          } else if (f >= pts[numPts - 1].f) {
+            const row = pts[numPts - 1].s[dstPortIdx];
+            cVal = row ? row[0] : CMath.zero();
+          } else {
+            let idx = 0;
+            while (idx < numPts - 1 && pts[idx + 1].f < f) idx++;
+            const p0 = pts[idx], p1 = pts[idx + 1];
+            const t = (f - p0.f) / (p1.f - p0.f);
+            const r0 = p0.s[dstPortIdx] ? p0.s[dstPortIdx][0] : CMath.zero();
+            const r1 = p1.s[dstPortIdx] ? p1.s[dstPortIdx][0] : CMath.zero();
+            cVal = CMath.fromRI(r0.r + t * (r1.r - r0.r), r0.i + t * (r1.i - r0.i));
+          }
+          tDb[k] = CMath.dB(cVal);
+        }
+
+        if ((freqs[0] < parsed.minFreq || freqs[N - 1] > parsed.maxFreq) && warnings) {
+          warnings.push(`Warning: Touchstone data for '${lbl}' (${(parsed.minFreq/1e9).toFixed(2)}–${(parsed.maxFreq/1e9).toFixed(2)} GHz) was extrapolated to match the analysis band.`);
+        }
+        return tDb;
+      }
+    }
+
+    // Fallback to ideal switch loss
+    const pathLossDb = (kThrow === stNum) ? ilDb : isoDb;
+    for (let k = 0; k < N; k++) tDb[k] = pathLossDb;
+    return tDb;
   }
 
-  return { interpolated, extrapolated };
-}
+  if (b.type === "bamp") {
+    const isByp = (b.params && b.params.mode === "Bypass Mode");
+    const sRaw = isByp ? (b.params.s2pData_byp || b.params.s2pData) : (b.params.s2pData_amp || b.params.s2pData);
+    const idealDb = isByp ? -Math.abs(+b.params.bypLoss || 1.8) : (+b.params.gain || 18);
 
-/* Fallback Constant Model (Perfect Match S11=0, S22=0, S21=gain/loss) */
-function getIdealSParams(block, targetFreqs) {
-  const N = targetFreqs.length;
-  const c = COMP[block.type];
-  const p = block.params || {};
+    if (sRaw) {
+      const parsed = parseTouchstone(sRaw);
+      if (parsed) {
+        const pts = parsed.pts, numPts = pts.length;
+        for (let k = 0; k < N; k++) {
+          const f = freqs[k];
+          let cVal = CMath.zero();
+          if (f <= pts[0].f) {
+            cVal = (pts[0].s[1] && pts[0].s[1][0]) || CMath.zero();
+          } else if (f >= pts[numPts - 1].f) {
+            cVal = (pts[numPts - 1].s[1] && pts[numPts - 1].s[1][0]) || CMath.zero();
+          } else {
+            let idx = 0;
+            while (idx < numPts - 1 && pts[idx + 1].f < f) idx++;
+            const p0 = pts[idx], p1 = pts[idx + 1];
+            const t = (f - p0.f) / (p1.f - p0.f);
+            const r0 = (p0.s[1] && p0.s[1][0]) || CMath.zero();
+            const r1 = (p1.s[1] && p1.s[1][0]) || CMath.zero();
+            cVal = CMath.fromRI(r0.r + t * (r1.r - r0.r), r0.i + t * (r1.i - r0.i));
+          }
+          tDb[k] = CMath.dB(cVal);
+        }
 
-  let gainDb = 0;
-  if (c.out) {
+        if ((freqs[0] < parsed.minFreq || freqs[N - 1] > parsed.maxFreq) && warnings) {
+          warnings.push(`Warning: Touchstone data for '${lbl}' (${(parsed.minFreq/1e9).toFixed(2)}–${(parsed.maxFreq/1e9).toFixed(2)} GHz) was extrapolated to match the analysis band.`);
+        }
+        return tDb;
+      }
+    }
+
+    for (let k = 0; k < N; k++) tDb[k] = idealDb;
+    return tDb;
+  }
+
+  // Standard component Touchstone S2P or ideal gain/loss
+  const sRaw = b.params && b.params.s2pData;
+  if (sRaw) {
+    const parsed = parseTouchstone(sRaw);
+    if (parsed) {
+      const pts = parsed.pts, numPts = pts.length;
+      for (let k = 0; k < N; k++) {
+        const f = freqs[k];
+        let cVal = CMath.zero();
+        if (f <= pts[0].f) {
+          cVal = (pts[0].s[1] && pts[0].s[1][0]) || CMath.zero();
+        } else if (f >= pts[numPts - 1].f) {
+          cVal = (pts[numPts - 1].s[1] && pts[numPts - 1].s[1][0]) || CMath.zero();
+        } else {
+          let idx = 0;
+          while (idx < numPts - 1 && pts[idx + 1].f < f) idx++;
+          const p0 = pts[idx], p1 = pts[idx + 1];
+          const t = (f - p0.f) / (p1.f - p0.f);
+          const r0 = (p0.s[1] && p0.s[1][0]) || CMath.zero();
+          const r1 = (p1.s[1] && p1.s[1][0]) || CMath.zero();
+          cVal = CMath.fromRI(r0.r + t * (r1.r - r0.r), r0.i + t * (r1.i - r0.i));
+        }
+        tDb[k] = CMath.dB(cVal);
+      }
+
+      if ((freqs[0] < parsed.minFreq || freqs[N - 1] > parsed.maxFreq) && warnings) {
+        warnings.push(`Warning: Touchstone data for '${lbl}' (${(parsed.minFreq/1e9).toFixed(2)}–${(parsed.maxFreq/1e9).toFixed(2)} GHz) was extrapolated to match the analysis band.`);
+      }
+      return tDb;
+    }
+  }
+
+  // Calculate ideal dB for standard block
+  let idealDb = 0;
+  const c = COMP[b.type];
+  const p = b.params || {};
+  if (c && c.out) {
     const o = c.out(p);
-    if (o && o.out !== undefined) gainDb = +o.out || 0;
-  } else if (p.gain !== undefined) gainDb = +p.gain || 0;
-  else if (p.loss !== undefined) gainDb = -Math.abs(+p.loss || 0);
+    if (o) {
+      if (o.out !== undefined) idealDb = +o.out || 0;
+      else {
+        const vals = Object.values(o).map(v => +v).filter(v => !isNaN(v));
+        if (vals.length) idealDb = vals[0];
+      }
+    }
+  } else if (p.gain !== undefined) idealDb = +p.gain || 0;
+  else if (p.loss !== undefined) idealDb = -Math.abs(+p.loss || 0);
 
-  // If SPnT switch, check active mode/throw
-  if (block.type === "bamp") {
-    gainDb = (p.mode === "Bypass Mode") ? -Math.abs(+p.bypLoss || 1.8) : (+p.gain || 18);
-  }
-
-  const s21 = CMath.fromDBDeg(gainDb, 0);
-  const s11 = CMath.zero(); // Perfect input match (0 linear -> -inf dB)
-  const s22 = CMath.zero(); // Perfect output match (0 linear -> -inf dB)
-  const s12 = CMath.zero(); // Perfect isolation
-
-  const interpolated = [];
-  for (let k = 0; k < N; k++) {
-    interpolated.push({ s11, s21, s12, s22 });
-  }
-  return { interpolated, extrapolated: false };
+  for (let k = 0; k < N; k++) tDb[k] = idealDb;
+  return tDb;
 }
 
-/* Convert 2-Port S-matrix to ABCD Matrix */
-function sToAbcd(S, z0 = 50) {
-  const { s11, s21, s12, s22 } = S;
-  const twoS21 = CMath.mul(CMath.fromRI(2, 0), s21);
-
-  // Num A: (1 + s11)(1 - s22) + s12*s21
-  const tA1 = CMath.mul(CMath.add(CMath.one(), s11), CMath.sub(CMath.one(), s22));
-  const tA2 = CMath.mul(s12, s21);
-  const A = CMath.div(CMath.add(tA1, tA2), twoS21);
-
-  // Num B: Z0 * ((1 + s11)(1 + s22) - s12*s21)
-  const tB1 = CMath.mul(CMath.add(CMath.one(), s11), CMath.add(CMath.one(), s22));
-  const B = CMath.mul(CMath.fromRI(z0, 0), CMath.div(CMath.sub(tB1, tA2), twoS21));
-
-  // Num C: (1/Z0) * ((1 - s11)(1 - s22) - s12*s21)
-  const tC1 = CMath.mul(CMath.sub(CMath.one(), s11), CMath.sub(CMath.one(), s22));
-  const C = CMath.mul(CMath.fromRI(1 / z0, 0), CMath.div(CMath.sub(tC1, tA2), twoS21));
-
-  // Num D: (1 - s11)(1 + s22) + s12*s21
-  const tD1 = CMath.mul(CMath.sub(CMath.one(), s11), CMath.add(CMath.one(), s22));
-  const D = CMath.div(CMath.add(tD1, tA2), twoS21);
-
-  return { A, B, C, D };
+/* Trace linear path between startBlockId and endBlockId via BFS */
+function tagPartner(b) {
+  const c = COMP[b.type];
+  if (!c || !c.isInterconnect) return null;
+  const isSend = (b.params && b.params.role === "send");
+  const targetRole = isSend ? "receive" : "send";
+  const t = (b.params && b.params.tag || "").trim();
+  if (!t) return null;
+  const allB = (typeof blocks !== "undefined" ? blocks : []);
+  return allB.find(x => COMP[x.type] && COMP[x.type].isInterconnect && (x.params && x.params.role) === targetRole && (x.params && x.params.tag || "").trim() === t) || null;
 }
 
-/* Convert 2-Port ABCD Matrix to S-matrix */
-function abcdToS(M, z0 = 50) {
-  const { A, B, C, D } = M;
-  const bOverZ0 = CMath.div(B, CMath.fromRI(z0, 0));
-  const cTimesZ0 = CMath.mul(C, CMath.fromRI(z0, 0));
-
-  // Denom: A + B/Z0 + C*Z0 + D
-  const denom = CMath.add(CMath.add(A, bOverZ0), CMath.add(cTimesZ0, D));
-
-  // S11: (A + B/Z0 - C*Z0 - D) / Denom
-  const numS11 = CMath.sub(CMath.sub(CMath.add(A, bOverZ0), cTimesZ0), D);
-  const s11 = CMath.div(numS11, denom);
-
-  // S21: 2 / Denom
-  const s21 = CMath.div(CMath.fromRI(2, 0), denom);
-
-  // S12: 2 * (A*D - B*C) / Denom
-  const ad_bc = CMath.sub(CMath.mul(A, D), CMath.mul(B, C));
-  const s12 = CMath.div(CMath.mul(CMath.fromRI(2, 0), ad_bc), denom);
-
-  // S22: (-A + B/Z0 - C*Z0 + D) / Denom
-  const numS22 = CMath.add(CMath.sub(CMath.add(CMath.mul(CMath.fromRI(-1, 0), A), bOverZ0), cTimesZ0), D);
-  const s22 = CMath.div(numS22, denom);
-
-  return { s11, s21, s12, s22 };
-}
-
-/* Multiply two ABCD matrices M1 * M2 */
-function mulAbcd(M1, M2) {
-  const A = CMath.add(CMath.mul(M1.A, M2.A), CMath.mul(M1.B, M2.C));
-  const B = CMath.add(CMath.mul(M1.A, M2.B), CMath.mul(M1.B, M2.D));
-  const C = CMath.add(CMath.mul(M1.C, M2.A), CMath.mul(M1.D, M2.C));
-  const D = CMath.add(CMath.mul(M1.C, M2.B), CMath.mul(M1.D, M2.D));
-  return { A, B, C, D };
-}
-
-/* Trace linear path from P1 port block to target port block */
 function findSignalPath(startBlockId, endBlockId) {
-  const path = [];
-  let currentId = startBlockId;
-  const visited = new Set();
+  if (!startBlockId || !endBlockId) return [];
 
-  while (currentId && !visited.has(currentId)) {
-    visited.add(currentId);
-    const b = blocks.find(x => x.id === currentId);
-    if (!b) break;
-    path.push(b);
-    if (currentId === endBlockId) break;
+  const allB = (typeof blocks !== "undefined" ? blocks : []);
+  const allC = (typeof conns !== "undefined" ? conns : []);
 
-    // Find outgoing connection
-    const cn = conns.find(c => c.from.block === currentId);
-    if (!cn) break;
-    currentId = cn.to.block;
+  if (startBlockId === endBlockId) {
+    const b = allB.find(x => x.id === startBlockId);
+    return b ? [b] : [];
   }
-  return path;
+
+  const queue = [[startBlockId]];
+  const visited = new Set([startBlockId]);
+
+  while (queue.length > 0) {
+    const currentPath = queue.shift();
+    const lastId = currentPath[currentPath.length - 1];
+
+    if (lastId === endBlockId) {
+      return currentPath.map(id => allB.find(x => x.id === id)).filter(Boolean);
+    }
+
+    // Find all connected blocks (forward or backward)
+    const neighbors = [];
+    for (const cn of allC) {
+      if (cn.from.block === lastId && !visited.has(cn.to.block)) {
+        neighbors.push(cn.to.block);
+      } else if (cn.to.block === lastId && !visited.has(cn.from.block)) {
+        neighbors.push(cn.from.block);
+      }
+    }
+
+    // Interconnect tag partner check
+    const lastB = allB.find(x => x.id === lastId);
+    if (lastB && COMP[lastB.type] && COMP[lastB.type].isInterconnect) {
+      const partner = tagPartner(lastB);
+      if (partner && !visited.has(partner.id)) {
+        neighbors.push(partner.id);
+      }
+    }
+
+    for (const neighborId of neighbors) {
+      visited.add(neighborId);
+      queue.push([...currentPath, neighborId]);
+    }
+  }
+
+  return [];
 }
 
-/* Main Execution Engine for S-Parameter Linear Analysis */
+/* Main Execution Engine for Scalable Multi-Port S-Parameter Analysis (Transmission Focus) */
 function computeLinearAnalysis(band) {
   const freqs = generateFreqVector(band);
   const N = freqs.length;
 
-  // Locate Analysis Ports P1, P2, P3
-  const p1Block = blocks.find(b => b.params && b.params.anaPort === "P1");
-  const p2Block = blocks.find(b => b.params && b.params.anaPort === "P2");
-  const p3Block = blocks.find(b => b.params && b.params.anaPort === "P3");
+  const allB = (typeof blocks !== "undefined" ? blocks : []);
+
+  // Scan for defined analysis ports P1 through P8
+  const portsList = []; // [{ num: 1, label: "P1", block: {...} }, ...]
+  for (let pNum = 1; pNum <= 8; pNum++) {
+    const pTag = "P" + pNum;
+    const b = allB.find(x => x.params && x.params.anaPort === pTag);
+    if (b) {
+      portsList.push({ num: pNum, tag: pTag, label: b.params.label || pTag, block: b });
+    }
+  }
 
   const warnings = [];
 
-  if (!p1Block) {
-    return { error: "No Analysis Port P1 (Input) defined. Set 'Analysis Port' to P1 on an input terminal.", freqs };
-  }
-  if (!p2Block && !p3Block) {
-    return { error: "No Analysis Port P2 or P3 defined. Set 'Analysis Port' to P2/P3 on output terminals.", freqs };
+  if (portsList.length < 2) {
+    return { error: "At least 2 Analysis Ports (e.g. P1 and P2) must be defined on schematic terminals to run linear analysis.", freqs, portsList };
   }
 
-  // Helper to process chain of components
-  const analyzeChain = (pStart, pEnd) => {
-    if (!pEnd) return null;
-    const path = findSignalPath(pStart.id, pEnd.id);
-    if (!path.length || path[path.length - 1].id !== pEnd.id) return null;
+  // Matrix dictionary: store transmission parameters S_ij (where i != j)
+  const matrix = {};
 
-    // Filter out pure terminals from cascading calculations if desired
-    const chainBlocks = path.filter(b => !COMP[b.type].isSource && b.type !== "antenna" && b.type !== "rfin" && b.type !== "rfout");
+  // Analyze pair (i, j): Port j (source) -> Port i (destination)
+  for (const srcPort of portsList) {
+    for (const dstPort of portsList) {
+      if (srcPort.num === dstPort.num) continue; // Focus strictly on transmission parameters S_ij (i != j)
 
-    const stageSParams = [];
-    for (const b of chainBlocks) {
-      let sRes = null;
-      // Check if S2P data uploaded for active path
-      const sRaw = b.params && b.params.s2pData;
-      if (sRaw) {
-        const parsed = parseTouchstone(sRaw);
-        if (parsed) {
-          sRes = interpolateSParams(parsed, freqs);
-          if (sRes.extrapolated) {
-            const lbl = b.params.label || COMP[b.type].name;
-            warnings.push(`Warning: Touchstone data for '${lbl}' (${(parsed.minFreq/1e9).toFixed(2)}–${(parsed.maxFreq/1e9).toFixed(2)} GHz) was extrapolated to match the analysis band.`);
-          }
-        }
-      }
-      if (!sRes) sRes = getIdealSParams(b, freqs);
-      stageSParams.push(sRes.interpolated);
-    }
+      const sKey = `S${dstPort.num}${srcPort.num}`;
+      const path = findSignalPath(srcPort.block.id, dstPort.block.id);
 
-    const s21Arr = new Float64Array(N);
-    const s11Arr = new Float64Array(N);
-    const s22Arr = new Float64Array(N);
-    const s12Arr = new Float64Array(N);
-
-    for (let k = 0; k < N; k++) {
-      if (!chainBlocks.length) {
-        s21Arr[k] = 0; s11Arr[k] = -120; s22Arr[k] = -120; s12Arr[k] = -120;
+      if (!path.length || path[path.length - 1].id !== dstPort.block.id) {
+        // No connected physical path between Port j and Port i
+        const sArr = new Float64Array(N);
+        for (let k = 0; k < N; k++) sArr[k] = -120.0; // Isolation (-120 dB)
+        matrix[sKey] = sArr;
         continue;
       }
-      let chainAbcd = sToAbcd(stageSParams[0][k]);
-      for (let i = 1; i < stageSParams.length; i++) {
-        const nextAbcd = sToAbcd(stageSParams[i][k]);
-        chainAbcd = mulAbcd(chainAbcd, nextAbcd);
+
+      const chainBlocks = path.filter(b => !COMP[b.type].isSource && b.type !== "antenna" && b.type !== "rfin" && b.type !== "rfout");
+      const sArr = new Float64Array(N);
+
+      for (const b of chainBlocks) {
+        const stageDb = getStageTransmissionDb(b, freqs, warnings, path);
+        for (let k = 0; k < N; k++) {
+          sArr[k] += stageDb[k];
+        }
       }
-      const sysS = abcdToS(chainAbcd);
-      s21Arr[k] = CMath.dB(sysS.s21);
-      s11Arr[k] = CMath.dB(sysS.s11);
-      s22Arr[k] = CMath.dB(sysS.s22);
-      s12Arr[k] = CMath.dB(sysS.s12);
+
+      matrix[sKey] = sArr;
     }
+  }
 
-    return { s21: s21Arr, s11: s11Arr, s22: s22Arr, s12: s12Arr };
-  };
-
-  const path12 = analyzeChain(p1Block, p2Block);
-  const path13 = analyzeChain(p1Block, p3Block);
-
-  // Deduplicate warnings
   const uniqueWarnings = Array.from(new Set(warnings));
 
   return {
     freqs,
-    p1: p1Block ? (p1Block.params.label || "P1") : null,
-    p2: p2Block ? (p2Block.params.label || "P2") : null,
-    p3: p3Block ? (p3Block.params.label || "P3") : null,
-    path12,
-    path13,
+    portsList,
+    matrix,
     warnings: uniqueWarnings
   };
 }

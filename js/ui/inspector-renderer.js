@@ -71,48 +71,163 @@ function renderInspector() {
   }
 
   if (!c.isLabel && !c.isInterconnect && !c.isSubsystem && !c.isSource && c.type !== "rfin" && c.type !== "rfout" && c.type !== "antenna" && c.type !== "termination") {
-    h += `<div class="insp-sec" style="margin-top:10px; padding-top:10px; border-top:1px solid var(--border,#e2e8f0)">
-      <label style="font-weight:600; font-size:12px; display:block; margin-bottom:4px">S-Parameter File (.s2p / .sNp)</label>
-      <div style="display:flex; gap:6px; align-items:center">
-        <button class="btn btn-sm" id="ibS2pBtn" style="flex:1">${b.params.s2pFileName ? "📄 Change .s2p" : "📁 Attach Touchstone (.s2p)"}</button>
-        ${b.params.s2pFileName ? `<button class="btn btn-sm btn-del" id="ibS2pClr" title="Clear S2P">✕</button>` : ""}
-      </div>
-      <div style="font-size:11px; color:var(--txt2,#64748b); margin-top:4px">
-        ${b.params.s2pFileName ? `File: <b>${esc(b.params.s2pFileName)}</b>` : "No file attached (using constant fallback)"}
-      </div>
-      <input type="file" id="ibS2pFile" accept=".s1p,.s2p,.s3p,.s4p,.s5p,.s6p,.s7p,.s8p,.s9p,.snp,.ts" style="display:none"/>
-    </div>`;
+    if (b.type === "bamp") {
+      // Per-state upload for Bypass Amplifier (Amp Mode vs Bypass Mode)
+      h += `<div class="insp-sec" style="margin-top:10px; padding-top:10px; border-top:1px solid var(--border,#e2e8f0)">
+        <label style="font-weight:600; font-size:12px; display:block; margin-bottom:6px">Per-Mode Touchstone Files (.s2p)</label>
+        
+        <div style="margin-bottom:8px">
+          <div style="font-size:11px; font-weight:600; color:var(--txt2,#64748b)">Amp Mode S2P:</div>
+          <div style="display:flex; gap:6px; align-items:center; margin-top:2px">
+            <button class="btn btn-sm" id="ibS2pAmpBtn" style="flex:1">${b.params.s2pFileName_amp ? "📄 " + esc(b.params.s2pFileName_amp) : "📁 Attach Amp Mode (.s2p)"}</button>
+            ${b.params.s2pFileName_amp ? `<button class="btn btn-sm btn-del" id="ibS2pAmpClr">✕</button>` : ""}
+          </div>
+          <input type="file" id="ibS2pAmpFile" accept=".s1p,.s2p,.snp,.ts" style="display:none"/>
+        </div>
+
+        <div>
+          <div style="font-size:11px; font-weight:600; color:var(--txt2,#64748b)">Bypass Mode S2P:</div>
+          <div style="display:flex; gap:6px; align-items:center; margin-top:2px">
+            <button class="btn btn-sm" id="ibS2pBypBtn" style="flex:1">${b.params.s2pFileName_byp ? "📄 " + esc(b.params.s2pFileName_byp) : "📁 Attach Bypass Mode (.s2p)"}</button>
+            ${b.params.s2pFileName_byp ? `<button class="btn btn-sm btn-del" id="ibS2pBypClr">✕</button>` : ""}
+          </div>
+          <input type="file" id="ibS2pBypFile" accept=".s1p,.s2p,.snp,.ts" style="display:none"/>
+        </div>
+      </div>`;
+    } else if (b.type === "switch") {
+      // Per-throw upload for SPnT Switches
+      const numThrows = parseInt(b.params.throws) || 2;
+      h += `<div class="insp-sec" style="margin-top:10px; padding-top:10px; border-top:1px solid var(--border,#e2e8f0)">
+        <label style="font-weight:600; font-size:12px; display:block; margin-bottom:6px">Per-Throw Touchstone Files (.s2p / .sNp)</label>`;
+      for (let t = 1; t <= numThrows; t++) {
+        const fnKey = `s2pFileName_st${t}`;
+        const fn = b.params[fnKey];
+        h += `<div style="margin-bottom:6px">
+          <div style="font-size:11px; font-weight:600; color:var(--txt2,#64748b)">Throw ${t} (Path ${t}) S2P:</div>
+          <div style="display:flex; gap:6px; align-items:center; margin-top:2px">
+            <button class="btn btn-sm ib-sw-s2p-btn" data-throw="${t}" style="flex:1">${fn ? "📄 " + esc(fn) : `📁 Attach Throw ${t} (.s2p)`}</button>
+            ${fn ? `<button class="btn btn-sm btn-del ib-sw-s2p-clr" data-throw="${t}">✕</button>` : ""}
+          </div>
+          <input type="file" class="ib-sw-s2p-file" data-throw="${t}" accept=".s1p,.s2p,.s3p,.s4p,.snp,.ts" style="display:none"/>
+        </div>`;
+      }
+      h += `</div>`;
+    } else {
+      // Standard single component Touchstone S2P upload
+      h += `<div class="insp-sec" style="margin-top:10px; padding-top:10px; border-top:1px solid var(--border,#e2e8f0)">
+        <label style="font-weight:600; font-size:12px; display:block; margin-bottom:4px">S-Parameter File (.s2p / .sNp)</label>
+        <div style="display:flex; gap:6px; align-items:center">
+          <button class="btn btn-sm" id="ibS2pBtn" style="flex:1">${b.params.s2pFileName ? "📄 Change .s2p" : "📁 Attach Touchstone (.s2p)"}</button>
+          ${b.params.s2pFileName ? `<button class="btn btn-sm btn-del" id="ibS2pClr" title="Clear S2P">✕</button>` : ""}
+        </div>
+        <div style="font-size:11px; color:var(--txt2,#64748b); margin-top:4px">
+          ${b.params.s2pFileName ? `File: <b>${esc(b.params.s2pFileName)}</b>` : "No file attached (using gain/loss fallback)"}
+        </div>
+        <input type="file" id="ibS2pFile" accept=".s1p,.s2p,.s3p,.s4p,.s5p,.s6p,.s7p,.s8p,.s9p,.snp,.ts" style="display:none"/>
+      </div>`;
+    }
   }
 
   if (!c.isLabel) h += `<button class="btn ins-btn" id="ibRot1">⟳ Rotate 90° &nbsp;(R)</button>`;
   h += `<button class="btn btn-del" id="ibDel1">Delete block</button>`;
   box.innerHTML = h;
 
-  const s2pBtn = $("ibS2pBtn"), s2pFile = $("ibS2pFile"), s2pClr = $("ibS2pClr");
-  if (s2pBtn && s2pFile) {
-    s2pBtn.onclick = () => s2pFile.click();
-    s2pFile.onchange = e => {
-      const file = e.target.files && e.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = ev => {
+  // Bind Per-State File Event Handlers
+  if (b.type === "bamp") {
+    const bindS2pSlot = (btnId, fileId, clrId, fnKey, dataKey) => {
+      const btn = $(btnId), fileEl = $(fileId), clr = $(clrId);
+      if (btn && fileEl) {
+        btn.onclick = () => fileEl.click();
+        fileEl.onchange = e => {
+          const f = e.target.files && e.target.files[0];
+          if (!f) return;
+          const rd = new FileReader();
+          rd.onload = ev => {
+            pushHistory();
+            b.params[fnKey] = f.name;
+            b.params[dataKey] = ev.target.result;
+            renderAll();
+            if (typeof renderLinearAnalysis === "function") renderLinearAnalysis();
+            hint(`Attached '${f.name}' for ${btnId.includes("Amp")?"Amp Mode":"Bypass Mode"}`);
+          };
+          rd.readAsText(f);
+        };
+      }
+      if (clr) {
+        clr.onclick = () => {
+          pushHistory();
+          delete b.params[fnKey];
+          delete b.params[dataKey];
+          renderAll();
+          if (typeof renderLinearAnalysis === "function") renderLinearAnalysis();
+          hint("Removed Touchstone file.");
+        };
+      }
+    };
+    bindS2pSlot("ibS2pAmpBtn", "ibS2pAmpFile", "ibS2pAmpClr", "s2pFileName_amp", "s2pData_amp");
+    bindS2pSlot("ibS2pBypBtn", "ibS2pBypFile", "ibS2pBypClr", "s2pFileName_byp", "s2pData_byp");
+  } else if (b.type === "switch") {
+    box.querySelectorAll(".ib-sw-s2p-btn").forEach(btn => {
+      const t = btn.getAttribute("data-throw");
+      const fileEl = box.querySelector(`.ib-sw-s2p-file[data-throw="${t}"]`);
+      if (btn && fileEl) {
+        btn.onclick = () => fileEl.click();
+        fileEl.onchange = e => {
+          const f = e.target.files && e.target.files[0];
+          if (!f) return;
+          const rd = new FileReader();
+          rd.onload = ev => {
+            pushHistory();
+            b.params[`s2pFileName_st${t}`] = f.name;
+            b.params[`s2pData_st${t}`] = ev.target.result;
+            renderAll();
+            if (typeof renderLinearAnalysis === "function") renderLinearAnalysis();
+            hint(`Attached '${f.name}' for Throw ${t}`);
+          };
+          rd.readAsText(f);
+        };
+      }
+    });
+    box.querySelectorAll(".ib-sw-s2p-clr").forEach(clr => {
+      clr.onclick = () => {
+        const t = clr.getAttribute("data-throw");
         pushHistory();
-        b.params.s2pFileName = file.name;
-        b.params.s2pData = ev.target.result;
+        delete b.params[`s2pFileName_st${t}`];
+        delete b.params[`s2pData_st${t}`];
         renderAll();
-        hint(`Attached Touchstone file '${file.name}' to ${b.params.label || c.name}`);
+        if (typeof renderLinearAnalysis === "function") renderLinearAnalysis();
+        hint(`Removed Touchstone file for Throw ${t}.`);
       };
-      reader.readAsText(file);
-    };
-  }
-  if (s2pClr) {
-    s2pClr.onclick = () => {
-      pushHistory();
-      delete b.params.s2pFileName;
-      delete b.params.s2pData;
-      renderAll();
-      hint("Removed Touchstone S-parameter file.");
-    };
+    });
+  } else {
+    const s2pBtn = $("ibS2pBtn"), s2pFile = $("ibS2pFile"), s2pClr = $("ibS2pClr");
+    if (s2pBtn && s2pFile) {
+      s2pBtn.onclick = () => s2pFile.click();
+      s2pFile.onchange = e => {
+        const file = e.target.files && e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = ev => {
+          pushHistory();
+          b.params.s2pFileName = file.name;
+          b.params.s2pData = ev.target.result;
+          renderAll();
+          if (typeof renderLinearAnalysis === "function") renderLinearAnalysis();
+          hint(`Attached Touchstone file '${file.name}' to ${b.params.label || c.name}`);
+        };
+        reader.readAsText(file);
+      };
+    }
+    if (s2pClr) {
+      s2pClr.onclick = () => {
+        pushHistory();
+        delete b.params.s2pFileName;
+        delete b.params.s2pData;
+        renderAll();
+        if (typeof renderLinearAnalysis === "function") renderLinearAnalysis();
+        hint("Removed Touchstone S-parameter file.");
+      };
+    }
   }
 
   box.querySelectorAll("[data-fkey]").forEach(inp => {

@@ -628,7 +628,7 @@ def({
   type: "source", keys: "signal generator cw carrier input", name: "Source", group: "Sources", w: 40, h: 40,
   ports: [{ id: "out", side: "right", kind: "out", dx: 40, dy: 20 }],
   params: { label: "SRC", power: 0, freq: "1 GHz", anaPort: "None" },
-  fields: [{ key: "anaPort", label: "Analysis Port", type: "select", options: ["None", "P1", "P2", "P3"] },
+  fields: [{ key: "anaPort", label: "Analysis Port", type: "select", options: ["None", "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8"] },
            { key: "power", label: "Output level", unit: "dBm", step: 0.5 }, { key: "freq", label: "Frequency", type: "text" }],
   isSource: () => true, srcOut: () => "out", srcPower: p => p.power, val: p => p.freq || "",
   sym() { return `<circle class="blk-shape" cx="20" cy="20" r="19"/><path class="blk-glyph" d="M10 20 q5 -7 10 0 t10 0"/>`; }
@@ -638,7 +638,7 @@ def({
   type: "lo", keys: "oscillator local synth vco source", name: "LO / Osc", group: "Frequency", w: 40, h: 40,
   ports: [{ id: "out", side: "top", kind: "out", dx: 20, dy: 0 }],
   params: { label: "LO", power: 10, freq: "0.9 GHz", anaPort: "None" },
-  fields: [{ key: "anaPort", label: "Analysis Port", type: "select", options: ["None", "P1", "P2", "P3"] },
+  fields: [{ key: "anaPort", label: "Analysis Port", type: "select", options: ["None", "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8"] },
            { key: "power", label: "Drive level", unit: "dBm", step: 0.5 }, { key: "freq", label: "Frequency", type: "text" }],
   isSource: () => true, srcOut: () => "out", srcPower: p => p.power, val: p => p.freq || "",
   sym() { return `<circle class="blk-shape" cx="20" cy="20" r="19"/><path class="blk-glyph" d="M10 20 q5 -7 10 0 t10 0"/>`; }
@@ -1105,7 +1105,7 @@ def({
   type: "rfin", keys: "connector input port sma source", name: "In connector", group: "Terminals", w: 40, h: 40,
   ports: [{ id: "out", side: "right", kind: "out", dx: 40, dy: 20 }],
   params: { label: "RF IN", power: 0, freq: "", anaPort: "P1" },
-  fields: [{ key: "anaPort", label: "Analysis Port", type: "select", options: ["None", "P1", "P2", "P3"] },
+  fields: [{ key: "anaPort", label: "Analysis Port", type: "select", options: ["None", "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8"] },
            { key: "power", label: "Input level", unit: "dBm", step: 0.5 }, { key: "freq", label: "Frequency", type: "text" }],
   isSource: () => true, srcOut: () => "out", srcPower: p => p.power, val: p => p.freq || dbm(p.power),
   sym() { return `<path class="blk-line" d="M22 20H40"/><circle class="blk-shape" cx="13" cy="20" r="9"/><circle class="blk-fillg" cx="13" cy="20" r="3"/>`; }
@@ -1115,7 +1115,7 @@ def({
   type: "rfout", keys: "connector output port sma sink", name: "Out connector", group: "Terminals", w: 40, h: 40,
   ports: [{ id: "in", side: "left", kind: "in", dx: 0, dy: 20 }],
   params: { label: "RF OUT", anaPort: "P2" },
-  fields: [{ key: "anaPort", label: "Analysis Port", type: "select", options: ["None", "P1", "P2", "P3"] }],
+  fields: [{ key: "anaPort", label: "Analysis Port", type: "select", options: ["None", "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8"] }],
   val: () => "output",
   sym() { return `<path class="blk-line" d="M0 20H18"/><circle class="blk-shape" cx="27" cy="20" r="9"/><circle class="blk-fillg" cx="27" cy="20" r="3"/>`; }
 });
@@ -1124,7 +1124,7 @@ def({
   type: "detector", keys: "diode video log power meter", name: "Detector", group: "Terminals", w: 40, h: 40,
   ports: [{ id: "in", side: "left", kind: "in", dx: 0, dy: 20 }],
   params: { label: "DET", anaPort: "None" },
-  fields: [{ key: "anaPort", label: "Analysis Port", type: "select", options: ["None", "P1", "P2", "P3"] }],
+  fields: [{ key: "anaPort", label: "Analysis Port", type: "select", options: ["None", "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8"] }],
   val: () => "video",
   sym() { return `<rect class="blk-shape" x="0" y="6" width="40" height="28" rx="4"/><path class="blk-line" d="M4 20H12"/><path class="blk-fillg" d="M12 12L28 20L12 28Z"/><path class="blk-glyph" d="M28 12V28"/>`; }
 });
@@ -1132,7 +1132,7 @@ def({
 def({
   type: "antenna", keys: "aerial radiator tx rx", name: "Antenna", group: "Terminals", w: 40, h: 40,
   params: { label: "ANT", role: "Tx", power: -80, anaPort: "None" },
-  fields: [{ key: "anaPort", label: "Analysis Port", type: "select", options: ["None", "P1", "P2", "P3"] },
+  fields: [{ key: "anaPort", label: "Analysis Port", type: "select", options: ["None", "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8"] },
            { key: "role", label: "Role", type: "select", options: ["Tx", "Rx"] }, { key: "power", label: "Received level", unit: "dBm", step: 1, showIf: p => p.role === "Rx" }],
   dynPorts: p => p.role === "Rx" ? [{ id: "ant", side: "right", kind: "out", dx: 40, dy: 20 }] : [{ id: "ant", side: "left", kind: "in", dx: 0, dy: 20 }],
   isSource: p => p.role === "Rx", srcOut: () => "ant", srcPower: p => p.power, val: p => p.role === "Rx" ? "Rx" : "Tx",
@@ -1146,7 +1146,7 @@ def({
   type: "termination", keys: "load dummy 50 ohm match terminator", name: "Load 50\u03a9", group: "Terminals", w: 40, h: 40,
   ports: [{ id: "in", side: "left", kind: "in", dx: 0, dy: 20 }],
   params: { label: "LOAD", anaPort: "None" },
-  fields: [{ key: "anaPort", label: "Analysis Port", type: "select", options: ["None", "P1", "P2", "P3"] }],
+  fields: [{ key: "anaPort", label: "Analysis Port", type: "select", options: ["None", "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8"] }],
   val: () => "50 \u03a9",
   sym() { return `<path class="blk-glyph" d="M0 20l3 -6 6 12 6 -12 6 12 3 -6H30"/><path class="blk-line" d="M30 12V28"/><path class="blk-line" d="M34 15V25"/><path class="blk-line" d="M38 18V22"/>`; }
 });
@@ -2011,7 +2011,7 @@ const noiseFloor = (nfDbv, bwHz) => (-174 + 10 * Math.log10(Math.max(1, bwHz)) +
 "use strict";
 
 /* ====================================================================
-   RF S-Parameter Physics Solver & Touchstone Engine
+   RF S-Parameter Physics Solver & Multi-Port Matrix Engine (Up to 8 Ports)
    ==================================================================== */
 
 /* Complex Number Math Library */
@@ -2076,17 +2076,13 @@ function generateFreqVector(band) {
 function parseTouchstone(text) {
   if (!text || typeof text !== "string") return null;
   const lines = text.split(/\r?\n/);
-  let freqHzMult = 1e9, format = "DB", z0 = 50, numPorts = 2;
+  let freqHzMult = 1e9, format = "DB", z0 = 50, numPorts = null;
 
-  const dataRows = [];
-  let headerFound = false;
-
+  const rawTokens = [];
   for (let line of lines) {
     line = line.trim();
-    if (!line || line.startsWith("!")) continue; // Comment line
+    if (!line || line.startsWith("!")) continue;
     if (line.startsWith("#")) {
-      // Option line e.g. # GHz S DB R 50
-      headerFound = true;
       const tokens = line.slice(1).trim().split(/\s+/);
       for (let i = 0; i < tokens.length; i++) {
         const t = tokens[i].toUpperCase();
@@ -2097,41 +2093,60 @@ function parseTouchstone(text) {
       continue;
     }
 
-    const nums = line.split(/\s+/).map(Number).filter(n => !isNaN(n));
-    if (nums.length >= 3) dataRows.push(nums);
+    const tokens = line.split(/\s+/);
+    for (const tok of tokens) {
+      const num = Number(tok);
+      if (!isNaN(num)) rawTokens.push(num);
+    }
   }
 
-  if (!dataRows.length) return null;
+  if (!rawTokens.length) return null;
 
-  // Infer ports if data row length matches: 2-port .s2p has 9 numbers per freq row (f, s11_1, s11_2, s21_1, s21_2, s12_1, s12_2, s22_1, s22_2)
-  if (dataRows[0].length === 9) numPorts = 2;
-  else if (dataRows[0].length === 3) numPorts = 1;
+  // Infer numPorts if not explicitly set
+  // For N-port: 1 freq + 2*N^2 vals per point
+  for (const p of [2, 3, 4, 5, 6, 7, 8, 1]) {
+    const valsPerPoint = 1 + 2 * p * p;
+    if (rawTokens.length % valsPerPoint === 0) {
+      numPorts = p;
+      break;
+    }
+  }
+  if (!numPorts) numPorts = 2;
+
+  const valsPerPoint = 1 + 2 * numPorts * numPorts;
+  const numPoints = Math.floor(rawTokens.length / valsPerPoint);
+  if (numPoints === 0) return null;
+
+  const readVal = (n1, n2) => {
+    if (format === "DB") return CMath.fromDBDeg(n1, n2);
+    if (format === "MA") return CMath.fromMADeg(n1, n2);
+    return CMath.fromRI(n1, n2);
+  };
 
   const pts = [];
-  for (const row of dataRows) {
-    const fHz = row[0] * freqHzMult;
+  let idx = 0;
+  for (let ptIdx = 0; ptIdx < numPoints; ptIdx++) {
+    const fHz = rawTokens[idx++] * freqHzMult;
     const sMat = [];
-    if (numPorts === 2 && row.length >= 9) {
-      // 2-Port: S11, S21, S12, S22
-      const readVal = (n1, n2) => {
-        if (format === "DB") return CMath.fromDBDeg(n1, n2);
-        if (format === "MA") return CMath.fromMADeg(n1, n2);
-        return CMath.fromRI(n1, n2);
-      };
-      const s11 = readVal(row[1], row[2]);
-      const s21 = readVal(row[3], row[4]);
-      const s12 = readVal(row[5], row[6]);
-      const s22 = readVal(row[7], row[8]);
+
+    if (numPorts === 2) {
+      // Touchstone 2-port token order: f, S11, S21, S12, S22
+      const s11 = readVal(rawTokens[idx++], rawTokens[idx++]);
+      const s21 = readVal(rawTokens[idx++], rawTokens[idx++]);
+      const s12 = readVal(rawTokens[idx++], rawTokens[idx++]);
+      const s22 = (rawTokens[idx] !== undefined) ? readVal(rawTokens[idx++], rawTokens[idx++]) : CMath.zero();
       sMat.push([s11, s12], [s21, s22]);
     } else {
-      // Fallback 1-port
-      const readVal = (n1, n2) => {
-        if (format === "DB") return CMath.fromDBDeg(n1, n2);
-        if (format === "MA") return CMath.fromMADeg(n1, n2);
-        return CMath.fromRI(n1, n2);
-      };
-      const s11 = readVal(row[1], row[2]);
-      sMat.push([s11]);
+      // Touchstone N-port (N >= 3) token order: row-by-row (S11, S12, S13... S21, S22, S23...)
+      for (let i = 0; i < numPorts; i++) {
+        const row = [];
+        for (let j = 0; j < numPorts; j++) {
+          const val1 = rawTokens[idx++];
+          const val2 = rawTokens[idx++];
+          row.push(readVal(val1, val2));
+        }
+        sMat.push(row);
+      }
     }
     pts.push({ f: fHz, s: sMat });
   }
@@ -2146,247 +2161,316 @@ function parseTouchstone(text) {
   };
 }
 
-/* Interpolate Touchstone data onto target frequency vector */
-function interpolateSParams(sData, targetFreqs) {
-  const N = targetFreqs.length;
-  const interpolated = [];
-  const pts = sData.pts;
-  const numPts = pts.length;
+/* Extract transmission magnitude vector in dB for a single block stage */
+function getSwitchThrowIndex(b, path) {
+  if (!b) return 1;
+  const allConnections = (typeof allConns === "function") ? allConns() : (typeof conns !== "undefined" ? conns : []);
+  const pathIds = new Set((path || []).map(x => x.id));
+  pathIds.delete(b.id);
 
-  let extrapolated = false;
+  for (const cn of allConnections) {
+    if (cn.from.block === b.id && pathIds.has(cn.to.block)) {
+      const m = String(cn.from.port || "").match(/^o(\d+)$/i);
+      if (m) return parseInt(m[1], 10);
+    }
+    if (cn.to.block === b.id && pathIds.has(cn.from.block)) {
+      const m = String(cn.to.port || "").match(/^o(\d+)$/i);
+      if (m) return parseInt(m[1], 10);
+    }
+  }
+  return 1;
+}
 
-  for (let k = 0; k < N; k++) {
-    const f = targetFreqs[k];
-    if (f < sData.minFreq || f > sData.maxFreq) extrapolated = true;
+function getStageTransmissionDb(b, freqs, warnings, path) {
+  const N = freqs.length;
+  const tDb = new Float64Array(N);
+  const lbl = (b.params && b.params.label) || (COMP[b.type] && COMP[b.type].name) || "Block";
 
-    let s11, s21, s12, s22;
+  if (b.type === "switch") {
+    const nThrows = parseInt(b.params && b.params.throws) || 2;
+    const stNum = swState(b.params || {}, nThrows);
+    const kThrow = getSwitchThrowIndex(b, path);
+    const isoDb = -Math.abs(+b.params.iso >= 0 ? +b.params.iso : 60);
+    const ilDb = -Math.abs(+b.params.il || 0.4);
 
-    if (f <= pts[0].f) {
-      const p = pts[0].s;
-      s11 = p[0][0]; s12 = p[0][1] || CMath.zero();
-      s21 = p[1] ? p[1][0] : CMath.zero(); s22 = p[1] ? p[1][1] : CMath.zero();
-    } else if (f >= pts[numPts - 1].f) {
-      const p = pts[numPts - 1].s;
-      s11 = p[0][0]; s12 = p[0][1] || CMath.zero();
-      s21 = p[1] ? p[1][0] : CMath.zero(); s22 = p[1] ? p[1][1] : CMath.zero();
-    } else {
-      // Find bounding interval
-      let idx = 0;
-      while (idx < numPts - 1 && pts[idx + 1].f < f) idx++;
-      const p0 = pts[idx], p1 = pts[idx + 1];
-      const t = (f - p0.f) / (p1.f - p0.f);
-
-      const interpC = (c0, c1) => CMath.fromRI(c0.r + t * (c1.r - c0.r), c0.i + t * (c1.i - c0.i));
-
-      s11 = interpC(p0.s[0][0], p1.s[0][0]);
-      s12 = interpC(p0.s[0][1] || CMath.zero(), p1.s[0][1] || CMath.zero());
-      s21 = interpC(p0.s[1] ? p0.s[1][0] : CMath.zero(), p1.s[1] ? p1.s[1][0] : CMath.zero());
-      s22 = interpC(p0.s[1] ? p0.s[1][1] : CMath.zero(), p1.s[1] ? p1.s[1][1] : CMath.zero());
+    if (stNum === 0) {
+      // Off / Open state
+      for (let k = 0; k < N; k++) tDb[k] = isoDb;
+      return tDb;
     }
 
-    interpolated.push({ s11, s21, s12, s22 });
+    // Check per-state file for active switch position stNum
+    const sRaw = (b.params && b.params[`s2pData_st${stNum}`]) || (b.params && b.params.s2pData);
+
+    if (sRaw) {
+      const parsed = parseTouchstone(sRaw);
+      if (parsed) {
+        let dstPortIdx = 1;
+        if (parsed.numPorts >= 3) {
+          // Multi-port S(N+1)P Touchstone file: Throw k = Port k+1 (row index k in sMat)
+          dstPortIdx = kThrow;
+        } else {
+          // 2-port Touchstone file:
+          // If this path goes through the active throw (kThrow === stNum), use Port 2 (index 1) S21
+          // If this path goes through an inactive throw (kThrow !== stNum), return isolation
+          if (kThrow !== stNum) {
+            for (let k = 0; k < N; k++) tDb[k] = isoDb;
+            return tDb;
+          }
+          dstPortIdx = 1;
+        }
+
+        const pts = parsed.pts, numPts = pts.length;
+
+        for (let k = 0; k < N; k++) {
+          const f = freqs[k];
+          let cVal = CMath.zero();
+          if (f <= pts[0].f) {
+            const row = pts[0].s[dstPortIdx];
+            cVal = row ? row[0] : CMath.zero();
+          } else if (f >= pts[numPts - 1].f) {
+            const row = pts[numPts - 1].s[dstPortIdx];
+            cVal = row ? row[0] : CMath.zero();
+          } else {
+            let idx = 0;
+            while (idx < numPts - 1 && pts[idx + 1].f < f) idx++;
+            const p0 = pts[idx], p1 = pts[idx + 1];
+            const t = (f - p0.f) / (p1.f - p0.f);
+            const r0 = p0.s[dstPortIdx] ? p0.s[dstPortIdx][0] : CMath.zero();
+            const r1 = p1.s[dstPortIdx] ? p1.s[dstPortIdx][0] : CMath.zero();
+            cVal = CMath.fromRI(r0.r + t * (r1.r - r0.r), r0.i + t * (r1.i - r0.i));
+          }
+          tDb[k] = CMath.dB(cVal);
+        }
+
+        if ((freqs[0] < parsed.minFreq || freqs[N - 1] > parsed.maxFreq) && warnings) {
+          warnings.push(`Warning: Touchstone data for '${lbl}' (${(parsed.minFreq/1e9).toFixed(2)}–${(parsed.maxFreq/1e9).toFixed(2)} GHz) was extrapolated to match the analysis band.`);
+        }
+        return tDb;
+      }
+    }
+
+    // Fallback to ideal switch loss
+    const pathLossDb = (kThrow === stNum) ? ilDb : isoDb;
+    for (let k = 0; k < N; k++) tDb[k] = pathLossDb;
+    return tDb;
   }
 
-  return { interpolated, extrapolated };
-}
+  if (b.type === "bamp") {
+    const isByp = (b.params && b.params.mode === "Bypass Mode");
+    const sRaw = isByp ? (b.params.s2pData_byp || b.params.s2pData) : (b.params.s2pData_amp || b.params.s2pData);
+    const idealDb = isByp ? -Math.abs(+b.params.bypLoss || 1.8) : (+b.params.gain || 18);
 
-/* Fallback Constant Model (Perfect Match S11=0, S22=0, S21=gain/loss) */
-function getIdealSParams(block, targetFreqs) {
-  const N = targetFreqs.length;
-  const c = COMP[block.type];
-  const p = block.params || {};
+    if (sRaw) {
+      const parsed = parseTouchstone(sRaw);
+      if (parsed) {
+        const pts = parsed.pts, numPts = pts.length;
+        for (let k = 0; k < N; k++) {
+          const f = freqs[k];
+          let cVal = CMath.zero();
+          if (f <= pts[0].f) {
+            cVal = (pts[0].s[1] && pts[0].s[1][0]) || CMath.zero();
+          } else if (f >= pts[numPts - 1].f) {
+            cVal = (pts[numPts - 1].s[1] && pts[numPts - 1].s[1][0]) || CMath.zero();
+          } else {
+            let idx = 0;
+            while (idx < numPts - 1 && pts[idx + 1].f < f) idx++;
+            const p0 = pts[idx], p1 = pts[idx + 1];
+            const t = (f - p0.f) / (p1.f - p0.f);
+            const r0 = (p0.s[1] && p0.s[1][0]) || CMath.zero();
+            const r1 = (p1.s[1] && p1.s[1][0]) || CMath.zero();
+            cVal = CMath.fromRI(r0.r + t * (r1.r - r0.r), r0.i + t * (r1.i - r0.i));
+          }
+          tDb[k] = CMath.dB(cVal);
+        }
 
-  let gainDb = 0;
-  if (c.out) {
+        if ((freqs[0] < parsed.minFreq || freqs[N - 1] > parsed.maxFreq) && warnings) {
+          warnings.push(`Warning: Touchstone data for '${lbl}' (${(parsed.minFreq/1e9).toFixed(2)}–${(parsed.maxFreq/1e9).toFixed(2)} GHz) was extrapolated to match the analysis band.`);
+        }
+        return tDb;
+      }
+    }
+
+    for (let k = 0; k < N; k++) tDb[k] = idealDb;
+    return tDb;
+  }
+
+  // Standard component Touchstone S2P or ideal gain/loss
+  const sRaw = b.params && b.params.s2pData;
+  if (sRaw) {
+    const parsed = parseTouchstone(sRaw);
+    if (parsed) {
+      const pts = parsed.pts, numPts = pts.length;
+      for (let k = 0; k < N; k++) {
+        const f = freqs[k];
+        let cVal = CMath.zero();
+        if (f <= pts[0].f) {
+          cVal = (pts[0].s[1] && pts[0].s[1][0]) || CMath.zero();
+        } else if (f >= pts[numPts - 1].f) {
+          cVal = (pts[numPts - 1].s[1] && pts[numPts - 1].s[1][0]) || CMath.zero();
+        } else {
+          let idx = 0;
+          while (idx < numPts - 1 && pts[idx + 1].f < f) idx++;
+          const p0 = pts[idx], p1 = pts[idx + 1];
+          const t = (f - p0.f) / (p1.f - p0.f);
+          const r0 = (p0.s[1] && p0.s[1][0]) || CMath.zero();
+          const r1 = (p1.s[1] && p1.s[1][0]) || CMath.zero();
+          cVal = CMath.fromRI(r0.r + t * (r1.r - r0.r), r0.i + t * (r1.i - r0.i));
+        }
+        tDb[k] = CMath.dB(cVal);
+      }
+
+      if ((freqs[0] < parsed.minFreq || freqs[N - 1] > parsed.maxFreq) && warnings) {
+        warnings.push(`Warning: Touchstone data for '${lbl}' (${(parsed.minFreq/1e9).toFixed(2)}–${(parsed.maxFreq/1e9).toFixed(2)} GHz) was extrapolated to match the analysis band.`);
+      }
+      return tDb;
+    }
+  }
+
+  // Calculate ideal dB for standard block
+  let idealDb = 0;
+  const c = COMP[b.type];
+  const p = b.params || {};
+  if (c && c.out) {
     const o = c.out(p);
-    if (o && o.out !== undefined) gainDb = +o.out || 0;
-  } else if (p.gain !== undefined) gainDb = +p.gain || 0;
-  else if (p.loss !== undefined) gainDb = -Math.abs(+p.loss || 0);
+    if (o) {
+      if (o.out !== undefined) idealDb = +o.out || 0;
+      else {
+        const vals = Object.values(o).map(v => +v).filter(v => !isNaN(v));
+        if (vals.length) idealDb = vals[0];
+      }
+    }
+  } else if (p.gain !== undefined) idealDb = +p.gain || 0;
+  else if (p.loss !== undefined) idealDb = -Math.abs(+p.loss || 0);
 
-  // If SPnT switch, check active mode/throw
-  if (block.type === "bamp") {
-    gainDb = (p.mode === "Bypass Mode") ? -Math.abs(+p.bypLoss || 1.8) : (+p.gain || 18);
-  }
-
-  const s21 = CMath.fromDBDeg(gainDb, 0);
-  const s11 = CMath.zero(); // Perfect input match (0 linear -> -inf dB)
-  const s22 = CMath.zero(); // Perfect output match (0 linear -> -inf dB)
-  const s12 = CMath.zero(); // Perfect isolation
-
-  const interpolated = [];
-  for (let k = 0; k < N; k++) {
-    interpolated.push({ s11, s21, s12, s22 });
-  }
-  return { interpolated, extrapolated: false };
+  for (let k = 0; k < N; k++) tDb[k] = idealDb;
+  return tDb;
 }
 
-/* Convert 2-Port S-matrix to ABCD Matrix */
-function sToAbcd(S, z0 = 50) {
-  const { s11, s21, s12, s22 } = S;
-  const twoS21 = CMath.mul(CMath.fromRI(2, 0), s21);
-
-  // Num A: (1 + s11)(1 - s22) + s12*s21
-  const tA1 = CMath.mul(CMath.add(CMath.one(), s11), CMath.sub(CMath.one(), s22));
-  const tA2 = CMath.mul(s12, s21);
-  const A = CMath.div(CMath.add(tA1, tA2), twoS21);
-
-  // Num B: Z0 * ((1 + s11)(1 + s22) - s12*s21)
-  const tB1 = CMath.mul(CMath.add(CMath.one(), s11), CMath.add(CMath.one(), s22));
-  const B = CMath.mul(CMath.fromRI(z0, 0), CMath.div(CMath.sub(tB1, tA2), twoS21));
-
-  // Num C: (1/Z0) * ((1 - s11)(1 - s22) - s12*s21)
-  const tC1 = CMath.mul(CMath.sub(CMath.one(), s11), CMath.sub(CMath.one(), s22));
-  const C = CMath.mul(CMath.fromRI(1 / z0, 0), CMath.div(CMath.sub(tC1, tA2), twoS21));
-
-  // Num D: (1 - s11)(1 + s22) + s12*s21
-  const tD1 = CMath.mul(CMath.sub(CMath.one(), s11), CMath.add(CMath.one(), s22));
-  const D = CMath.div(CMath.add(tD1, tA2), twoS21);
-
-  return { A, B, C, D };
+/* Trace linear path between startBlockId and endBlockId via BFS */
+function tagPartner(b) {
+  const c = COMP[b.type];
+  if (!c || !c.isInterconnect) return null;
+  const isSend = (b.params && b.params.role === "send");
+  const targetRole = isSend ? "receive" : "send";
+  const t = (b.params && b.params.tag || "").trim();
+  if (!t) return null;
+  const allB = (typeof blocks !== "undefined" ? blocks : []);
+  return allB.find(x => COMP[x.type] && COMP[x.type].isInterconnect && (x.params && x.params.role) === targetRole && (x.params && x.params.tag || "").trim() === t) || null;
 }
 
-/* Convert 2-Port ABCD Matrix to S-matrix */
-function abcdToS(M, z0 = 50) {
-  const { A, B, C, D } = M;
-  const bOverZ0 = CMath.div(B, CMath.fromRI(z0, 0));
-  const cTimesZ0 = CMath.mul(C, CMath.fromRI(z0, 0));
-
-  // Denom: A + B/Z0 + C*Z0 + D
-  const denom = CMath.add(CMath.add(A, bOverZ0), CMath.add(cTimesZ0, D));
-
-  // S11: (A + B/Z0 - C*Z0 - D) / Denom
-  const numS11 = CMath.sub(CMath.sub(CMath.add(A, bOverZ0), cTimesZ0), D);
-  const s11 = CMath.div(numS11, denom);
-
-  // S21: 2 / Denom
-  const s21 = CMath.div(CMath.fromRI(2, 0), denom);
-
-  // S12: 2 * (A*D - B*C) / Denom
-  const ad_bc = CMath.sub(CMath.mul(A, D), CMath.mul(B, C));
-  const s12 = CMath.div(CMath.mul(CMath.fromRI(2, 0), ad_bc), denom);
-
-  // S22: (-A + B/Z0 - C*Z0 + D) / Denom
-  const numS22 = CMath.add(CMath.sub(CMath.add(CMath.mul(CMath.fromRI(-1, 0), A), bOverZ0), cTimesZ0), D);
-  const s22 = CMath.div(numS22, denom);
-
-  return { s11, s21, s12, s22 };
-}
-
-/* Multiply two ABCD matrices M1 * M2 */
-function mulAbcd(M1, M2) {
-  const A = CMath.add(CMath.mul(M1.A, M2.A), CMath.mul(M1.B, M2.C));
-  const B = CMath.add(CMath.mul(M1.A, M2.B), CMath.mul(M1.B, M2.D));
-  const C = CMath.add(CMath.mul(M1.C, M2.A), CMath.mul(M1.D, M2.C));
-  const D = CMath.add(CMath.mul(M1.C, M2.B), CMath.mul(M1.D, M2.D));
-  return { A, B, C, D };
-}
-
-/* Trace linear path from P1 port block to target port block */
 function findSignalPath(startBlockId, endBlockId) {
-  const path = [];
-  let currentId = startBlockId;
-  const visited = new Set();
+  if (!startBlockId || !endBlockId) return [];
 
-  while (currentId && !visited.has(currentId)) {
-    visited.add(currentId);
-    const b = blocks.find(x => x.id === currentId);
-    if (!b) break;
-    path.push(b);
-    if (currentId === endBlockId) break;
+  const allB = (typeof blocks !== "undefined" ? blocks : []);
+  const allC = (typeof conns !== "undefined" ? conns : []);
 
-    // Find outgoing connection
-    const cn = conns.find(c => c.from.block === currentId);
-    if (!cn) break;
-    currentId = cn.to.block;
+  if (startBlockId === endBlockId) {
+    const b = allB.find(x => x.id === startBlockId);
+    return b ? [b] : [];
   }
-  return path;
+
+  const queue = [[startBlockId]];
+  const visited = new Set([startBlockId]);
+
+  while (queue.length > 0) {
+    const currentPath = queue.shift();
+    const lastId = currentPath[currentPath.length - 1];
+
+    if (lastId === endBlockId) {
+      return currentPath.map(id => allB.find(x => x.id === id)).filter(Boolean);
+    }
+
+    // Find all connected blocks (forward or backward)
+    const neighbors = [];
+    for (const cn of allC) {
+      if (cn.from.block === lastId && !visited.has(cn.to.block)) {
+        neighbors.push(cn.to.block);
+      } else if (cn.to.block === lastId && !visited.has(cn.from.block)) {
+        neighbors.push(cn.from.block);
+      }
+    }
+
+    // Interconnect tag partner check
+    const lastB = allB.find(x => x.id === lastId);
+    if (lastB && COMP[lastB.type] && COMP[lastB.type].isInterconnect) {
+      const partner = tagPartner(lastB);
+      if (partner && !visited.has(partner.id)) {
+        neighbors.push(partner.id);
+      }
+    }
+
+    for (const neighborId of neighbors) {
+      visited.add(neighborId);
+      queue.push([...currentPath, neighborId]);
+    }
+  }
+
+  return [];
 }
 
-/* Main Execution Engine for S-Parameter Linear Analysis */
+/* Main Execution Engine for Scalable Multi-Port S-Parameter Analysis (Transmission Focus) */
 function computeLinearAnalysis(band) {
   const freqs = generateFreqVector(band);
   const N = freqs.length;
 
-  // Locate Analysis Ports P1, P2, P3
-  const p1Block = blocks.find(b => b.params && b.params.anaPort === "P1");
-  const p2Block = blocks.find(b => b.params && b.params.anaPort === "P2");
-  const p3Block = blocks.find(b => b.params && b.params.anaPort === "P3");
+  const allB = (typeof blocks !== "undefined" ? blocks : []);
+
+  // Scan for defined analysis ports P1 through P8
+  const portsList = []; // [{ num: 1, label: "P1", block: {...} }, ...]
+  for (let pNum = 1; pNum <= 8; pNum++) {
+    const pTag = "P" + pNum;
+    const b = allB.find(x => x.params && x.params.anaPort === pTag);
+    if (b) {
+      portsList.push({ num: pNum, tag: pTag, label: b.params.label || pTag, block: b });
+    }
+  }
 
   const warnings = [];
 
-  if (!p1Block) {
-    return { error: "No Analysis Port P1 (Input) defined. Set 'Analysis Port' to P1 on an input terminal.", freqs };
-  }
-  if (!p2Block && !p3Block) {
-    return { error: "No Analysis Port P2 or P3 defined. Set 'Analysis Port' to P2/P3 on output terminals.", freqs };
+  if (portsList.length < 2) {
+    return { error: "At least 2 Analysis Ports (e.g. P1 and P2) must be defined on schematic terminals to run linear analysis.", freqs, portsList };
   }
 
-  // Helper to process chain of components
-  const analyzeChain = (pStart, pEnd) => {
-    if (!pEnd) return null;
-    const path = findSignalPath(pStart.id, pEnd.id);
-    if (!path.length || path[path.length - 1].id !== pEnd.id) return null;
+  // Matrix dictionary: store transmission parameters S_ij (where i != j)
+  const matrix = {};
 
-    // Filter out pure terminals from cascading calculations if desired
-    const chainBlocks = path.filter(b => !COMP[b.type].isSource && b.type !== "antenna" && b.type !== "rfin" && b.type !== "rfout");
+  // Analyze pair (i, j): Port j (source) -> Port i (destination)
+  for (const srcPort of portsList) {
+    for (const dstPort of portsList) {
+      if (srcPort.num === dstPort.num) continue; // Focus strictly on transmission parameters S_ij (i != j)
 
-    const stageSParams = [];
-    for (const b of chainBlocks) {
-      let sRes = null;
-      // Check if S2P data uploaded for active path
-      const sRaw = b.params && b.params.s2pData;
-      if (sRaw) {
-        const parsed = parseTouchstone(sRaw);
-        if (parsed) {
-          sRes = interpolateSParams(parsed, freqs);
-          if (sRes.extrapolated) {
-            const lbl = b.params.label || COMP[b.type].name;
-            warnings.push(`Warning: Touchstone data for '${lbl}' (${(parsed.minFreq/1e9).toFixed(2)}–${(parsed.maxFreq/1e9).toFixed(2)} GHz) was extrapolated to match the analysis band.`);
-          }
-        }
-      }
-      if (!sRes) sRes = getIdealSParams(b, freqs);
-      stageSParams.push(sRes.interpolated);
-    }
+      const sKey = `S${dstPort.num}${srcPort.num}`;
+      const path = findSignalPath(srcPort.block.id, dstPort.block.id);
 
-    const s21Arr = new Float64Array(N);
-    const s11Arr = new Float64Array(N);
-    const s22Arr = new Float64Array(N);
-    const s12Arr = new Float64Array(N);
-
-    for (let k = 0; k < N; k++) {
-      if (!chainBlocks.length) {
-        s21Arr[k] = 0; s11Arr[k] = -120; s22Arr[k] = -120; s12Arr[k] = -120;
+      if (!path.length || path[path.length - 1].id !== dstPort.block.id) {
+        // No connected physical path between Port j and Port i
+        const sArr = new Float64Array(N);
+        for (let k = 0; k < N; k++) sArr[k] = -120.0; // Isolation (-120 dB)
+        matrix[sKey] = sArr;
         continue;
       }
-      let chainAbcd = sToAbcd(stageSParams[0][k]);
-      for (let i = 1; i < stageSParams.length; i++) {
-        const nextAbcd = sToAbcd(stageSParams[i][k]);
-        chainAbcd = mulAbcd(chainAbcd, nextAbcd);
+
+      const chainBlocks = path.filter(b => !COMP[b.type].isSource && b.type !== "antenna" && b.type !== "rfin" && b.type !== "rfout");
+      const sArr = new Float64Array(N);
+
+      for (const b of chainBlocks) {
+        const stageDb = getStageTransmissionDb(b, freqs, warnings, path);
+        for (let k = 0; k < N; k++) {
+          sArr[k] += stageDb[k];
+        }
       }
-      const sysS = abcdToS(chainAbcd);
-      s21Arr[k] = CMath.dB(sysS.s21);
-      s11Arr[k] = CMath.dB(sysS.s11);
-      s22Arr[k] = CMath.dB(sysS.s22);
-      s12Arr[k] = CMath.dB(sysS.s12);
+
+      matrix[sKey] = sArr;
     }
+  }
 
-    return { s21: s21Arr, s11: s11Arr, s22: s22Arr, s12: s12Arr };
-  };
-
-  const path12 = analyzeChain(p1Block, p2Block);
-  const path13 = analyzeChain(p1Block, p3Block);
-
-  // Deduplicate warnings
   const uniqueWarnings = Array.from(new Set(warnings));
 
   return {
     freqs,
-    p1: p1Block ? (p1Block.params.label || "P1") : null,
-    p2: p2Block ? (p2Block.params.label || "P2") : null,
-    p3: p3Block ? (p3Block.params.label || "P3") : null,
-    path12,
-    path13,
+    portsList,
+    matrix,
     warnings: uniqueWarnings
   };
 }
@@ -3368,48 +3452,163 @@ function renderInspector() {
   }
 
   if (!c.isLabel && !c.isInterconnect && !c.isSubsystem && !c.isSource && c.type !== "rfin" && c.type !== "rfout" && c.type !== "antenna" && c.type !== "termination") {
-    h += `<div class="insp-sec" style="margin-top:10px; padding-top:10px; border-top:1px solid var(--border,#e2e8f0)">
-      <label style="font-weight:600; font-size:12px; display:block; margin-bottom:4px">S-Parameter File (.s2p / .sNp)</label>
-      <div style="display:flex; gap:6px; align-items:center">
-        <button class="btn btn-sm" id="ibS2pBtn" style="flex:1">${b.params.s2pFileName ? "📄 Change .s2p" : "📁 Attach Touchstone (.s2p)"}</button>
-        ${b.params.s2pFileName ? `<button class="btn btn-sm btn-del" id="ibS2pClr" title="Clear S2P">✕</button>` : ""}
-      </div>
-      <div style="font-size:11px; color:var(--txt2,#64748b); margin-top:4px">
-        ${b.params.s2pFileName ? `File: <b>${esc(b.params.s2pFileName)}</b>` : "No file attached (using constant fallback)"}
-      </div>
-      <input type="file" id="ibS2pFile" accept=".s1p,.s2p,.s3p,.s4p,.s5p,.s6p,.s7p,.s8p,.s9p,.snp,.ts" style="display:none"/>
-    </div>`;
+    if (b.type === "bamp") {
+      // Per-state upload for Bypass Amplifier (Amp Mode vs Bypass Mode)
+      h += `<div class="insp-sec" style="margin-top:10px; padding-top:10px; border-top:1px solid var(--border,#e2e8f0)">
+        <label style="font-weight:600; font-size:12px; display:block; margin-bottom:6px">Per-Mode Touchstone Files (.s2p)</label>
+        
+        <div style="margin-bottom:8px">
+          <div style="font-size:11px; font-weight:600; color:var(--txt2,#64748b)">Amp Mode S2P:</div>
+          <div style="display:flex; gap:6px; align-items:center; margin-top:2px">
+            <button class="btn btn-sm" id="ibS2pAmpBtn" style="flex:1">${b.params.s2pFileName_amp ? "📄 " + esc(b.params.s2pFileName_amp) : "📁 Attach Amp Mode (.s2p)"}</button>
+            ${b.params.s2pFileName_amp ? `<button class="btn btn-sm btn-del" id="ibS2pAmpClr">✕</button>` : ""}
+          </div>
+          <input type="file" id="ibS2pAmpFile" accept=".s1p,.s2p,.snp,.ts" style="display:none"/>
+        </div>
+
+        <div>
+          <div style="font-size:11px; font-weight:600; color:var(--txt2,#64748b)">Bypass Mode S2P:</div>
+          <div style="display:flex; gap:6px; align-items:center; margin-top:2px">
+            <button class="btn btn-sm" id="ibS2pBypBtn" style="flex:1">${b.params.s2pFileName_byp ? "📄 " + esc(b.params.s2pFileName_byp) : "📁 Attach Bypass Mode (.s2p)"}</button>
+            ${b.params.s2pFileName_byp ? `<button class="btn btn-sm btn-del" id="ibS2pBypClr">✕</button>` : ""}
+          </div>
+          <input type="file" id="ibS2pBypFile" accept=".s1p,.s2p,.snp,.ts" style="display:none"/>
+        </div>
+      </div>`;
+    } else if (b.type === "switch") {
+      // Per-throw upload for SPnT Switches
+      const numThrows = parseInt(b.params.throws) || 2;
+      h += `<div class="insp-sec" style="margin-top:10px; padding-top:10px; border-top:1px solid var(--border,#e2e8f0)">
+        <label style="font-weight:600; font-size:12px; display:block; margin-bottom:6px">Per-Throw Touchstone Files (.s2p / .sNp)</label>`;
+      for (let t = 1; t <= numThrows; t++) {
+        const fnKey = `s2pFileName_st${t}`;
+        const fn = b.params[fnKey];
+        h += `<div style="margin-bottom:6px">
+          <div style="font-size:11px; font-weight:600; color:var(--txt2,#64748b)">Throw ${t} (Path ${t}) S2P:</div>
+          <div style="display:flex; gap:6px; align-items:center; margin-top:2px">
+            <button class="btn btn-sm ib-sw-s2p-btn" data-throw="${t}" style="flex:1">${fn ? "📄 " + esc(fn) : `📁 Attach Throw ${t} (.s2p)`}</button>
+            ${fn ? `<button class="btn btn-sm btn-del ib-sw-s2p-clr" data-throw="${t}">✕</button>` : ""}
+          </div>
+          <input type="file" class="ib-sw-s2p-file" data-throw="${t}" accept=".s1p,.s2p,.s3p,.s4p,.snp,.ts" style="display:none"/>
+        </div>`;
+      }
+      h += `</div>`;
+    } else {
+      // Standard single component Touchstone S2P upload
+      h += `<div class="insp-sec" style="margin-top:10px; padding-top:10px; border-top:1px solid var(--border,#e2e8f0)">
+        <label style="font-weight:600; font-size:12px; display:block; margin-bottom:4px">S-Parameter File (.s2p / .sNp)</label>
+        <div style="display:flex; gap:6px; align-items:center">
+          <button class="btn btn-sm" id="ibS2pBtn" style="flex:1">${b.params.s2pFileName ? "📄 Change .s2p" : "📁 Attach Touchstone (.s2p)"}</button>
+          ${b.params.s2pFileName ? `<button class="btn btn-sm btn-del" id="ibS2pClr" title="Clear S2P">✕</button>` : ""}
+        </div>
+        <div style="font-size:11px; color:var(--txt2,#64748b); margin-top:4px">
+          ${b.params.s2pFileName ? `File: <b>${esc(b.params.s2pFileName)}</b>` : "No file attached (using gain/loss fallback)"}
+        </div>
+        <input type="file" id="ibS2pFile" accept=".s1p,.s2p,.s3p,.s4p,.s5p,.s6p,.s7p,.s8p,.s9p,.snp,.ts" style="display:none"/>
+      </div>`;
+    }
   }
 
   if (!c.isLabel) h += `<button class="btn ins-btn" id="ibRot1">⟳ Rotate 90° &nbsp;(R)</button>`;
   h += `<button class="btn btn-del" id="ibDel1">Delete block</button>`;
   box.innerHTML = h;
 
-  const s2pBtn = $("ibS2pBtn"), s2pFile = $("ibS2pFile"), s2pClr = $("ibS2pClr");
-  if (s2pBtn && s2pFile) {
-    s2pBtn.onclick = () => s2pFile.click();
-    s2pFile.onchange = e => {
-      const file = e.target.files && e.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = ev => {
+  // Bind Per-State File Event Handlers
+  if (b.type === "bamp") {
+    const bindS2pSlot = (btnId, fileId, clrId, fnKey, dataKey) => {
+      const btn = $(btnId), fileEl = $(fileId), clr = $(clrId);
+      if (btn && fileEl) {
+        btn.onclick = () => fileEl.click();
+        fileEl.onchange = e => {
+          const f = e.target.files && e.target.files[0];
+          if (!f) return;
+          const rd = new FileReader();
+          rd.onload = ev => {
+            pushHistory();
+            b.params[fnKey] = f.name;
+            b.params[dataKey] = ev.target.result;
+            renderAll();
+            if (typeof renderLinearAnalysis === "function") renderLinearAnalysis();
+            hint(`Attached '${f.name}' for ${btnId.includes("Amp")?"Amp Mode":"Bypass Mode"}`);
+          };
+          rd.readAsText(f);
+        };
+      }
+      if (clr) {
+        clr.onclick = () => {
+          pushHistory();
+          delete b.params[fnKey];
+          delete b.params[dataKey];
+          renderAll();
+          if (typeof renderLinearAnalysis === "function") renderLinearAnalysis();
+          hint("Removed Touchstone file.");
+        };
+      }
+    };
+    bindS2pSlot("ibS2pAmpBtn", "ibS2pAmpFile", "ibS2pAmpClr", "s2pFileName_amp", "s2pData_amp");
+    bindS2pSlot("ibS2pBypBtn", "ibS2pBypFile", "ibS2pBypClr", "s2pFileName_byp", "s2pData_byp");
+  } else if (b.type === "switch") {
+    box.querySelectorAll(".ib-sw-s2p-btn").forEach(btn => {
+      const t = btn.getAttribute("data-throw");
+      const fileEl = box.querySelector(`.ib-sw-s2p-file[data-throw="${t}"]`);
+      if (btn && fileEl) {
+        btn.onclick = () => fileEl.click();
+        fileEl.onchange = e => {
+          const f = e.target.files && e.target.files[0];
+          if (!f) return;
+          const rd = new FileReader();
+          rd.onload = ev => {
+            pushHistory();
+            b.params[`s2pFileName_st${t}`] = f.name;
+            b.params[`s2pData_st${t}`] = ev.target.result;
+            renderAll();
+            if (typeof renderLinearAnalysis === "function") renderLinearAnalysis();
+            hint(`Attached '${f.name}' for Throw ${t}`);
+          };
+          rd.readAsText(f);
+        };
+      }
+    });
+    box.querySelectorAll(".ib-sw-s2p-clr").forEach(clr => {
+      clr.onclick = () => {
+        const t = clr.getAttribute("data-throw");
         pushHistory();
-        b.params.s2pFileName = file.name;
-        b.params.s2pData = ev.target.result;
+        delete b.params[`s2pFileName_st${t}`];
+        delete b.params[`s2pData_st${t}`];
         renderAll();
-        hint(`Attached Touchstone file '${file.name}' to ${b.params.label || c.name}`);
+        if (typeof renderLinearAnalysis === "function") renderLinearAnalysis();
+        hint(`Removed Touchstone file for Throw ${t}.`);
       };
-      reader.readAsText(file);
-    };
-  }
-  if (s2pClr) {
-    s2pClr.onclick = () => {
-      pushHistory();
-      delete b.params.s2pFileName;
-      delete b.params.s2pData;
-      renderAll();
-      hint("Removed Touchstone S-parameter file.");
-    };
+    });
+  } else {
+    const s2pBtn = $("ibS2pBtn"), s2pFile = $("ibS2pFile"), s2pClr = $("ibS2pClr");
+    if (s2pBtn && s2pFile) {
+      s2pBtn.onclick = () => s2pFile.click();
+      s2pFile.onchange = e => {
+        const file = e.target.files && e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = ev => {
+          pushHistory();
+          b.params.s2pFileName = file.name;
+          b.params.s2pData = ev.target.result;
+          renderAll();
+          if (typeof renderLinearAnalysis === "function") renderLinearAnalysis();
+          hint(`Attached Touchstone file '${file.name}' to ${b.params.label || c.name}`);
+        };
+        reader.readAsText(file);
+      };
+    }
+    if (s2pClr) {
+      s2pClr.onclick = () => {
+        pushHistory();
+        delete b.params.s2pFileName;
+        delete b.params.s2pData;
+        renderAll();
+        if (typeof renderLinearAnalysis === "function") renderLinearAnalysis();
+        hint("Removed Touchstone S-parameter file.");
+      };
+    }
   }
 
   box.querySelectorAll("[data-fkey]").forEach(inp => {
@@ -3800,12 +3999,25 @@ function exportBudgetCsv() {
 "use strict";
 
 /* ====================================================================
-   RF Analyser Settings & Full-Stage S-Parameter Analysis Panel
+   RF Analyser Settings & Multi-Port S-Parameter Invocation Grid Panel
    ==================================================================== */
 
 let sparamsTabs = []; // Array of { id, name, band, res }
 let activeTabIdx = 0;
 let linearMarkers = [{ id: "M1", f: 0 }];
+let invokedTraces = new Set(["S21", "S11", "S22"]); // Currently invoked S-parameter trace keys
+
+// Vibrant distinct colors for multi-port traces
+const TRACE_COLORS = {
+  S21: "#2563eb", S11: "#dc2626", S22: "#16a34a", S31: "#9333ea",
+  S12: "#0d9488", S32: "#ea580c", S41: "#ca8a04", S23: "#db2777",
+  S33: "#059669", S44: "#e11d48", S51: "#7c3aed", S61: "#4f46e5"
+};
+const FALLBACK_COLORS = ["#2563eb", "#dc2626", "#16a34a", "#9333ea", "#0d9488", "#ea580c", "#ca8a04", "#db2777"];
+
+function getTraceColor(key, idx = 0) {
+  return TRACE_COLORS[key] || FALLBACK_COLORS[idx % FALLBACK_COLORS.length];
+}
 
 /* --- Analyser Settings Drawer Toggle & Renderer --- */
 function toggleAnalyserDrawer() {
@@ -3828,7 +4040,7 @@ function renderAnalyserSettings() {
       <span>⚙️</span> Global Analyser & Frequency Sweep Parameters
     </h3>
     <div style="font-size:12px; color:var(--txt2,#64748b); margin-bottom:16px">
-      Configure the global frequency sweep range, step resolution, and reference impedance for system-level linear S-parameter analysis.
+      Configure global frequency sweep range, resolution, and reference impedance for multi-port (up to 8 ports P1–P8) S-parameter linear analysis.
     </div>
 
     <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; background:var(--bg2,#f8fafc); padding:16px; border-radius:8px; border:1px solid var(--border,#e2e8f0); margin-bottom:16px">
@@ -3912,7 +4124,7 @@ function renderAnalyserSettings() {
 }
 
 
-/* --- Full-Stage S-Params Panel & Tab Management --- */
+/* --- Full-Stage Multi-Port S-Params Panel & Tab Management --- */
 function toggleSParamsDrawer() {
   const panel = $("spStagePanel");
   if (!panel) return;
@@ -3947,11 +4159,12 @@ function renderLinearAnalysis() {
   if (!sparamsTabs.length || activeTabIdx >= sparamsTabs.length) activeTabIdx = Math.max(0, sparamsTabs.length - 1);
   const activeTab = sparamsTabs[activeTabIdx];
 
-  // DYNAMICALLY RE-RUN LINEAR SOLVER ON CURRENT DIAGRAM STATE
-  // Ensures newly added ports (P1, P2, P3) or block edits are instantly evaluated!
+  // Data persistence: use stored snapshot result if present, or evaluate once if missing
   const band = (activeTab && activeTab.band) || settings.analysisBand || { startFreq: 1, startUnit: "GHz", stopFreq: 10, stopUnit: "GHz", points: 101, sweepType: "lin" };
-  const res = withAllSheets(() => computeLinearAnalysis(band));
-  if (activeTab) activeTab.res = res;
+  if (activeTab && !activeTab.res) {
+    activeTab.res = withAllSheets(() => computeLinearAnalysis(band));
+  }
+  const res = (activeTab && activeTab.res) || withAllSheets(() => computeLinearAnalysis(band));
 
   let html = `<div style="max-width:1200px; margin:0 auto; font-family:sans-serif; color:var(--ink,#e2e8f0)">`;
 
@@ -3959,8 +4172,9 @@ function renderLinearAnalysis() {
   html += `<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; border-bottom:1px solid var(--line,#334155); padding-bottom:10px">
     <div style="display:flex; align-items:center; gap:12px">
       <h3 style="margin:0; font-size:16px; display:flex; align-items:center; gap:8px">
-        <span>📈</span> Linear S-Parameter Analysis & Comparison View
+        <span>📈</span> Multi-Port Transmission Analysis & Benchmark View
       </h3>
+      <button class="btn btn-sm btn-pri" id="spRerunSweep" title="Re-evaluate sweep for current schematic state">⚡ Re-run Sweep</button>
       <button class="btn btn-sm" id="spOpenSettings" title="Open Analyser Settings">⚙️ Analyser Settings</button>
     </div>
     <button class="btn btn-sm" id="spClosePanel">✕ Close Analysis View</button>
@@ -3978,10 +4192,13 @@ function renderLinearAnalysis() {
   html += `<button class="btn btn-sm" id="spNewTab" style="margin-left:6px">+ New Sweep Tab</button>`;
   html += `</div>`;
 
-  // Status & Port Indicators
+  // Ports List Status Header
+  const portsList = res.portsList || [];
+  const portsStr = portsList.length ? portsList.map(p => `<b>${p.tag} (${esc(p.label)})</b>`).join(", ") : "None";
+
   html += `<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:12px">
     <div style="font-size:12.5px; color:var(--ink-dim,#94a3b8)">
-      Analysis Ports: <b>P1 (${esc(res.p1 || "None")})</b> ➔ <b>P2 (${esc(res.p2 || "None")})</b> ${res.p3 ? `& <b>P3 (${esc(res.p3)})</b>` : ""} | Active: <b>${esc(activeTab.name)}</b>
+      Defined Ports (${portsList.length}): ${portsStr} | Active Tab: <b>${esc(activeTab ? activeTab.name : "Sweep")}</b>
     </div>
 
     <!-- Export Action Buttons -->
@@ -3990,7 +4207,7 @@ function renderLinearAnalysis() {
       <button class="btn btn-sm" id="spExportCsv">📄 Export CSV</button>
       <button class="btn btn-sm" id="spExportSvg">📊 Export SVG</button>
       <button class="btn btn-sm" id="spExportPng">🖼️ Export PNG</button>
-      <button class="btn btn-sm" id="spExportS2p">📁 Export .s2p</button>
+      <button class="btn btn-sm" id="spExportS2p">📁 Export Touchstone (.sNp)</button>
     </div>
   </div>`;
 
@@ -3998,7 +4215,7 @@ function renderLinearAnalysis() {
   if (res.error) {
     html += `<div style="background:#451a1a; color:#fca5a5; padding:12px; border-radius:6px; margin-bottom:14px; font-size:12.5px; border:1px solid #7f1d1d">
       <b>⚠️ Notice:</b> ${esc(res.error)}
-      <div style="margin-top:4px; font-size:11.5px; opacity:0.85">To resolve: Select your input connector/antenna in the Inspector and set 'Analysis Port' to <b>P1</b>, then select your output connector and set 'Analysis Port' to <b>P2</b>.</div>
+      <div style="margin-top:4px; font-size:11.5px; opacity:0.85">To resolve: Select schematic terminals in the Inspector and assign Analysis Ports (P1 through P8).</div>
     </div>`;
   } else if (res.warnings && res.warnings.length) {
     html += `<div style="background:#451a03; color:#fcd34d; padding:10px; border-radius:6px; margin-bottom:14px; font-size:12px; border:1px solid #78350f">
@@ -4006,17 +4223,96 @@ function renderLinearAnalysis() {
     </div>`;
   }
 
-  if (!res.error) {
-    // Chart Area (Full Height & Width)
-    html += `<div style="position:relative; background:#ffffff; border:1px solid var(--border,#334155); border-radius:8px; padding:14px; margin-bottom:16px">
-      <!-- Trace Visibility Toggles & Marker Actions -->
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; font-size:12px; flex-wrap:wrap; gap:8px">
-        <div style="display:flex; gap:16px; align-items:center">
-          <label style="color:#2563eb; font-weight:600; cursor:pointer"><input type="checkbox" id="chkS21" checked/> S21 (Gain)</label>
-          ${res.path13 ? `<label style="color:#9333ea; font-weight:600; cursor:pointer"><input type="checkbox" id="chkS31" checked/> S31 (Coupled)</label>` : ""}
-          <label style="color:#dc2626; font-weight:600; cursor:pointer"><input type="checkbox" id="chkS11" checked/> S11 (P1 Match)</label>
-          <label style="color:#16a34a; font-weight:600; cursor:pointer"><input type="checkbox" id="chkS22" checked/> S22 (P2 Match)</label>
+  if (!res.error && portsList.length >= 2) {
+    // --- Interactive Transmission Trace Selector ---
+    const P = portsList.length;
+
+    // Build list of valid transmission S_ij (i != j) combinations
+    const availableTraces = [];
+    for (let i = 1; i <= P; i++) {
+      for (let j = 1; j <= P; j++) {
+        if (i === j) continue; // Focus strictly on transmission parameters
+        const sKey = `S${i}${j}`;
+        let label = sKey;
+        if (j === 1) label += ` (Forward Transmission P1 → P${i})`;
+        else label += ` (Transmission P${j} → P${i})`;
+        availableTraces.push({ key: sKey, label });
+      }
+    }
+
+    // Clean out old S_ii return loss keys if present
+    invokedTraces.forEach(k => {
+      if (/^S(\d+)\1$/.test(k)) invokedTraces.delete(k);
+    });
+    // Auto-invoke traces with active data (> -110 dB) if current selection is empty or isolated
+    let hasValidActive = false;
+    invokedTraces.forEach(sk => {
+      if (res.matrix[sk] && res.matrix[sk].some(v => v > -110)) hasValidActive = true;
+    });
+    if (!hasValidActive) {
+      for (const sk in res.matrix) {
+        if (res.matrix[sk].some(v => v > -110)) {
+          invokedTraces.add(sk);
+        }
+      }
+    }
+    if (invokedTraces.size === 0) {
+      availableTraces.forEach(tr => invokedTraces.add(tr.key));
+    }
+
+    html += `<div style="background:var(--chrome,#1e293b); border:1px solid var(--line,#334155); border-radius:8px; padding:12px; margin-bottom:14px">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:8px">
+        <h4 style="margin:0; font-size:13px; color:var(--ink,#e2e8f0); display:flex; align-items:center; gap:6px">
+          <span>🎛️</span> Transmission Parameter Selection (${P}-Port System)
+        </h4>
+        <div style="display:flex; gap:6px; flex-wrap:wrap">
+          <button class="btn btn-sm" id="spPrePrimary">Preset: Primary (S21)</button>
+          <button class="btn btn-sm" id="spPreAllOutputs">Preset: All Outputs (S_j1)</button>
+          <button class="btn btn-sm" id="spPreAllTrans">Preset: All Transmission (S_ij)</button>
+          <button class="btn btn-sm" id="spPreClearAll">Clear All</button>
         </div>
+      </div>
+
+      <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap">
+        <div style="display:flex; align-items:center; gap:6px">
+          <label style="font-size:12px; font-weight:600; color:#94a3b8">Add Trace:</label>
+          <select id="spTraceSelect" style="padding:6px 10px; font-size:12px; border-radius:6px; border:1px solid #334155; background:#0f172a; color:#e2e8f0; min-width:240px">
+            <option value="">-- Select Transmission Trace --</option>`;
+
+    availableTraces.forEach(tr => {
+      const isInv = invokedTraces.has(tr.key);
+      html += `<option value="${tr.key}"${isInv ? " disabled" : ""}>${esc(tr.label)}${isInv ? " (Active)" : ""}</option>`;
+    });
+
+    html += `</select>
+        </div>
+
+        <div style="font-size:12px; font-weight:600; color:#94a3b8">Active:</div>
+        <div id="spActiveTraceChips" style="display:flex; gap:6px; flex-wrap:wrap; align-items:center">`;
+
+    let chipIdx = 0;
+    invokedTraces.forEach(sKey => {
+      const col = getTraceColor(sKey, chipIdx++);
+      html += `<div style="display:inline-flex; align-items:center; gap:6px; padding:4px 10px; border-radius:4px; background:${col}; color:#ffffff; font-size:12px; font-weight:600; box-shadow:0 1px 2px rgba(0,0,0,0.2)">
+        <span>${sKey}</span>
+        <span class="sp-chip-del" data-skey="${sKey}" style="cursor:pointer; opacity:0.85; font-size:11px; margin-left:2px" title="Remove trace">✕</span>
+      </div>`;
+    });
+
+    html += `</div>
+      </div>
+    </div>`;
+
+    // --- Chart Area ---
+    html += `<div style="position:relative; background:#ffffff; border:1px solid var(--border,#334155); border-radius:8px; padding:14px; margin-bottom:16px">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; font-size:12px; flex-wrap:wrap; gap:8px">
+        <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap">
+          <span style="font-weight:600; color:#334155">Transmission Traces (${invokedTraces.size}):</span>`;
+    invokedTraces.forEach(sKey => {
+      const col = getTraceColor(sKey);
+      html += `<span style="color:${col}; font-weight:600; font-size:12px">■ ${sKey}</span>`;
+    });
+    html += `</div>
         <div>
           <button class="btn btn-sm" id="spAddMarker">+ Add Marker</button>
         </div>
@@ -4028,7 +4324,7 @@ function renderLinearAnalysis() {
 
     // Markers Table
     html += `<div style="background:var(--chrome,#1e293b); border:1px solid var(--line,#334155); border-radius:8px; padding:14px">
-      <h4 style="margin:0 0 10px 0; font-size:13px; color:var(--ink,#e2e8f0)">📌 Frequency Markers & Delta Readouts</h4>
+      <h4 style="margin:0 0 10px 0; font-size:13px; color:var(--ink,#e2e8f0)">📌 Frequency Markers & Readouts</h4>
       <div id="spMarkerTable"></div>
     </div>`;
   }
@@ -4039,6 +4335,66 @@ function renderLinearAnalysis() {
   // Bind Header Action Buttons
   if ($("spClosePanel")) $("spClosePanel").onclick = toggleSParamsDrawer;
   if ($("spOpenSettings")) $("spOpenSettings").onclick = toggleAnalyserDrawer;
+  if ($("spRerunSweep")) {
+    $("spRerunSweep").onclick = () => {
+      if (activeTab) {
+        activeTab.res = withAllSheets(() => computeLinearAnalysis(activeTab.band));
+        renderLinearAnalysis();
+        if (typeof hint === "function") hint(`Re-evaluated sweep for '${activeTab.name}'`);
+      }
+    };
+  }
+
+  // Bind Combobox Dropdown & Chip Event Listeners
+  const selTrace = $("spTraceSelect");
+  if (selTrace) {
+    selTrace.onchange = e => {
+      const val = e.target.value;
+      if (val) {
+        invokedTraces.add(val);
+        renderLinearAnalysis();
+      }
+    };
+  }
+
+  box.querySelectorAll(".sp-chip-del").forEach(chip => {
+    chip.onclick = () => {
+      const sk = chip.getAttribute("data-skey");
+      invokedTraces.delete(sk);
+      renderLinearAnalysis();
+    };
+  });
+
+  if ($("spPrePrimary")) {
+    $("spPrePrimary").onclick = () => {
+      invokedTraces = new Set(["S21"]);
+      renderLinearAnalysis();
+    };
+  }
+  if ($("spPreAllOutputs")) {
+    $("spPreAllOutputs").onclick = () => {
+      invokedTraces.clear();
+      for (let p = 2; p <= portsList.length; p++) invokedTraces.add(`S${p}1`);
+      renderLinearAnalysis();
+    };
+  }
+  if ($("spPreAllTrans")) {
+    $("spPreAllTrans").onclick = () => {
+      invokedTraces.clear();
+      for (let i = 1; i <= portsList.length; i++) {
+        for (let j = 1; j <= portsList.length; j++) {
+          if (i !== j) invokedTraces.add(`S${i}${j}`);
+        }
+      }
+      renderLinearAnalysis();
+    };
+  }
+  if ($("spPreClearAll")) {
+    $("spPreClearAll").onclick = () => {
+      invokedTraces.clear();
+      renderLinearAnalysis();
+    };
+  }
 
   // Bind Tab Bar Event Listeners
   box.querySelectorAll(".sp-tab-item").forEach(item => {
@@ -4078,7 +4434,7 @@ function renderLinearAnalysis() {
     };
   }
 
-  if (!res.error) {
+  if (!res.error && portsList.length >= 2) {
     renderSvgPlot(res);
     renderMarkerTable(res);
 
@@ -4098,24 +4454,16 @@ function renderLinearAnalysis() {
     if ($("spExportPng")) $("spExportPng").onclick = () => exportSParamsPng();
     if ($("spExportS2p")) $("spExportS2p").onclick = () => exportTouchstoneS2p(res);
 
-    ["chkS21", "chkS31", "chkS11", "chkS22", "chkCompare"].forEach(id => {
-      const el = $(id);
-      if (el) el.onchange = () => renderSvgPlot(res);
-    });
+    if ($("chkCompare")) $("chkCompare").onchange = () => renderSvgPlot(res);
   }
 }
 
-/* Render SVG Plotter with Traces and Optional Benchmark Comparison Overlay */
+/* Render SVG Plotter for All Invoked Traces with Dynamic Y-Axis Auto-Scaling */
 function renderSvgPlot(res) {
   const container = $("spChartContainer");
-  if (!container || !res || !res.freqs || !res.path12) return;
+  if (!container || !res || !res.freqs || !res.matrix) return;
 
-  const showS21 = $("chkS21") && $("chkS21").checked;
-  const showS31 = $("chkS31") && $("chkS31").checked;
-  const showS11 = $("chkS11") && $("chkS11").checked;
-  const showS22 = $("chkS22") && $("chkS22").checked;
   const showCompare = $("chkCompare") && $("chkCompare").checked;
-
   const freqs = res.freqs;
   const N = freqs.length;
   const fMin = freqs[0], fMax = freqs[N - 1];
@@ -4126,24 +4474,50 @@ function renderSvgPlot(res) {
 
   const W = container.clientWidth || 900;
   const H = 360;
-  const margin = { top: 20, right: 30, bottom: 35, left: 45 };
+  const margin = { top: 20, right: 30, bottom: 35, left: 50 };
   const pw = W - margin.left - margin.right;
   const ph = H - margin.top - margin.bottom;
 
-  let yMin = -60, yMax = 30;
+  // Compute dynamic Y-axis auto-scaling from active data (> -110 dB)
+  let dMin = Infinity, dMax = -Infinity;
+  invokedTraces.forEach(sKey => {
+    const arr = res.matrix[sKey];
+    if (arr) {
+      for (let k = 0; k < N; k++) {
+        const v = arr[k];
+        if (isFinite(v) && v > -110) {
+          if (v < dMin) dMin = v;
+          if (v > dMax) dMax = v;
+        }
+      }
+    }
+  });
+
+  let yMin, yMax;
+  if (!isFinite(dMin) || !isFinite(dMax)) {
+    yMin = -60; yMax = 30;
+  } else {
+    const span = Math.max(1, dMax - dMin);
+    yMin = Math.floor((dMin - Math.max(1, span * 0.2)) / 5) * 5;
+    yMax = Math.ceil((dMax + Math.max(1, span * 0.2)) / 5) * 5;
+    if (yMin >= yMax) { yMin = -60; yMax = 30; }
+  }
 
   const getX = f => margin.left + ((f - fMin) / (fMax - fMin || 1)) * pw;
-  const getY = val => margin.top + (1 - (val - yMin) / (yMax - yMin)) * ph;
+  const getY = val => margin.top + (1 - (val - yMin) / (yMax - yMin || 1)) * ph;
 
   let svgHtml = `<svg id="spSvgPlot" width="100%" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="user-select:none; font-family:sans-serif; background:#fff">`;
 
-  // Grid Lines & Labels
+  // Grid Lines & Axis Labels
   svgHtml += `<rect x="${margin.left}" y="${margin.top}" width="${pw}" height="${ph}" fill="#fafafa" stroke="#cbd5e1"/>`;
 
-  for (let db = -60; db <= 30; db += 15) {
+  const yStep = Math.max(2, Math.ceil((yMax - yMin) / 6 / 2) * 2);
+  for (let db = yMin; db <= yMax; db += yStep) {
     const y = getY(db);
-    svgHtml += `<line x1="${margin.left}" y1="${y}" x2="${W - margin.right}" y2="${y}" stroke="${db===0?'#94a3b8':'#e2e8f0'}" stroke-width="${db===0?1.5:1}"/>`;
-    svgHtml += `<text x="${margin.left - 6}" y="${y + 4}" font-size="10" fill="#64748b" text-anchor="end">${db} dB</text>`;
+    if (y >= margin.top && y <= H - margin.bottom) {
+      svgHtml += `<line x1="${margin.left}" y1="${y}" x2="${W - margin.right}" y2="${y}" stroke="${db===0?'#94a3b8':'#e2e8f0'}" stroke-width="${db===0?1.5:1}"/>`;
+      svgHtml += `<text x="${margin.left - 6}" y="${y + 4}" font-size="10" fill="#64748b" text-anchor="end">${db} dB</text>`;
+    }
   }
 
   for (let i = 0; i <= 5; i++) {
@@ -4163,21 +4537,26 @@ function renderSvgPlot(res) {
     return d;
   };
 
-  // Optional Comparative Benchmark Overlays
+  // Comparative Overlays for Benchmark Saved Tabs
   if (showCompare && sparamsTabs.length > 1) {
     sparamsTabs.forEach((tb, idx) => {
-      if (idx === activeTabIdx || !tb.res || !tb.res.path12) return;
-      if (showS21 && tb.res.path12.s21) {
-        svgHtml += `<path d="${makePath(tb.res.path12.s21)}" fill="none" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="4 3"/>`;
-      }
+      if (idx === activeTabIdx || !tb.res || !tb.res.matrix) return;
+      invokedTraces.forEach(sKey => {
+        if (tb.res.matrix[sKey]) {
+          svgHtml += `<path d="${makePath(tb.res.matrix[sKey])}" fill="none" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="4 3"/>`;
+        }
+      });
     });
   }
 
-  // Active Tab Traces
-  if (showS11 && res.path12.s11) svgHtml += `<path d="${makePath(res.path12.s11)}" fill="none" stroke="#dc2626" stroke-width="1.8"/>`;
-  if (showS22 && res.path12.s22) svgHtml += `<path d="${makePath(res.path12.s22)}" fill="none" stroke="#16a34a" stroke-width="1.8"/>`;
-  if (showS31 && res.path13 && res.path13.s21) svgHtml += `<path d="${makePath(res.path13.s21)}" fill="none" stroke="#9333ea" stroke-width="2"/>`;
-  if (showS21 && res.path12.s21) svgHtml += `<path d="${makePath(res.path12.s21)}" fill="none" stroke="#2563eb" stroke-width="2.2"/>`;
+  // Active Invoked Traces
+  let traceIdx = 0;
+  invokedTraces.forEach(sKey => {
+    if (res.matrix[sKey]) {
+      const col = getTraceColor(sKey, traceIdx++);
+      svgHtml += `<path d="${makePath(res.matrix[sKey])}" fill="none" stroke="${col}" stroke-width="2.2"/>`;
+    }
+  });
 
   // Frequency Markers
   if (linearMarkers.length) {
@@ -4195,16 +4574,18 @@ function renderSvgPlot(res) {
   container.innerHTML = svgHtml;
 }
 
-/* Render Table for Markers and Delta Comparisons */
+/* Render Table for Markers and Invoked S-Parameters */
 function renderMarkerTable(res) {
   const box = $("spMarkerTable");
-  if (!box || !res || !res.freqs) return;
+  if (!box || !res || !res.freqs || !res.matrix) return;
 
   const freqs = res.freqs;
   const fMin = freqs[0], fMax = freqs[freqs.length - 1];
   const useGhz = fMax >= 1e8;
   const fDiv = useGhz ? 1e9 : 1e6;
   const fUnit = useGhz ? "GHz" : "MHz";
+
+  const invKeys = Array.from(invokedTraces);
 
   const getValAt = (arr, targetF) => {
     if (!arr) return "-";
@@ -4218,12 +4599,14 @@ function renderMarkerTable(res) {
     <thead>
       <tr style="border-bottom:1px solid #334155; color:#94a3b8">
         <th style="padding:6px">Marker</th>
-        <th style="padding:6px">Frequency (${fUnit})</th>
-        <th style="padding:6px">S21 (Gain)</th>
-        ${res.path13 ? `<th style="padding:6px">S31 (Coupled)</th>` : ""}
-        <th style="padding:6px">S11 (Return Loss)</th>
-        <th style="padding:6px">S22 (Output RL)</th>
-        <th style="padding:6px">Action</th>
+        <th style="padding:6px">Frequency (${fUnit})</th>`;
+
+  invKeys.forEach(sKey => {
+    const col = getTraceColor(sKey);
+    h += `<th style="padding:6px; color:${col}">${sKey}</th>`;
+  });
+
+  h += `<th style="padding:6px">Action</th>
       </tr>
     </thead>
     <tbody>`;
@@ -4231,11 +4614,6 @@ function renderMarkerTable(res) {
   const m1F = linearMarkers.length ? linearMarkers[0].f : fMin;
 
   linearMarkers.forEach((m, idx) => {
-    const s21Val = getValAt(res.path12.s21, m.f);
-    const s31Val = res.path13 ? getValAt(res.path13.s21, m.f) : "-";
-    const s11Val = getValAt(res.path12.s11, m.f);
-    const s22Val = getValAt(res.path12.s22, m.f);
-
     const deltaF = ((m.f - m1F) / fDiv).toFixed(3);
 
     h += `<tr style="border-bottom:1px solid #334155">
@@ -4243,12 +4621,15 @@ function renderMarkerTable(res) {
       <td style="padding:6px">
         <input type="number" step="0.01" value="${(m.f / fDiv).toFixed(3)}" data-midx="${idx}" class="sp-mkr-input" style="width:75px; padding:3px 6px; background:#0f172a; color:#e2e8f0; border:1px solid #334155; border-radius:4px"/>
         ${idx > 0 ? `<span style="font-size:10px; color:#94a3b8; margin-left:4px">(Δ ${deltaF > 0 ? '+'+deltaF : deltaF})</span>` : ""}
-      </td>
-      <td style="padding:6px; color:#60a5fa; font-weight:600">${s21Val}</td>
-      ${res.path13 ? `<td style="padding:6px; color:#c084fc">${s31Val}</td>` : ""}
-      <td style="padding:6px; color:#f87171">${s11Val}</td>
-      <td style="padding:6px; color:#4ade80">${s22Val}</td>
-      <td style="padding:6px">
+      </td>`;
+
+    invKeys.forEach(sKey => {
+      const v = getValAt(res.matrix[sKey], m.f);
+      const col = getTraceColor(sKey);
+      h += `<td style="padding:6px; color:${col}; font-weight:600">${v}</td>`;
+    });
+
+    h += `<td style="padding:6px">
         ${idx > 0 ? `<button class="btn btn-sm btn-del sp-del-mkr" data-midx="${idx}">✕</button>` : `<span style="color:#64748b">Ref</span>`}
       </td>
     </tr>`;
@@ -4279,25 +4660,27 @@ function renderMarkerTable(res) {
   });
 }
 
-/* Export Graph Data as CSV */
+/* Export Multi-Port Graph Data to CSV */
 function exportSParamsCsv(res) {
-  if (!res || !res.freqs || !res.path12) return;
+  if (!res || !res.freqs || !res.matrix) return;
   const freqs = res.freqs;
-  let csv = "Frequency_Hz,S21_dB,S11_dB,S22_dB";
-  if (res.path13) csv += ",S31_dB";
-  csv += "\n";
+  const invKeys = Array.from(invokedTraces);
+  let csv = "Frequency_Hz," + invKeys.join(",") + "\n";
 
   for (let k = 0; k < freqs.length; k++) {
-    csv += `${freqs[k].toFixed(0)},${res.path12.s21[k].toFixed(4)},${res.path12.s11[k].toFixed(4)},${res.path12.s22[k].toFixed(4)}`;
-    if (res.path13) csv += `,${res.path13.s21[k].toFixed(4)}`;
-    csv += "\n";
+    const row = [freqs[k].toFixed(0)];
+    invKeys.forEach(sKey => {
+      const arr = res.matrix[sKey];
+      row.push(arr ? arr[k].toFixed(4) : "-120.0000");
+    });
+    csv += row.join(",") + "\n";
   }
 
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = "rf_linear_analysis_sparams.csv";
+  a.download = "rf_multi_port_linear_analysis.csv";
   a.click();
   URL.revokeObjectURL(url);
 }
@@ -4313,7 +4696,7 @@ function exportSParamsSvg() {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = "s_parameters_chart.svg";
+  a.download = "multi_port_s_parameters.svg";
   a.click();
   URL.revokeObjectURL(url);
 }
@@ -4338,7 +4721,7 @@ function exportSParamsPng() {
       const u = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = u;
-      a.download = "s_parameters_chart.png";
+      a.download = "multi_port_s_parameters.png";
       a.click();
       URL.revokeObjectURL(u);
     });
@@ -4346,29 +4729,33 @@ function exportSParamsPng() {
   img.src = url;
 }
 
-/* Export System Touchstone (.s2p) File */
+/* Export System Touchstone (.s2p / .sNp) File */
 function exportTouchstoneS2p(res) {
-  if (!res || !res.freqs || !res.path12) return;
+  if (!res || !res.freqs || !res.matrix) return;
   const freqs = res.freqs;
-  let s2p = `! RF Chain System S-Parameters Export\n`;
-  s2p += `! Date: ${new Date().toISOString()}\n`;
-  s2p += `# Hz S DB R 50\n`;
-  s2p += `! Freq_Hz    S11_dB S11_deg  S21_dB S21_deg  S12_dB S12_deg  S22_dB S22_deg\n`;
+  const P = (res.portsList && res.portsList.length) || 2;
+  let sNp = `! RF Chain System Multi-Port S-Parameters (${P}-Port Export)\n`;
+  sNp += `! Date: ${new Date().toISOString()}\n`;
+  sNp += `# Hz S DB R 50\n`;
 
   for (let k = 0; k < freqs.length; k++) {
-    const f = freqs[k].toFixed(0);
-    const s11 = res.path12.s11[k].toFixed(3);
-    const s21 = res.path12.s21[k].toFixed(3);
-    const s12 = res.path12.s12 ? res.path12.s12[k].toFixed(3) : "-120.000";
-    const s22 = res.path12.s22[k].toFixed(3);
-    s2p += `${f} ${s11} 0.00 ${s21} 0.00 ${s12} 0.00 ${s22} 0.00\n`;
+    let line = `${freqs[k].toFixed(0)}`;
+    for (let i = 1; i <= P; i++) {
+      for (let j = 1; j <= P; j++) {
+        const arr = res.matrix[`S${i}${j}`];
+        const db = arr ? arr[k].toFixed(3) : "-120.000";
+        line += ` ${db} 0.00`;
+      }
+    }
+    sNp += line + "\n";
   }
 
-  const blob = new Blob([s2p], { type: "text/plain;charset=utf-8;" });
+  const ext = P === 2 ? ".s2p" : `.s${P}p`;
+  const blob = new Blob([sNp], { type: "text/plain;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = "system_linear_analysis.s2p";
+  a.download = `system_linear_analysis${ext}`;
   a.click();
   URL.revokeObjectURL(url);
 }

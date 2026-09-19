@@ -17,7 +17,7 @@ def({
   type: "source", keys: "signal generator cw carrier input", name: "Source", group: "Sources", w: 40, h: 40,
   ports: [{ id: "out", side: "right", kind: "out", dx: 40, dy: 20 }],
   params: { label: "SRC", power: 0, freq: "1 GHz", anaPort: "None" },
-  fields: [{ key: "anaPort", label: "Analysis Port", type: "select", options: ["None", "P1", "P2", "P3"] },
+  fields: [{ key: "anaPort", label: "Analysis Port", type: "select", options: ["None", "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8"] },
            { key: "power", label: "Output level", unit: "dBm", step: 0.5 }, { key: "freq", label: "Frequency", type: "text" }],
   isSource: () => true, srcOut: () => "out", srcPower: p => p.power, val: p => p.freq || "",
   sym() { return `<circle class="blk-shape" cx="20" cy="20" r="19"/><path class="blk-glyph" d="M10 20 q5 -7 10 0 t10 0"/>`; }
@@ -27,7 +27,7 @@ def({
   type: "lo", keys: "oscillator local synth vco source", name: "LO / Osc", group: "Frequency", w: 40, h: 40,
   ports: [{ id: "out", side: "top", kind: "out", dx: 20, dy: 0 }],
   params: { label: "LO", power: 10, freq: "0.9 GHz", anaPort: "None" },
-  fields: [{ key: "anaPort", label: "Analysis Port", type: "select", options: ["None", "P1", "P2", "P3"] },
+  fields: [{ key: "anaPort", label: "Analysis Port", type: "select", options: ["None", "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8"] },
            { key: "power", label: "Drive level", unit: "dBm", step: 0.5 }, { key: "freq", label: "Frequency", type: "text" }],
   isSource: () => true, srcOut: () => "out", srcPower: p => p.power, val: p => p.freq || "",
   sym() { return `<circle class="blk-shape" cx="20" cy="20" r="19"/><path class="blk-glyph" d="M10 20 q5 -7 10 0 t10 0"/>`; }
@@ -494,7 +494,7 @@ def({
   type: "rfin", keys: "connector input port sma source", name: "In connector", group: "Terminals", w: 40, h: 40,
   ports: [{ id: "out", side: "right", kind: "out", dx: 40, dy: 20 }],
   params: { label: "RF IN", power: 0, freq: "", anaPort: "P1" },
-  fields: [{ key: "anaPort", label: "Analysis Port", type: "select", options: ["None", "P1", "P2", "P3"] },
+  fields: [{ key: "anaPort", label: "Analysis Port", type: "select", options: ["None", "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8"] },
            { key: "power", label: "Input level", unit: "dBm", step: 0.5 }, { key: "freq", label: "Frequency", type: "text" }],
   isSource: () => true, srcOut: () => "out", srcPower: p => p.power, val: p => p.freq || dbm(p.power),
   sym() { return `<path class="blk-line" d="M22 20H40"/><circle class="blk-shape" cx="13" cy="20" r="9"/><circle class="blk-fillg" cx="13" cy="20" r="3"/>`; }
@@ -504,7 +504,7 @@ def({
   type: "rfout", keys: "connector output port sma sink", name: "Out connector", group: "Terminals", w: 40, h: 40,
   ports: [{ id: "in", side: "left", kind: "in", dx: 0, dy: 20 }],
   params: { label: "RF OUT", anaPort: "P2" },
-  fields: [{ key: "anaPort", label: "Analysis Port", type: "select", options: ["None", "P1", "P2", "P3"] }],
+  fields: [{ key: "anaPort", label: "Analysis Port", type: "select", options: ["None", "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8"] }],
   val: () => "output",
   sym() { return `<path class="blk-line" d="M0 20H18"/><circle class="blk-shape" cx="27" cy="20" r="9"/><circle class="blk-fillg" cx="27" cy="20" r="3"/>`; }
 });
@@ -513,7 +513,7 @@ def({
   type: "detector", keys: "diode video log power meter", name: "Detector", group: "Terminals", w: 40, h: 40,
   ports: [{ id: "in", side: "left", kind: "in", dx: 0, dy: 20 }],
   params: { label: "DET", anaPort: "None" },
-  fields: [{ key: "anaPort", label: "Analysis Port", type: "select", options: ["None", "P1", "P2", "P3"] }],
+  fields: [{ key: "anaPort", label: "Analysis Port", type: "select", options: ["None", "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8"] }],
   val: () => "video",
   sym() { return `<rect class="blk-shape" x="0" y="6" width="40" height="28" rx="4"/><path class="blk-line" d="M4 20H12"/><path class="blk-fillg" d="M12 12L28 20L12 28Z"/><path class="blk-glyph" d="M28 12V28"/>`; }
 });
@@ -521,7 +521,7 @@ def({
 def({
   type: "antenna", keys: "aerial radiator tx rx", name: "Antenna", group: "Terminals", w: 40, h: 40,
   params: { label: "ANT", role: "Tx", power: -80, anaPort: "None" },
-  fields: [{ key: "anaPort", label: "Analysis Port", type: "select", options: ["None", "P1", "P2", "P3"] },
+  fields: [{ key: "anaPort", label: "Analysis Port", type: "select", options: ["None", "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8"] },
            { key: "role", label: "Role", type: "select", options: ["Tx", "Rx"] }, { key: "power", label: "Received level", unit: "dBm", step: 1, showIf: p => p.role === "Rx" }],
   dynPorts: p => p.role === "Rx" ? [{ id: "ant", side: "right", kind: "out", dx: 40, dy: 20 }] : [{ id: "ant", side: "left", kind: "in", dx: 0, dy: 20 }],
   isSource: p => p.role === "Rx", srcOut: () => "ant", srcPower: p => p.power, val: p => p.role === "Rx" ? "Rx" : "Tx",
@@ -535,7 +535,7 @@ def({
   type: "termination", keys: "load dummy 50 ohm match terminator", name: "Load 50\u03a9", group: "Terminals", w: 40, h: 40,
   ports: [{ id: "in", side: "left", kind: "in", dx: 0, dy: 20 }],
   params: { label: "LOAD", anaPort: "None" },
-  fields: [{ key: "anaPort", label: "Analysis Port", type: "select", options: ["None", "P1", "P2", "P3"] }],
+  fields: [{ key: "anaPort", label: "Analysis Port", type: "select", options: ["None", "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8"] }],
   val: () => "50 \u03a9",
   sym() { return `<path class="blk-glyph" d="M0 20l3 -6 6 12 6 -12 6 12 3 -6H30"/><path class="blk-line" d="M30 12V28"/><path class="blk-line" d="M34 15V25"/><path class="blk-line" d="M38 18V22"/>`; }
 });
