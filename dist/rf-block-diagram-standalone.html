@@ -440,8 +440,8 @@ button.btn.primary:hover {
 .port-lbl { fill: var(--blk-stroke); opacity: 0.75; font-family: var(--mono); font-size: 8.5px; font-weight: 600; }
 .block.hot .blk-shape { stroke: #ef4444; stroke-width: 2.5; }
 .block.hot .lbl-name { fill: #f87171; }
-.lbl-name { fill: var(--lbl-ink, #f8fafc); font-family: var(--mono); font-size: 11px; font-weight: 700; text-anchor: middle; letter-spacing: 0.02em; }
-.lbl-val { fill: var(--lbl-ink, #94a3b8); font-family: var(--mono); font-size: 9.5px; font-weight: 600; text-anchor: middle; letter-spacing: 0.01em; opacity: 0.85; }
+.lbl-name { fill: #f8fafc; font-family: var(--mono); font-size: 11px; font-weight: 700; text-anchor: middle; letter-spacing: 0.02em; }
+.lbl-val { fill: #38bdf8; font-family: var(--mono); font-size: 9.5px; font-weight: 600; text-anchor: middle; letter-spacing: 0.01em; opacity: 0.95; }
 .free-label { fill: #f8fafc; font-family: var(--mono); font-size: 14px; font-weight: 600; }
 .block .sel-ring { fill: none; stroke: var(--accent); stroke-width: 2.2; stroke-dasharray: 6 4; opacity: 0; transition: opacity 0.15s; }
 .block.sel .sel-ring { opacity: 1; }
@@ -1165,8 +1165,13 @@ def({
     if (m.out !== undefined) o.in = Math.min(m.out, th) - d;
     return o;
   },
-  val: p => "\u2264 " + fmt(p.thresh) + " dBm",
-  sym() { return `<rect class="blk-shape" x="0" y="4" width="40" height="32" rx="4"/><path class="blk-glyph" d="M8 27H15L25 13H32"/>`; }
+  sym() {
+    return `<rect class="blk-shape" x="0" y="4" width="40" height="32" rx="4"/>` +
+           `<path class="blk-line" d="M0 20H40"/>` +
+           `<path class="blk-fillg" d="M14 13L26 13L20 22Z"/>` +
+           `<path class="blk-glyph" d="M14 22H26"/>` +
+           `<path class="blk-glyph" d="M15 28H25M17 31H23"/>`;
+  }
 });
 
 def({
@@ -1789,10 +1794,7 @@ function blockInk(fill, type) {
 
 function blockStyle(b) {
   const fill = blockFill(b), ink = blockInk(fill, b ? b.type : null);
-  if (b && TERMINAL_TYPES.has(b.type)) {
-    return `--blk-fill:${fill};--blk-stroke:#f8fafc;--lbl-ink:#f8fafc`;
-  }
-  return `--blk-fill:${fill};--blk-stroke:${ink};--lbl-ink:${ink}`;
+  return `--blk-fill:${fill};--blk-stroke:${ink}`;
 }
 
 function colorLabel(b) {

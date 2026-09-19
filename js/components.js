@@ -114,8 +114,13 @@ def({
     if (m.out !== undefined) o.in = Math.min(m.out, th) - d;
     return o;
   },
-  val: p => "\u2264 " + fmt(p.thresh) + " dBm",
-  sym() { return `<rect class="blk-shape" x="0" y="4" width="40" height="32" rx="4"/><path class="blk-glyph" d="M8 27H15L25 13H32"/>`; }
+  sym() {
+    return `<rect class="blk-shape" x="0" y="4" width="40" height="32" rx="4"/>` +
+           `<path class="blk-line" d="M0 20H40"/>` +
+           `<path class="blk-fillg" d="M14 13L26 13L20 22Z"/>` +
+           `<path class="blk-glyph" d="M14 22H26"/>` +
+           `<path class="blk-glyph" d="M15 28H25M17 31H23"/>`;
+  }
 });
 
 def({

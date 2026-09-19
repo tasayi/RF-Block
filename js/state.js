@@ -107,10 +107,7 @@ function blockInk(fill, type) {
 
 function blockStyle(b) {
   const fill = blockFill(b), ink = blockInk(fill, b ? b.type : null);
-  if (b && TERMINAL_TYPES.has(b.type)) {
-    return `--blk-fill:${fill};--blk-stroke:#f8fafc;--lbl-ink:#f8fafc`;
-  }
-  return `--blk-fill:${fill};--blk-stroke:${ink};--lbl-ink:${ink}`;
+  return `--blk-fill:${fill};--blk-stroke:${ink}`;
 }
 
 function colorLabel(b) {
