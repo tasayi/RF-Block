@@ -118,3 +118,22 @@ $$[ABCD]_{total}(f_k) = [ABCD]_1(f_k) \cdot [ABCD]_2(f_k) \dots [ABCD]_N(f_k)$$
 - **Comparative Overlay**: Superimposes benchmark sweep curves (dashed lines) on top of active sweep curves.
 - **Graph & Data Exporters**: CSV Export, SVG Vector Export, PNG Image Export, and Touchstone `.s2p` / `.sNp` File Export.
 
+---
+
+## 🐍 Python `scikit-rf` Backend Engine & UV Architecture
+
+### 1. `scikit-rf` (`skrf`) Integration
+The application includes a Python backend engine (`python/rfblock`) powered by `scikit-rf` (`skrf`):
+- **Matrix Cascading**: Full complex multi-port S-parameter matrix cascade (`net1 ** net2`).
+- **Stability Analysis**: Computes frequency-dependent Rollett stability factor ($K$), $\Delta$, and stability circles.
+- **Touchstone Engine**: High-fidelity `.s1p` through `.sNp` Touchstone file parsing and export.
+
+### 2. `uv` Package Management & Single Executable App
+- Managed via the `uv` package manager with `pyproject.toml` definition.
+- **Single-File Desktop Executable**: Compiles into `dist/RFBlock-Engine` binary via PyInstaller, embedding FastAPI + Uvicorn + `scikit-rf` + Web UI with auto-launching desktop window / browser interface.
+- **CLI Commands**:
+  - `uv sync`: Locks dependencies reproducibly.
+  - `uv run rfblock`: Launches desktop application with live Python backend.
+  - `uv run rfblock-build`: Compiles single-file executable `dist/RFBlock-Engine`.
+
+

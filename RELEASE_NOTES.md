@@ -1,96 +1,60 @@
-# Release Notes — RF Chain v1.0.0
+# Release Notes — RF Chain v2.0.0
 
-**Release Date**: September 19, 2026  
-**Version**: `v1.0.0`  
+**Release Date**: September 20, 2026  
+**Version**: `v2.0.0`  
 **Repository**: `RFBlock`
 
 ---
 
 ## 🚀 Overview
 
-`RF Chain v1.0.0` is a major release of the modern, fast, zero-dependency web application for designing, simulating, auditing, and exporting **Radio Frequency (RF) system block diagrams**. 
-
-This milestone release establishes a modular codebase architecture, introduces physical non-linear power compression solvers, expands the component catalog with high-linearity components (such as Bypass LNAs, DSAs, and PLL Synthesizers with Reference inputs), optimizes canvas wire badging, and delivers a zero-dependency standalone HTML distribution.
+`RF Chain v2.0.0` is a major upgrade introducing Python **`uv`** package management, a modular backend package architecture (`python/rfblock`), native **`scikit-rf` (`skrf`)** frequency-domain S-parameter matrix physics solvers, IEEE Std 315 schematic coupler symbols, and single-file binary executable packaging (`dist/RFBlock-Engine`).
 
 ---
 
 ## 🌟 Key Features & Improvements
 
-### 1. 🏗️ Modular Architecture Refactoring
-- Transformed the monolithic application into clean, maintainable ES6 modules under `js/`:
-  - `js/config.js`: Component color tint registries and application configuration defaults.
-  - `js/components.js`: Comprehensive component registry (`COMP`) with SVG symbol definitions and dynamic port rules.
-  - `js/solvers/`: Isolated mathematical solver modules (`power-solver.js`, `noise-solver.js`, `budget-solver.js`).
-  - `js/io/`: File I/O, `.rfbd` document state, vector exports (SVG/PNG), and binary XLSX BOM generator (`xlsx-exporter.js`).
-  - `js/ui/`: UI renderers, canvas interaction state machine, toolbar controls, dynamic inspector forms, and cascade budget drawer.
-- Implemented `build.js` node bundler script to package styles and JS modules into a zero-dependency single distributable file (`dist/rf-block-diagram-standalone.html`).
+### 1. 🐍 Modular Python Backend Package (`python/rfblock`)
+- **`rfblock.core`**: Asset resource path resolution and standalone HTML bundle locator.
+- **`rfblock.physics`**: Decoupled `scikit-rf` S-parameter matrix engine:
+  - `network_builder.py`: Converts front-end schematic blocks into frequency-dependent `skrf.Network` objects.
+  - `cascade.py`: Multi-port S-parameter matrix cascade ($S_{11}, S_{21}, S_{12}, S_{22}$) and Rollett stability factor ($K$) solver.
+  - `touchstone.py`: Touchstone `.s2p` string generator and exporter.
+- **`rfblock.api`**: FastAPI REST API server layer with Pydantic request/response validation models (`/api/v1/status`, `/api/v1/analyze/sparams`, `/api/v1/export/touchstone`).
+- **`rfblock.desktop`**: Local port binder, Uvicorn server, PyWebView / browser launcher, and PyInstaller single-file binary packager.
+- **`rfblock.cli`**: CLI entry points for application execution (`rfblock`) and binary packaging (`rfblock-build`).
 
 ---
 
-### 2. ⚡ Physical RF Solvers & Engine Upgrades
-- **$P_{1\text{dB}}$ Power Compression Solver**:
-  - Enforces physical power compression limits ($P_{out} = \min(P_{in} + \text{Gain}, P_{1\text{dB}})$) across active components (Amplifiers, Mixers, Limiters).
-  - Propagates realistic compressed power levels downstream across interconnecting wires, waterfall budget drawers, and canvas overdrive alerts (`.block.hot`).
-- **Friis Cascaded Noise Figure Engine**:
-  - Computes stage-by-stage Noise Figure ($NF$) propagation across linear signal paths using Friis' formula.
-  - Guarded against math edge cases, zero gain divisions, and unpowered floating nodes.
-- **Waterfall Power Budget & DRC System**:
-  - Interactive drawer displaying stage-by-stage Gain, Power Level, $P_{1\text{dB}}$ Headroom, Noise Figure, Output IP3, and Design Rule Check (DRC) alerts.
+### 2. ⚡ `uv` Package Manager Integration
+- Full `pyproject.toml` definition with reproducible `uv.lock` dependency locking.
+- **CLI Commands**:
+  - `uv sync`: Installs and locks dependencies deterministically.
+  - `uv run rfblock`: Runs the desktop application with live Python backend.
+  - `uv run rfblock-build`: Compiles the single-file binary executable `dist/RFBlock-Engine`.
 
 ---
 
-### 3. 📻 Expanded RF Component Catalog
-- **Gain & Loss**:
-  - **Amplifier (`amp`)**: Active gain stage with Output $P_{1\text{dB}}$ compression and Noise Figure.
-  - **Bypass Amplifier (`bamp`)**: Dual-mode active/passive component inspired by Mini-Circuits TSY-83LN+. Features dynamic SVG switch toggling between `Amp Mode` (+18 dB gain, 1.2 dB NF, P1dB compression) and `Bypass Mode` (1.8 dB passive loss, bypasses active compression).
-  - **Digital Step Attenuator (`dsa`)**: Digital control attenuation pad with 45° variable control arrow symbol.
-  - **Attenuator (`atten`)**: Standardized vertical resistor wave symbol.
-  - **Limiter (`limiter`)** & **Line / Trace (`trace`)**.
-- **Filtering**:
-  - **Filter (`filter`)**: Fixed response curve (LPF, HPF, BPF, BSF).
-  - **Tunable Filter (`tfilter`)**: Variable filter response curve with 45° tuning arrow symbol.
-- **Frequency Conversion**:
-  - **Mixer (`mixer`)**: Down/Up-converter with top label layout preventing bottom `LO` port wire overlap.
-  - **Multiplier (`multiplier`)** & **Divider (`divider`)**: Frequency multiplication ($\times N$) and division ($\div N$) stages.
-  - **PLL Synthesizer (`pll`)**: Synthesizer featuring dedicated Reference Input port (`ref`) on the left and RF Output port on the right.
-- **Routing & Switching**:
-  - **SP1T to SP8T Switches (`switch`)**: Configurable 1 to 8 throw switches with `Open (Off)` position isolation state.
-  - **Splitter (`splitter`)**, **Combiner (`combiner`)**, **Coupler (`coupler`)**, and **Interconnect (`interconnect`)**.
-- **Passive Components & Terminals**:
-  - **Isolator (`isolator`)**, **Circulator (`circulator`)**, **Phase Shift (`phase`)**.
-  - **Antenna (`antenna`)**, **RF In/Out (`rfin`/`rfout`)**, **Detector (`detector`)**, **Load 50Ω (`termination`)**.
+### 3. 📦 Single-File Executable Desktop App (`RFBlock-Engine`)
+- Compiles the web application UI, FastAPI server, Uvicorn, and `scikit-rf` into a zero-setup single binary executable (`dist/RFBlock-Engine`).
+- **Zero Setup**: Auto-starts local backend engine on a free port and launches the web interface seamlessly.
 
 ---
 
-### 4. 🎨 Canvas UI & Wire Badging Enhancements
-- **Single-Line Wire Level Pills**: Wire signal level badges format power and units on a clean single line (e.g. `+10.0 dBm`).
-- **Universal Wire Labels Toggle**: Toolbar `Labels` toggle button to instantly turn ON or OFF all wire signal level badges across the canvas and exported graphics.
-- **Responsive 100% Scale Toolbar**: Streamlined toolbar layout ensuring all 15 control buttons, toggles, zoom controls, and drawer action buttons fit without clipping at 100% monitor scale.
-- **Default Figure Layout Spacing**: Increased component grid separation to 140px, giving single-line power badges ample breathing room on connecting wires.
+### 4. 📐 IEEE Std 315 / IEC 60617 RF Coupler Symbols & Port Alignment
+- **Bi-directional Coupler**: Placed `fwd` at Bottom-Left (adjacent to `in`) and `rev` at Bottom-Right (adjacent to `thru`). Rendered crossed dual coupling arms ('X' symbol).
+- **Directional Coupler**: Placed `cpl` at Bottom-Left (adjacent to `in`) and `iso` at Bottom-Right (adjacent to `thru`). Rendered single backward-coupling arm.
+- **Resistive Splitter**: Rendered standard IEEE 315 3-resistor star (Y) divider topology.
+- **90° Hybrid**: Rendered 4-port branch-line box with `90°` phase designation tag.
+- **180° Hybrid**: Rendered circular Rat-Race ring coupler with feeds and $\Sigma$ / $\Delta$ port symbols.
 
 ---
 
-### 5. 📁 Export & File Compatibility
-- **Binary XLSX BOM Export**: Generates `.xlsx` Bill of Materials workbooks directly in-browser via a custom Uint8Array ZIP/XLSX builder.
-- **Vector Graphics Export**: High-resolution SVG and PNG diagram export options.
-- **Document Saving**: `.rfbd` native JSON project document format with full subsystem multi-sheet hierarchy support.
+# Release Notes — RF Chain v1.0.0
 
----
+**Release Date**: September 19, 2026  
+**Version**: `v1.0.0`  
 
-## 📦 Single Standalone Distribution File
+## 🚀 Overview
 
-The standalone distribution build is available at:
-```
-dist/rf-block-diagram-standalone.html (194.41 KB)
-```
-No web server, build tools, or internet connection required.
-
----
-
-## 📜 Commit Summary
-
-- `8978a6f`: Add Bypass Amplifier (`bamp`) component with dual-mode switch symbol and update documentation.
-- `9d3b7e8`: Add project documentation (`README.md`, `ARCHITECTURE.md`, `INFO.md`).
-- `4382c54`: Refactor codebase, add components (`DSA`, `Tunable Filter`, `Multiplier`, `Divider`, `PLL`), $P_{1\text{dB}}$ compression solver, and single-line wire labels.
-- `a737f32`: Initial commit.
-
+`RF Chain v1.0.0` is a major release establishing a modular codebase architecture, physical non-linear power compression solvers, component catalog expansions, optimized canvas wire badging, and a zero-dependency standalone HTML distribution (`dist/rf-block-diagram-standalone.html`).
