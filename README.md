@@ -10,7 +10,7 @@ Built with modular JavaScript (ES6+), SVG rendering, and embedded physics solver
 
 - **Comprehensive RF Component Library**:
   - **Sources & Generators**: CW Signal Sources, LO Oscillators, PLL Synthesizers (with Reference input).
-  - **Gain & Loss**: Amplifiers (LNA / PA / Driver), Fixed Attenuators, Digital Control Attenuators (DSA), Limiters, Transmission Lines / Traces.
+  - **Gain & Loss**: Amplifiers (LNA / PA / Driver), Bypass Amplifiers (Dual-mode active/passive inspired by Mini-Circuits TSY-83LN+), Fixed Attenuators, Digital Control Attenuators (DSA), Limiters, Transmission Lines / Traces.
   - **Filtering**: Fixed Filters (LPF, HPF, BPF, BSF) and Tunable Filters with dynamic response curves and 45° tuning controls.
   - **Frequency Conversion**: Mixers (Down/Up-converters), Frequency Multipliers ($\times N$), Frequency Dividers / Prescalers ($\div N$).
   - **Routing & Switching**: SP1T through SP8T Switches (with `Open (Off)` isolation position), Wilkinson Power Splitters, Combiners, Directional Couplers, Power Taps, Hybrid Junctions, Off-page Interconnect tags.

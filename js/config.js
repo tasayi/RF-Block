@@ -29,6 +29,7 @@ const TYPE_TINT = {
 
   /* Gain & Loss */
   "amp":         "#dcfce7",  // Soft Mint Green (Amplifier/LNA/PA)
+  "bamp":        "#dcfce7",  // Soft Mint Green (Bypass Amplifier)
   "atten":       "#ffedd5",  // Soft Warm Peach/Orange (Attenuator)
   "dsa":         "#ffedd5",  // Soft Warm Peach/Orange (Digital Attenuator)
   "limiter":     "#fed7aa",  // Soft Amber (Limiter)

@@ -21,6 +21,7 @@ This document provides a comprehensive specification of all supported RF compone
 | Type Key | Name | Ports | Parameters | Transfer & Compression Physics |
 | :--- | :--- | :--- | :--- | :--- |
 | `amp` | **Amplifier** | In (Left), Out (Right) | `gain: 15 dB`, `nf: 2 dB`, `p1db: 20 dBm`, `oip3: 30 dBm` | Linear gain $P_{out} = P_{in} + \text{Gain}$, capped at Output $P_{1\text{dB}}$ ($P_{out} \le P_{1\text{dB}}$). |
+| `bamp` | **Bypass Amplifier** | In (Left), Out (Right) | `label: "By_Amp"`, `mode: "Amp Mode"`, `gain: 18 dB`, `nf: 1.2 dB`, `bypLoss: 1.8 dB`, `p1db: 20 dBm`, `oip3: 32 dBm` | Dual-mode active/passive component inspired by Mini-Circuits TSY-83LN+. In **Amp Mode**, applies $+18\text{ dB}$ gain, $1.2\text{ dB}$ NF, and $P_{1\text{dB}}$ compression. In **Bypass Mode**, applies $1.8\text{ dB}$ passive loss and bypasses active compression. Enclosed in outer box with upper parallel SPST bypass switch and lower branch featuring amplifier triangle in series with SPST isolation switch. |
 | `atten` | **Attenuator** | In (Left), Out (Right) | `loss: 10 dB` | Fixed attenuation pad. Symbol renders vertical triangular resistor wave. |
 | `dsa` | **Digital Attenuator** | In (Left), Out (Right) | `loss: 10 dB` | Digital Step Attenuator (DSA). Symbol renders vertical resistor wave + 45° control arrow. |
 | `limiter` | **Limiter** | In (Left), Out (Right) | `thresh: 10 dBm`, `il: 0.5 dB` | Power clamping protection. $P_{out} = \min(P_{in}, \text{thresh}) - \text{il}$. |
@@ -90,3 +91,4 @@ This document provides a comprehensive specification of all supported RF compone
   $$P_{out} = \min(P_{in} + \text{Gain}, P_{1\text{dB}})$$
 - **Cascaded Friis Noise Figure**:
   $$F_{total} = F_1 + \frac{F_2 - 1}{G_1} + \frac{F_3 - 1}{G_1 G_2} + \dots$$
+

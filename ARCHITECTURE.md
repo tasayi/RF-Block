@@ -88,3 +88,4 @@ Traverses signal chains from source to sink:
 ## 📦 Standalone Packager (`build.js`)
 
 The Node.js build script `build.js` reads `index.html`, inline-injects `css/styles.css`, and concatenates all modules in `js/` in dependency order into a single standalone HTML document `dist/rf-block-diagram-standalone.html`.
+

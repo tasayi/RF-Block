@@ -44,6 +44,34 @@ def({
 });
 
 def({
+  type: "bamp", keys: "bypass amplifier lna amp tsy-83ln+ switch bypass mode active passive by_amp", name: "Bypass Amplifier", group: "Gain / Loss", w: 40, h: 40,
+  ports: [{ id: "in", side: "left", kind: "inout", dx: 0, dy: 20 }, { id: "out", side: "right", kind: "inout", dx: 40, dy: 20 }],
+  params: { label: "By_Amp", mode: "Amp Mode", gain: 18, nf: 1.2, bypLoss: 1.8, p1db: 20, oip3: 32 },
+  fields: [{ key: "mode", label: "Mode", type: "select", options: ["Amp Mode", "Bypass Mode"] },
+           { key: "gain", label: "Amp Gain", unit: "dB", step: 0.5 },
+           { key: "nf", label: "Noise figure", unit: "dB", step: 0.1 },
+           { key: "bypLoss", label: "Bypass loss", unit: "dB", step: 0.1, min: 0 },
+           { key: "p1db", label: "Output P1dB", unit: "dBm", step: 0.5 },
+           { key: "oip3", label: "Output IP3", unit: "dBm", step: 0.5 }],
+  out: p => (p.mode === "Bypass Mode" ? { out: -Math.abs(+p.bypLoss || 0) } : { out: +p.gain }),
+  nf: p => (p.mode === "Bypass Mode" ? Math.abs(+p.bypLoss || 0) : Math.abs(+p.nf || 0)),
+  p1db: p => (p.mode === "Bypass Mode" ? undefined : num(p.p1db)),
+  oip3: p => (p.mode === "Bypass Mode" ? undefined : num(p.oip3)),
+  val: p => (p.mode === "Bypass Mode" ? ("BYP \u2212" + fmt(Math.abs(+p.bypLoss || 0)) + " dB") : gsign(p.gain)),
+  sym(p) {
+    const isByp = (p && p.mode === "Bypass Mode");
+    const topSw = isByp ? `<path class="blk-line" d="M12 10H26"/>` : `<path class="blk-line" d="M12 10L24 4"/>`;
+    const botSw = isByp ? `<path class="blk-line" d="M24 28L30 22"/>` : `<path class="blk-line" d="M24 28H32"/>`;
+    return `<rect class="blk-shape" x="0" y="2" width="40" height="36" rx="4"/>` +
+           `<path class="blk-line" d="M0 20H6V10H12M26 10H34V28M34 20H40"/>` +
+           `<path class="blk-line" d="M6 20V28H10M22 28H24M32 28H34"/>` +
+           `<path class="blk-glyph" d="M10 22L22 28L10 34Z"/>` +
+           topSw +
+           botSw;
+  }
+});
+
+def({
   type: "atten", keys: "pad attenuation loss fixed step", name: "Attenuator", group: "Gain / Loss", w: 40, h: 40,
   ports: [{ id: "in", side: "left", kind: "inout", dx: 0, dy: 20 }, { id: "out", side: "right", kind: "inout", dx: 40, dy: 20 }],
   params: { label: "ATT", loss: 10 },
