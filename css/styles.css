@@ -1,4 +1,4 @@
-:root {
+:root, html[data-theme="dark"] {
   --bg: #0b0f17;
   --chrome: #111827;
   --chrome-2: #1f2937;
@@ -17,7 +17,8 @@
   --grid-maj: #212e4a;
   --blk-fill: #1e293b;
   --blk-stroke: #cbd5e1;
-  --lbl-ink: #f1f5f9;
+  --lbl-ink: #f8fafc;
+  --lbl-val-ink: #38bdf8;
   --wire: #64748b;
   --wire-sel: #f59e0b;
   --pill-bg: #1e293b;
@@ -33,6 +34,39 @@
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.25);
   --shadow-md: 0 4px 12px -2px rgba(0, 0, 0, 0.35);
   --shadow-lg: 0 12px 28px -4px rgba(0, 0, 0, 0.5);
+}
+
+html[data-theme="light"] {
+  --bg: #f8fafc;
+  --chrome: #ffffff;
+  --chrome-2: #f1f5f9;
+  --chrome-3: #e2e8f0;
+  --line: #cbd5e1;
+  --line-light: rgba(0, 0, 0, 0.08);
+  --ink: #0f172a;
+  --ink-dim: #475569;
+  --ink-dim2: #64748b;
+  --accent: #d97706;
+  --accent-deep: #b45309;
+  --accent-blue: #0284c7;
+  --accent-green: #059669;
+  --canvas: #ffffff;
+  --grid-min: #f1f5f9;
+  --grid-maj: #e2e8f0;
+  --blk-fill: #ffffff;
+  --blk-stroke: #1e293b;
+  --lbl-ink: #0f172a;
+  --lbl-val-ink: #0284c7;
+  --wire: #475569;
+  --wire-sel: #d97706;
+  --pill-bg: #ffffff;
+  --pill-bd: #94a3b8;
+  --pill-ink: #b45309;
+  --pill-unk: #64748b;
+  --danger: #dc2626;
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 12px -2px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 12px 28px -4px rgba(0, 0, 0, 0.15);
 }
 
 * { box-sizing: border-box; }
@@ -307,7 +341,7 @@ button.btn.primary:hover {
 .pal-search input {
   width: 100%;
   box-sizing: border-box;
-  background: #192231;
+  background: var(--chrome-2);
   border: 1px solid var(--line);
   border-radius: var(--radius-md);
   color: var(--ink);
@@ -358,7 +392,7 @@ button.btn.primary:hover {
 }
 .pal-item:hover {
   border-color: var(--accent);
-  background: #273549;
+  background: var(--chrome-3);
   transform: translateY(-2px);
   box-shadow: var(--shadow-md);
 }
@@ -372,7 +406,7 @@ button.btn.primary:hover {
   font-family: var(--mono);
   font-size: 9.5px;
   font-weight: 500;
-  color: #cbd5e1;
+  color: var(--ink-dim);
   letter-spacing: 0.01em;
   text-align: center;
   line-height: 1.1;
@@ -385,7 +419,7 @@ button.btn.primary:hover {
   font-size: 11px;
   line-height: 1.6;
   color: var(--ink-dim2);
-  background: rgba(0, 0, 0, 0.15);
+  background: var(--line-light);
 }
 .pal-foot b { color: var(--ink-dim); font-weight: 600; }
 
@@ -410,14 +444,14 @@ button.btn.primary:hover {
   color: var(--ink-dim);
   font-size: 13px;
   line-height: 1.6;
-  background: rgba(31, 41, 55, 0.85);
+  background: var(--chrome-2);
   backdrop-filter: blur(12px);
   border: 1px solid var(--line);
   border-radius: var(--radius-lg);
   padding: 22px 24px;
   box-shadow: var(--shadow-lg);
 }
-.empty-card h3 { margin: 0 0 10px; font-size: 14px; font-weight: 600; letter-spacing: 0.04em; color: #f8fafc; }
+.empty-card h3 { margin: 0 0 10px; font-size: 14px; font-weight: 600; letter-spacing: 0.04em; color: var(--ink); }
 .empty-card ol { margin: 0; padding-left: 20px; }
 .empty-card li { margin: 5px 0; }
 .empty-card b { color: var(--accent); }
@@ -433,9 +467,9 @@ button.btn.primary:hover {
 .port-lbl { fill: var(--blk-stroke); opacity: 0.75; font-family: var(--mono); font-size: 8.5px; font-weight: 600; }
 .block.hot .blk-shape { stroke: #ef4444; stroke-width: 2.5; }
 .block.hot .lbl-name { fill: #f87171; }
-.lbl-name { fill: #f8fafc; font-family: var(--mono); font-size: 11px; font-weight: 700; text-anchor: middle; letter-spacing: 0.02em; }
-.lbl-val { fill: #38bdf8; font-family: var(--mono); font-size: 9.5px; font-weight: 600; text-anchor: middle; letter-spacing: 0.01em; opacity: 0.95; }
-.free-label { fill: #f8fafc; font-family: var(--mono); font-size: 14px; font-weight: 600; }
+.lbl-name { fill: var(--lbl-ink); font-family: var(--mono); font-size: 11px; font-weight: 700; text-anchor: middle; letter-spacing: 0.02em; }
+.lbl-val { fill: var(--lbl-val-ink); font-family: var(--mono); font-size: 9.5px; font-weight: 600; text-anchor: middle; letter-spacing: 0.01em; opacity: 0.95; }
+.free-label { fill: var(--lbl-ink); font-family: var(--mono); font-size: 14px; font-weight: 600; }
 .block .sel-ring { fill: none; stroke: var(--accent); stroke-width: 2.2; stroke-dasharray: 6 4; opacity: 0; transition: opacity 0.15s; }
 .block.sel .sel-ring { opacity: 1; }
 .block.sel .blk-shape { stroke: var(--accent); }
@@ -456,9 +490,9 @@ button.btn.primary:hover {
 /* Level Readout Pills on Wires */
 .pill { pointer-events: all; cursor: grab; }
 .pill:active { cursor: grabbing; }
-.pill .pbg { fill: #1e293b; stroke: #475569; stroke-width: 1.2; filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.4)); rx: 4; }
-.pill .ptx { fill: var(--accent); font-family: var(--mono); font-size: 11px; font-weight: 700; text-anchor: middle; letter-spacing: 0.01em; }
-.pill .pun { fill: #94a3b8; font-family: var(--mono); font-size: 8.5px; font-weight: 600; text-anchor: middle; letter-spacing: 0.04em; }
+.pill .pbg { fill: var(--pill-bg); stroke: var(--pill-bd); stroke-width: 1.2; filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2)); rx: 4; }
+.pill .ptx { fill: var(--pill-ink); font-family: var(--mono); font-size: 11px; font-weight: 700; text-anchor: middle; letter-spacing: 0.01em; }
+.pill .pun { fill: var(--pill-unk); font-family: var(--mono); font-size: 8.5px; font-weight: 600; text-anchor: middle; letter-spacing: 0.04em; }
 .pill.unk .pbg { stroke: #334155; fill: #0f172a; filter: none; }
 .pill.unk .ptx { fill: #64748b; font-weight: 500; }
 .pill.unk .pun { fill: #64748b; }
@@ -513,7 +547,7 @@ button.btn.primary:hover {
 .field .inrow {
   display: flex;
   align-items: stretch;
-  background: #182232;
+  background: var(--chrome-2);
   border: 1px solid var(--line);
   border-radius: var(--radius-md);
   overflow: hidden;
@@ -543,7 +577,7 @@ button.btn.primary:hover {
   background-position: right 10px center;
   padding-right: 28px;
 }
-.field select option { color: #f8fafc; background: #1e293b; }
+.field select option { color: var(--ink); background: var(--chrome-2); }
 .field .unit {
   font-family: var(--mono);
   font-size: 11px;
@@ -553,12 +587,12 @@ button.btn.primary:hover {
   align-items: center;
   padding: 0 11px;
   border-left: 1px solid var(--line);
-  background: #111827;
+  background: var(--chrome-3);
   flex: none;
 }
 
 .readout {
-  background: #16202e;
+  background: var(--chrome-2);
   border: 1px solid var(--line);
   border-radius: var(--radius-md);
   padding: 12px 14px;

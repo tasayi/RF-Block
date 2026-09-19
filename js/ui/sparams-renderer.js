@@ -47,39 +47,39 @@ function renderAnalyserSettings() {
       Configure global frequency sweep range, resolution, and reference impedance for multi-port (up to 8 ports P1–P8) S-parameter linear analysis.
     </div>
 
-    <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; background:var(--chrome,#111827); padding:16px; border-radius:8px; border:1px solid var(--line,#2d3748); margin-bottom:16px">
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; background:var(--chrome); padding:16px; border-radius:8px; border:1px solid var(--line); margin-bottom:16px">
       <div>
-        <label style="font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.06em; color:var(--ink-dim,#94a3b8); display:block; margin-bottom:5px">Start Frequency</label>
+        <label style="font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.06em; color:var(--ink-dim); display:block; margin-bottom:5px">Start Frequency</label>
         <div style="display:flex; gap:6px">
-          <input type="number" id="anStartFreq" value="${band.startFreq}" style="flex:1; padding:7px 10px; background:#1e293b; border:1px solid #334155; color:#f8fafc; border-radius:6px; font-family:var(--mono)"/>
-          <select id="anStartUnit" style="padding:7px; background:#1e293b; border:1px solid #334155; color:#f8fafc; border-radius:6px"><option ${band.startUnit==="MHz"?"selected":""}>MHz</option><option ${band.startUnit==="GHz"?"selected":""}>GHz</option></select>
+          <input type="number" id="anStartFreq" value="${band.startFreq}" style="flex:1; padding:7px 10px; background:var(--chrome-2); border:1px solid var(--line); color:var(--ink); border-radius:6px; font-family:var(--mono)"/>
+          <select id="anStartUnit" style="padding:7px; background:var(--chrome-2); border:1px solid var(--line); color:var(--ink); border-radius:6px"><option ${band.startUnit==="MHz"?"selected":""}>MHz</option><option ${band.startUnit==="GHz"?"selected":""}>GHz</option></select>
         </div>
       </div>
 
       <div>
-        <label style="font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.06em; color:var(--ink-dim,#94a3b8); display:block; margin-bottom:5px">Stop Frequency</label>
+        <label style="font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.06em; color:var(--ink-dim); display:block; margin-bottom:5px">Stop Frequency</label>
         <div style="display:flex; gap:6px">
-          <input type="number" id="anStopFreq" value="${band.stopFreq}" style="flex:1; padding:7px 10px; background:#1e293b; border:1px solid #334155; color:#f8fafc; border-radius:6px; font-family:var(--mono)"/>
-          <select id="anStopUnit" style="padding:7px; background:#1e293b; border:1px solid #334155; color:#f8fafc; border-radius:6px"><option ${band.stopUnit==="MHz"?"selected":""}>MHz</option><option ${band.stopUnit==="GHz"?"selected":""}>GHz</option></select>
+          <input type="number" id="anStopFreq" value="${band.stopFreq}" style="flex:1; padding:7px 10px; background:var(--chrome-2); border:1px solid var(--line); color:var(--ink); border-radius:6px; font-family:var(--mono)"/>
+          <select id="anStopUnit" style="padding:7px; background:var(--chrome-2); border:1px solid var(--line); color:var(--ink); border-radius:6px"><option ${band.stopUnit==="MHz"?"selected":""}>MHz</option><option ${band.stopUnit==="GHz"?"selected":""}>GHz</option></select>
         </div>
       </div>
 
       <div>
-        <label style="font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.06em; color:var(--ink-dim,#94a3b8); display:block; margin-bottom:5px">Sweep Points (N)</label>
-        <input type="number" id="anPoints" value="${band.points}" style="width:100%; box-sizing:border-box; padding:7px 10px; background:#1e293b; border:1px solid #334155; color:#f8fafc; border-radius:6px; font-family:var(--mono)"/>
+        <label style="font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.06em; color:var(--ink-dim); display:block; margin-bottom:5px">Sweep Points (N)</label>
+        <input type="number" id="anPoints" value="${band.points}" style="width:100%; box-sizing:border-box; padding:7px 10px; background:var(--chrome-2); border:1px solid var(--line); color:var(--ink); border-radius:6px; font-family:var(--mono)"/>
       </div>
 
       <div>
-        <label style="font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.06em; color:var(--ink-dim,#94a3b8); display:block; margin-bottom:5px">Sweep Scale</label>
-        <select id="anSweepType" style="width:100%; padding:7px; background:#1e293b; border:1px solid #334155; color:#f8fafc; border-radius:6px">
+        <label style="font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.06em; color:var(--ink-dim); display:block; margin-bottom:5px">Sweep Scale</label>
+        <select id="anSweepType" style="width:100%; padding:7px; background:var(--chrome-2); border:1px solid var(--line); color:var(--ink); border-radius:6px">
           <option value="lin" ${band.sweepType==="lin"?"selected":""}>Linear</option>
           <option value="log" ${band.sweepType==="log"?"selected":""}>Logarithmic</option>
         </select>
       </div>
 
       <div>
-        <label style="font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.06em; color:var(--ink-dim,#94a3b8); display:block; margin-bottom:5px">System Reference Impedance (Z₀)</label>
-        <select id="anZ0" style="width:100%; padding:7px; background:#1e293b; border:1px solid #334155; color:#f8fafc; border-radius:6px">
+        <label style="font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.06em; color:var(--ink-dim); display:block; margin-bottom:5px">System Reference Impedance (Z₀)</label>
+        <select id="anZ0" style="width:100%; padding:7px; background:var(--chrome-2); border:1px solid var(--line); color:var(--ink); border-radius:6px">
           <option value="50" ${(band.z0||50)==50?"selected":""}>50 Ω (Standard)</option>
           <option value="75" ${(band.z0||50)==75?"selected":""}>75 Ω (Cable/CATV)</option>
           <option value="100" ${(band.z0||50)==100?"selected":""}>100 Ω (Differential)</option>
@@ -315,8 +315,8 @@ function renderLinearAnalysis() {
 
       <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap">
         <div style="display:flex; align-items:center; gap:6px">
-          <label style="font-size:12px; font-weight:600; color:#94a3b8">Add Trace:</label>
-          <select id="spTraceSelect" style="padding:6px 10px; font-size:12px; border-radius:6px; border:1px solid #334155; background:#0f172a; color:#e2e8f0; min-width:240px">
+          <label style="font-size:12px; font-weight:600; color:var(--ink-dim)">Add Trace:</label>
+          <select id="spTraceSelect" style="padding:6px 10px; font-size:12px; border-radius:6px; border:1px solid var(--line); background:var(--chrome-2); color:var(--ink); min-width:240px">
             <option value="">-- Select Transmission Trace --</option>`;
 
     availableTraces.forEach(tr => {
@@ -327,13 +327,13 @@ function renderLinearAnalysis() {
     html += `</select>
         </div>
 
-        <div style="font-size:12px; font-weight:600; color:#94a3b8">Active:</div>
+        <div style="font-size:12px; font-weight:600; color:var(--ink-dim)">Active:</div>
         <div id="spActiveTraceChips" style="display:flex; gap:6px; flex-wrap:wrap; align-items:center">`;
 
     let chipIdx = 0;
     invokedTraces.forEach(sKey => {
       const col = getTraceColor(sKey, chipIdx++);
-      html += `<div style="display:inline-flex; align-items:center; gap:6px; padding:4px 10px; border-radius:5px; background:${col}; color:#ffffff; font-size:12px; font-weight:700; box-shadow:0 2px 4px rgba(0,0,0,0.3)">
+      html += `<div style="display:inline-flex; align-items:center; gap:6px; padding:4px 10px; border-radius:5px; background:${col}; color:#ffffff; font-size:12px; font-weight:700; box-shadow:0 2px 4px rgba(0,0,0,0.2)">
         <span>${sKey}</span>
         <span class="sp-chip-del" data-skey="${sKey}" style="cursor:pointer; opacity:0.85; font-size:11px; margin-left:2px" title="Remove trace">✕</span>
       </div>`;
@@ -344,10 +344,10 @@ function renderLinearAnalysis() {
     </div>`;
 
     // --- Chart Area ---
-    html += `<div style="position:relative; background:#0b0f19; border:1px solid var(--line,#374151); border-radius:8px; padding:16px; margin-bottom:16px; box-shadow:var(--shadow-md)">
+    html += `<div style="position:relative; background:var(--chrome-2); border:1px solid var(--line); border-radius:8px; padding:16px; margin-bottom:16px; box-shadow:var(--shadow-md)">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; font-size:12px; flex-wrap:wrap; gap:8px">
         <div style="display:flex; gap:14px; align-items:center; flex-wrap:wrap">
-          <span style="font-weight:700; color:#cbd5e1">Transmission Traces (${invokedTraces.size}):</span>`;
+          <span style="font-weight:700; color:var(--ink)">Transmission Traces (${invokedTraces.size}):</span>`;
     invokedTraces.forEach(sKey => {
       const col = getTraceColor(sKey);
       html += `<span style="color:${col}; font-weight:700; font-size:12px">■ ${sKey}</span>`;
@@ -363,8 +363,8 @@ function renderLinearAnalysis() {
     </div>`;
 
     // Markers Table
-    html += `<div style="background:var(--chrome-2,#1f2937); border:1px solid var(--line,#374151); border-radius:8px; padding:16px">
-      <h4 style="margin:0 0 12px 0; font-size:13px; font-weight:700; color:var(--ink,#f8fafc)">📌 Frequency Markers & Readouts</h4>
+    html += `<div style="background:var(--chrome-2); border:1px solid var(--line); border-radius:8px; padding:16px">
+      <h4 style="margin:0 0 12px 0; font-size:13px; font-weight:700; color:var(--ink)">📌 Frequency Markers & Readouts</h4>
       <div id="spMarkerTable"></div>
     </div>`;
   }
@@ -546,25 +546,25 @@ function renderSvgPlot(res) {
   const getX = f => margin.left + ((f - fMin) / (fMax - fMin || 1)) * pw;
   const getY = val => margin.top + (1 - (val - yMin) / (yMax - yMin || 1)) * ph;
 
-  let svgHtml = `<svg id="spSvgPlot" width="100%" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="user-select:none; font-family:var(--sans); background:#0b0f19; border-radius:6px">`;
+  let svgHtml = `<svg id="spSvgPlot" width="100%" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="user-select:none; font-family:var(--sans); background:var(--canvas); border-radius:6px">`;
 
   // Grid Lines & Axis Labels
-  svgHtml += `<rect x="${margin.left}" y="${margin.top}" width="${pw}" height="${ph}" fill="#0f172a" stroke="#334155"/>`;
+  svgHtml += `<rect x="${margin.left}" y="${margin.top}" width="${pw}" height="${ph}" fill="var(--canvas)" stroke="var(--line)"/>`;
 
   const yStep = Math.max(2, Math.ceil((yMax - yMin) / 6 / 2) * 2);
   for (let db = yMin; db <= yMax; db += yStep) {
     const y = getY(db);
     if (y >= margin.top && y <= H - margin.bottom) {
-      svgHtml += `<line x1="${margin.left}" y1="${y}" x2="${W - margin.right}" y2="${y}" stroke="${db===0?'#475569':'#1e293b'}" stroke-width="${db===0?1.5:1}"/>`;
-      svgHtml += `<text x="${margin.left - 8}" y="${y + 4}" font-size="10" font-family="var(--mono)" fill="#94a3b8" text-anchor="end">${db} dB</text>`;
+      svgHtml += `<line x1="${margin.left}" y1="${y}" x2="${W - margin.right}" y2="${y}" stroke="${db===0?'var(--ink-dim)':'var(--grid-maj)'}" stroke-width="${db===0?1.5:1}"/>`;
+      svgHtml += `<text x="${margin.left - 8}" y="${y + 4}" font-size="10" font-family="var(--mono)" fill="var(--ink-dim)" text-anchor="end">${db} dB</text>`;
     }
   }
 
   for (let i = 0; i <= 5; i++) {
     const fVal = fMin + (i / 5) * (fMax - fMin);
     const x = getX(fVal);
-    svgHtml += `<line x1="${x}" y1="${margin.top}" x2="${x}" y2="${H - margin.bottom}" stroke="#1e293b" stroke-width="1"/>`;
-    svgHtml += `<text x="${x}" y="${H - margin.bottom + 18}" font-size="10" font-family="var(--mono)" fill="#94a3b8" text-anchor="middle">${(fVal / fDiv).toFixed(2)} ${fUnit}</text>`;
+    svgHtml += `<line x1="${x}" y1="${margin.top}" x2="${x}" y2="${H - margin.bottom}" stroke="var(--grid-maj)" stroke-width="1"/>`;
+    svgHtml += `<text x="${x}" y="${H - margin.bottom + 18}" font-size="10" font-family="var(--mono)" fill="var(--ink-dim)" text-anchor="middle">${(fVal / fDiv).toFixed(2)} ${fUnit}</text>`;
   }
 
   const makePath = arr => {
@@ -635,9 +635,9 @@ function renderMarkerTable(res) {
     return isFinite(v) ? v.toFixed(2) + " dB" : "-";
   };
 
-  let h = `<table style="width:100%; border-collapse:collapse; font-size:12px; text-align:left; color:var(--ink,#e2e8f0)">
+  let h = `<table style="width:100%; border-collapse:collapse; font-size:12px; text-align:left; color:var(--ink)">
     <thead>
-      <tr style="border-bottom:1px solid #334155; color:#94a3b8">
+      <tr style="border-bottom:1px solid var(--line); color:var(--ink-dim)">
         <th style="padding:6px">Marker</th>
         <th style="padding:6px">Frequency (${fUnit})</th>`;
 
@@ -656,11 +656,11 @@ function renderMarkerTable(res) {
   linearMarkers.forEach((m, idx) => {
     const deltaF = ((m.f - m1F) / fDiv).toFixed(3);
 
-    h += `<tr style="border-bottom:1px solid #334155">
+    h += `<tr style="border-bottom:1px solid var(--line)">
       <td style="padding:6px; font-weight:bold">${m.id}</td>
       <td style="padding:6px">
-        <input type="number" step="0.01" value="${(m.f / fDiv).toFixed(3)}" data-midx="${idx}" class="sp-mkr-input" style="width:75px; padding:3px 6px; background:#0f172a; color:#e2e8f0; border:1px solid #334155; border-radius:4px"/>
-        ${idx > 0 ? `<span style="font-size:10px; color:#94a3b8; margin-left:4px">(Δ ${deltaF > 0 ? '+'+deltaF : deltaF})</span>` : ""}
+        <input type="number" step="0.01" value="${(m.f / fDiv).toFixed(3)}" data-midx="${idx}" class="sp-mkr-input" style="width:75px; padding:3px 6px; background:var(--chrome-2); color:var(--ink); border:1px solid var(--line); border-radius:4px"/>
+        ${idx > 0 ? `<span style="font-size:10px; color:var(--ink-dim); margin-left:4px">(Δ ${deltaF > 0 ? '+'+deltaF : deltaF})</span>` : ""}
       </td>`;
 
     invKeys.forEach(sKey => {

@@ -32,4 +32,6 @@ rfblock-build = "rfblock.cli:main_build"
 packages = ["python/rfblock"]
 
 [dependency-groups]
-dev = []
+dev = [
+    "pyside6>=6.11.2",
+]

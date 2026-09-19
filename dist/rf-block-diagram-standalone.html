@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
 <title>RF Chain — Block Diagram Editor</title>
 <style>
-:root {
+:root, html[data-theme="dark"] {
   --bg: #0b0f17;
   --chrome: #111827;
   --chrome-2: #1f2937;
@@ -24,7 +24,8 @@
   --grid-maj: #212e4a;
   --blk-fill: #1e293b;
   --blk-stroke: #cbd5e1;
-  --lbl-ink: #f1f5f9;
+  --lbl-ink: #f8fafc;
+  --lbl-val-ink: #38bdf8;
   --wire: #64748b;
   --wire-sel: #f59e0b;
   --pill-bg: #1e293b;
@@ -40,6 +41,39 @@
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.25);
   --shadow-md: 0 4px 12px -2px rgba(0, 0, 0, 0.35);
   --shadow-lg: 0 12px 28px -4px rgba(0, 0, 0, 0.5);
+}
+
+html[data-theme="light"] {
+  --bg: #f8fafc;
+  --chrome: #ffffff;
+  --chrome-2: #f1f5f9;
+  --chrome-3: #e2e8f0;
+  --line: #cbd5e1;
+  --line-light: rgba(0, 0, 0, 0.08);
+  --ink: #0f172a;
+  --ink-dim: #475569;
+  --ink-dim2: #64748b;
+  --accent: #d97706;
+  --accent-deep: #b45309;
+  --accent-blue: #0284c7;
+  --accent-green: #059669;
+  --canvas: #ffffff;
+  --grid-min: #f1f5f9;
+  --grid-maj: #e2e8f0;
+  --blk-fill: #ffffff;
+  --blk-stroke: #1e293b;
+  --lbl-ink: #0f172a;
+  --lbl-val-ink: #0284c7;
+  --wire: #475569;
+  --wire-sel: #d97706;
+  --pill-bg: #ffffff;
+  --pill-bd: #94a3b8;
+  --pill-ink: #b45309;
+  --pill-unk: #64748b;
+  --danger: #dc2626;
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 12px -2px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 12px 28px -4px rgba(0, 0, 0, 0.15);
 }
 
 * { box-sizing: border-box; }
@@ -314,7 +348,7 @@ button.btn.primary:hover {
 .pal-search input {
   width: 100%;
   box-sizing: border-box;
-  background: #192231;
+  background: var(--chrome-2);
   border: 1px solid var(--line);
   border-radius: var(--radius-md);
   color: var(--ink);
@@ -365,7 +399,7 @@ button.btn.primary:hover {
 }
 .pal-item:hover {
   border-color: var(--accent);
-  background: #273549;
+  background: var(--chrome-3);
   transform: translateY(-2px);
   box-shadow: var(--shadow-md);
 }
@@ -379,7 +413,7 @@ button.btn.primary:hover {
   font-family: var(--mono);
   font-size: 9.5px;
   font-weight: 500;
-  color: #cbd5e1;
+  color: var(--ink-dim);
   letter-spacing: 0.01em;
   text-align: center;
   line-height: 1.1;
@@ -392,7 +426,7 @@ button.btn.primary:hover {
   font-size: 11px;
   line-height: 1.6;
   color: var(--ink-dim2);
-  background: rgba(0, 0, 0, 0.15);
+  background: var(--line-light);
 }
 .pal-foot b { color: var(--ink-dim); font-weight: 600; }
 
@@ -417,14 +451,14 @@ button.btn.primary:hover {
   color: var(--ink-dim);
   font-size: 13px;
   line-height: 1.6;
-  background: rgba(31, 41, 55, 0.85);
+  background: var(--chrome-2);
   backdrop-filter: blur(12px);
   border: 1px solid var(--line);
   border-radius: var(--radius-lg);
   padding: 22px 24px;
   box-shadow: var(--shadow-lg);
 }
-.empty-card h3 { margin: 0 0 10px; font-size: 14px; font-weight: 600; letter-spacing: 0.04em; color: #f8fafc; }
+.empty-card h3 { margin: 0 0 10px; font-size: 14px; font-weight: 600; letter-spacing: 0.04em; color: var(--ink); }
 .empty-card ol { margin: 0; padding-left: 20px; }
 .empty-card li { margin: 5px 0; }
 .empty-card b { color: var(--accent); }
@@ -440,9 +474,9 @@ button.btn.primary:hover {
 .port-lbl { fill: var(--blk-stroke); opacity: 0.75; font-family: var(--mono); font-size: 8.5px; font-weight: 600; }
 .block.hot .blk-shape { stroke: #ef4444; stroke-width: 2.5; }
 .block.hot .lbl-name { fill: #f87171; }
-.lbl-name { fill: #f8fafc; font-family: var(--mono); font-size: 11px; font-weight: 700; text-anchor: middle; letter-spacing: 0.02em; }
-.lbl-val { fill: #38bdf8; font-family: var(--mono); font-size: 9.5px; font-weight: 600; text-anchor: middle; letter-spacing: 0.01em; opacity: 0.95; }
-.free-label { fill: #f8fafc; font-family: var(--mono); font-size: 14px; font-weight: 600; }
+.lbl-name { fill: var(--lbl-ink); font-family: var(--mono); font-size: 11px; font-weight: 700; text-anchor: middle; letter-spacing: 0.02em; }
+.lbl-val { fill: var(--lbl-val-ink); font-family: var(--mono); font-size: 9.5px; font-weight: 600; text-anchor: middle; letter-spacing: 0.01em; opacity: 0.95; }
+.free-label { fill: var(--lbl-ink); font-family: var(--mono); font-size: 14px; font-weight: 600; }
 .block .sel-ring { fill: none; stroke: var(--accent); stroke-width: 2.2; stroke-dasharray: 6 4; opacity: 0; transition: opacity 0.15s; }
 .block.sel .sel-ring { opacity: 1; }
 .block.sel .blk-shape { stroke: var(--accent); }
@@ -463,9 +497,9 @@ button.btn.primary:hover {
 /* Level Readout Pills on Wires */
 .pill { pointer-events: all; cursor: grab; }
 .pill:active { cursor: grabbing; }
-.pill .pbg { fill: #1e293b; stroke: #475569; stroke-width: 1.2; filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.4)); rx: 4; }
-.pill .ptx { fill: var(--accent); font-family: var(--mono); font-size: 11px; font-weight: 700; text-anchor: middle; letter-spacing: 0.01em; }
-.pill .pun { fill: #94a3b8; font-family: var(--mono); font-size: 8.5px; font-weight: 600; text-anchor: middle; letter-spacing: 0.04em; }
+.pill .pbg { fill: var(--pill-bg); stroke: var(--pill-bd); stroke-width: 1.2; filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2)); rx: 4; }
+.pill .ptx { fill: var(--pill-ink); font-family: var(--mono); font-size: 11px; font-weight: 700; text-anchor: middle; letter-spacing: 0.01em; }
+.pill .pun { fill: var(--pill-unk); font-family: var(--mono); font-size: 8.5px; font-weight: 600; text-anchor: middle; letter-spacing: 0.04em; }
 .pill.unk .pbg { stroke: #334155; fill: #0f172a; filter: none; }
 .pill.unk .ptx { fill: #64748b; font-weight: 500; }
 .pill.unk .pun { fill: #64748b; }
@@ -520,7 +554,7 @@ button.btn.primary:hover {
 .field .inrow {
   display: flex;
   align-items: stretch;
-  background: #182232;
+  background: var(--chrome-2);
   border: 1px solid var(--line);
   border-radius: var(--radius-md);
   overflow: hidden;
@@ -550,7 +584,7 @@ button.btn.primary:hover {
   background-position: right 10px center;
   padding-right: 28px;
 }
-.field select option { color: #f8fafc; background: #1e293b; }
+.field select option { color: var(--ink); background: var(--chrome-2); }
 .field .unit {
   font-family: var(--mono);
   font-size: 11px;
@@ -560,12 +594,12 @@ button.btn.primary:hover {
   align-items: center;
   padding: 0 11px;
   border-left: 1px solid var(--line);
-  background: #111827;
+  background: var(--chrome-3);
   flex: none;
 }
 
 .readout {
-  background: #16202e;
+  background: var(--chrome-2);
   border: 1px solid var(--line);
   border-radius: var(--radius-md);
   padding: 12px 14px;
@@ -724,6 +758,7 @@ table.bg tr:hover td { background: rgba(255, 255, 255, 0.04); cursor: pointer; }
     <label class="toggle" title="Universally show or hide signal level labels on wires"><input type="checkbox" id="tglLabels" checked/> Labels</label>
     <label class="toggle" title="Show cascade noise figure on wires"><input type="checkbox" id="tglNF"/> NF</label>
     <label class="toggle" title="Tint blocks by category"><input type="checkbox" id="tglColor" checked/> Colour</label>
+    <label class="toggle" title="Toggle Light / Dark background theme"><input type="checkbox" id="tglTheme"/> Theme</label>
     <div class="zoombox">
       <button id="zOut" title="Zoom out">−</button>
       <div class="z" id="zLabel">100%</div>
@@ -775,7 +810,7 @@ table.bg tr:hover td { background: rgba(255, 255, 255, 0.04); cursor: pointer; }
           </ol>
         </div>
       </div>
-      <div id="spStagePanel" class="sp-stage-panel" style="display:none; position:absolute; inset:0; z-index:35; background:var(--chrome-2,#171c23); color:var(--ink,#e2e8f0); overflow-y:auto; padding:16px;"></div>
+      <div id="spStagePanel" class="sp-stage-panel" style="display:none; position:absolute; inset:0; z-index:35; background:var(--chrome-2); color:var(--ink); overflow-y:auto; padding:16px;"></div>
     </div>
 
     <aside class="inspector">
@@ -919,6 +954,7 @@ const DEFAULT_SETTINGS = {
   showNF: false,
   showLabels: true,
   color: true,
+  theme: "dark",
   analysisBand: { startFreq: 1, startUnit: "GHz", stopFreq: 10, stopUnit: "GHz", points: 101, sweepType: "lin" }
 };
 
@@ -1784,7 +1820,15 @@ function colorOf(k, type) {
   return (c && GROUP_TINT[c.group]) || "#ffffff";
 }
 
-function blockFill(b) { return settings.color ? colorOf(keyOfBlock(b), b.type) : "#ffffff"; }
+function blockFill(b) {
+  if (!settings.color) {
+    return (settings.theme === "light") ? "#ffffff" : "#1e293b";
+  }
+  if (b && b.type === "termination" && settings.theme === "light") {
+    return "#e2e8f0";
+  }
+  return colorOf(keyOfBlock(b), b.type);
+}
 
 function lumOf(hex) {
   const m = /^#?([0-9a-f]{6})$/i.exec(String(hex || ""));
@@ -1796,6 +1840,9 @@ function lumOf(hex) {
 const TERMINAL_TYPES = new Set(["rfin", "rfout", "antenna", "termination", "detector"]);
 
 function blockInk(fill, type) {
+  if (settings.theme === "light") {
+    return "#0f172a";
+  }
   if (type && TERMINAL_TYPES.has(type)) return "#f8fafc";
   return lumOf(fill) >= 0.55 ? "#0f172a" : "#f8fafc";
 }
@@ -1803,6 +1850,13 @@ function blockInk(fill, type) {
 function blockStyle(b) {
   const fill = blockFill(b), ink = blockInk(fill, b ? b.type : null);
   return `--blk-fill:${fill};--blk-stroke:${ink}`;
+}
+
+function applyTheme(themeName) {
+  const theme = (themeName === "light") ? "light" : "dark";
+  settings.theme = theme;
+  document.documentElement.setAttribute("data-theme", theme);
+  try { localStorage.setItem("rfblock_theme", theme); } catch (e) {}
 }
 
 function colorLabel(b) {
@@ -3601,6 +3655,10 @@ function loadDoc(text, name, handle) {
   }
   settings = { ...settings, ...(d.settings || {}) };
   if ($("tglColor")) $("tglColor").checked = settings.color !== false;
+  if ($("tglTheme")) {
+    $("tglTheme").checked = (settings.theme === "light");
+    applyTheme(settings.theme || "dark");
+  }
   adoptSheet(cur);
   renderSheets();
   clearSel();
@@ -4577,39 +4635,39 @@ function renderAnalyserSettings() {
       Configure global frequency sweep range, resolution, and reference impedance for multi-port (up to 8 ports P1–P8) S-parameter linear analysis.
     </div>
 
-    <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; background:var(--chrome,#111827); padding:16px; border-radius:8px; border:1px solid var(--line,#2d3748); margin-bottom:16px">
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; background:var(--chrome); padding:16px; border-radius:8px; border:1px solid var(--line); margin-bottom:16px">
       <div>
-        <label style="font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.06em; color:var(--ink-dim,#94a3b8); display:block; margin-bottom:5px">Start Frequency</label>
+        <label style="font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.06em; color:var(--ink-dim); display:block; margin-bottom:5px">Start Frequency</label>
         <div style="display:flex; gap:6px">
-          <input type="number" id="anStartFreq" value="${band.startFreq}" style="flex:1; padding:7px 10px; background:#1e293b; border:1px solid #334155; color:#f8fafc; border-radius:6px; font-family:var(--mono)"/>
-          <select id="anStartUnit" style="padding:7px; background:#1e293b; border:1px solid #334155; color:#f8fafc; border-radius:6px"><option ${band.startUnit==="MHz"?"selected":""}>MHz</option><option ${band.startUnit==="GHz"?"selected":""}>GHz</option></select>
+          <input type="number" id="anStartFreq" value="${band.startFreq}" style="flex:1; padding:7px 10px; background:var(--chrome-2); border:1px solid var(--line); color:var(--ink); border-radius:6px; font-family:var(--mono)"/>
+          <select id="anStartUnit" style="padding:7px; background:var(--chrome-2); border:1px solid var(--line); color:var(--ink); border-radius:6px"><option ${band.startUnit==="MHz"?"selected":""}>MHz</option><option ${band.startUnit==="GHz"?"selected":""}>GHz</option></select>
         </div>
       </div>
 
       <div>
-        <label style="font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.06em; color:var(--ink-dim,#94a3b8); display:block; margin-bottom:5px">Stop Frequency</label>
+        <label style="font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.06em; color:var(--ink-dim); display:block; margin-bottom:5px">Stop Frequency</label>
         <div style="display:flex; gap:6px">
-          <input type="number" id="anStopFreq" value="${band.stopFreq}" style="flex:1; padding:7px 10px; background:#1e293b; border:1px solid #334155; color:#f8fafc; border-radius:6px; font-family:var(--mono)"/>
-          <select id="anStopUnit" style="padding:7px; background:#1e293b; border:1px solid #334155; color:#f8fafc; border-radius:6px"><option ${band.stopUnit==="MHz"?"selected":""}>MHz</option><option ${band.stopUnit==="GHz"?"selected":""}>GHz</option></select>
+          <input type="number" id="anStopFreq" value="${band.stopFreq}" style="flex:1; padding:7px 10px; background:var(--chrome-2); border:1px solid var(--line); color:var(--ink); border-radius:6px; font-family:var(--mono)"/>
+          <select id="anStopUnit" style="padding:7px; background:var(--chrome-2); border:1px solid var(--line); color:var(--ink); border-radius:6px"><option ${band.stopUnit==="MHz"?"selected":""}>MHz</option><option ${band.stopUnit==="GHz"?"selected":""}>GHz</option></select>
         </div>
       </div>
 
       <div>
-        <label style="font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.06em; color:var(--ink-dim,#94a3b8); display:block; margin-bottom:5px">Sweep Points (N)</label>
-        <input type="number" id="anPoints" value="${band.points}" style="width:100%; box-sizing:border-box; padding:7px 10px; background:#1e293b; border:1px solid #334155; color:#f8fafc; border-radius:6px; font-family:var(--mono)"/>
+        <label style="font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.06em; color:var(--ink-dim); display:block; margin-bottom:5px">Sweep Points (N)</label>
+        <input type="number" id="anPoints" value="${band.points}" style="width:100%; box-sizing:border-box; padding:7px 10px; background:var(--chrome-2); border:1px solid var(--line); color:var(--ink); border-radius:6px; font-family:var(--mono)"/>
       </div>
 
       <div>
-        <label style="font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.06em; color:var(--ink-dim,#94a3b8); display:block; margin-bottom:5px">Sweep Scale</label>
-        <select id="anSweepType" style="width:100%; padding:7px; background:#1e293b; border:1px solid #334155; color:#f8fafc; border-radius:6px">
+        <label style="font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.06em; color:var(--ink-dim); display:block; margin-bottom:5px">Sweep Scale</label>
+        <select id="anSweepType" style="width:100%; padding:7px; background:var(--chrome-2); border:1px solid var(--line); color:var(--ink); border-radius:6px">
           <option value="lin" ${band.sweepType==="lin"?"selected":""}>Linear</option>
           <option value="log" ${band.sweepType==="log"?"selected":""}>Logarithmic</option>
         </select>
       </div>
 
       <div>
-        <label style="font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.06em; color:var(--ink-dim,#94a3b8); display:block; margin-bottom:5px">System Reference Impedance (Z₀)</label>
-        <select id="anZ0" style="width:100%; padding:7px; background:#1e293b; border:1px solid #334155; color:#f8fafc; border-radius:6px">
+        <label style="font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.06em; color:var(--ink-dim); display:block; margin-bottom:5px">System Reference Impedance (Z₀)</label>
+        <select id="anZ0" style="width:100%; padding:7px; background:var(--chrome-2); border:1px solid var(--line); color:var(--ink); border-radius:6px">
           <option value="50" ${(band.z0||50)==50?"selected":""}>50 Ω (Standard)</option>
           <option value="75" ${(band.z0||50)==75?"selected":""}>75 Ω (Cable/CATV)</option>
           <option value="100" ${(band.z0||50)==100?"selected":""}>100 Ω (Differential)</option>
@@ -4845,8 +4903,8 @@ function renderLinearAnalysis() {
 
       <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap">
         <div style="display:flex; align-items:center; gap:6px">
-          <label style="font-size:12px; font-weight:600; color:#94a3b8">Add Trace:</label>
-          <select id="spTraceSelect" style="padding:6px 10px; font-size:12px; border-radius:6px; border:1px solid #334155; background:#0f172a; color:#e2e8f0; min-width:240px">
+          <label style="font-size:12px; font-weight:600; color:var(--ink-dim)">Add Trace:</label>
+          <select id="spTraceSelect" style="padding:6px 10px; font-size:12px; border-radius:6px; border:1px solid var(--line); background:var(--chrome-2); color:var(--ink); min-width:240px">
             <option value="">-- Select Transmission Trace --</option>`;
 
     availableTraces.forEach(tr => {
@@ -4857,13 +4915,13 @@ function renderLinearAnalysis() {
     html += `</select>
         </div>
 
-        <div style="font-size:12px; font-weight:600; color:#94a3b8">Active:</div>
+        <div style="font-size:12px; font-weight:600; color:var(--ink-dim)">Active:</div>
         <div id="spActiveTraceChips" style="display:flex; gap:6px; flex-wrap:wrap; align-items:center">`;
 
     let chipIdx = 0;
     invokedTraces.forEach(sKey => {
       const col = getTraceColor(sKey, chipIdx++);
-      html += `<div style="display:inline-flex; align-items:center; gap:6px; padding:4px 10px; border-radius:5px; background:${col}; color:#ffffff; font-size:12px; font-weight:700; box-shadow:0 2px 4px rgba(0,0,0,0.3)">
+      html += `<div style="display:inline-flex; align-items:center; gap:6px; padding:4px 10px; border-radius:5px; background:${col}; color:#ffffff; font-size:12px; font-weight:700; box-shadow:0 2px 4px rgba(0,0,0,0.2)">
         <span>${sKey}</span>
         <span class="sp-chip-del" data-skey="${sKey}" style="cursor:pointer; opacity:0.85; font-size:11px; margin-left:2px" title="Remove trace">✕</span>
       </div>`;
@@ -4874,10 +4932,10 @@ function renderLinearAnalysis() {
     </div>`;
 
     // --- Chart Area ---
-    html += `<div style="position:relative; background:#0b0f19; border:1px solid var(--line,#374151); border-radius:8px; padding:16px; margin-bottom:16px; box-shadow:var(--shadow-md)">
+    html += `<div style="position:relative; background:var(--chrome-2); border:1px solid var(--line); border-radius:8px; padding:16px; margin-bottom:16px; box-shadow:var(--shadow-md)">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; font-size:12px; flex-wrap:wrap; gap:8px">
         <div style="display:flex; gap:14px; align-items:center; flex-wrap:wrap">
-          <span style="font-weight:700; color:#cbd5e1">Transmission Traces (${invokedTraces.size}):</span>`;
+          <span style="font-weight:700; color:var(--ink)">Transmission Traces (${invokedTraces.size}):</span>`;
     invokedTraces.forEach(sKey => {
       const col = getTraceColor(sKey);
       html += `<span style="color:${col}; font-weight:700; font-size:12px">■ ${sKey}</span>`;
@@ -4893,8 +4951,8 @@ function renderLinearAnalysis() {
     </div>`;
 
     // Markers Table
-    html += `<div style="background:var(--chrome-2,#1f2937); border:1px solid var(--line,#374151); border-radius:8px; padding:16px">
-      <h4 style="margin:0 0 12px 0; font-size:13px; font-weight:700; color:var(--ink,#f8fafc)">📌 Frequency Markers & Readouts</h4>
+    html += `<div style="background:var(--chrome-2); border:1px solid var(--line); border-radius:8px; padding:16px">
+      <h4 style="margin:0 0 12px 0; font-size:13px; font-weight:700; color:var(--ink)">📌 Frequency Markers & Readouts</h4>
       <div id="spMarkerTable"></div>
     </div>`;
   }
@@ -5076,25 +5134,25 @@ function renderSvgPlot(res) {
   const getX = f => margin.left + ((f - fMin) / (fMax - fMin || 1)) * pw;
   const getY = val => margin.top + (1 - (val - yMin) / (yMax - yMin || 1)) * ph;
 
-  let svgHtml = `<svg id="spSvgPlot" width="100%" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="user-select:none; font-family:var(--sans); background:#0b0f19; border-radius:6px">`;
+  let svgHtml = `<svg id="spSvgPlot" width="100%" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="user-select:none; font-family:var(--sans); background:var(--canvas); border-radius:6px">`;
 
   // Grid Lines & Axis Labels
-  svgHtml += `<rect x="${margin.left}" y="${margin.top}" width="${pw}" height="${ph}" fill="#0f172a" stroke="#334155"/>`;
+  svgHtml += `<rect x="${margin.left}" y="${margin.top}" width="${pw}" height="${ph}" fill="var(--canvas)" stroke="var(--line)"/>`;
 
   const yStep = Math.max(2, Math.ceil((yMax - yMin) / 6 / 2) * 2);
   for (let db = yMin; db <= yMax; db += yStep) {
     const y = getY(db);
     if (y >= margin.top && y <= H - margin.bottom) {
-      svgHtml += `<line x1="${margin.left}" y1="${y}" x2="${W - margin.right}" y2="${y}" stroke="${db===0?'#475569':'#1e293b'}" stroke-width="${db===0?1.5:1}"/>`;
-      svgHtml += `<text x="${margin.left - 8}" y="${y + 4}" font-size="10" font-family="var(--mono)" fill="#94a3b8" text-anchor="end">${db} dB</text>`;
+      svgHtml += `<line x1="${margin.left}" y1="${y}" x2="${W - margin.right}" y2="${y}" stroke="${db===0?'var(--ink-dim)':'var(--grid-maj)'}" stroke-width="${db===0?1.5:1}"/>`;
+      svgHtml += `<text x="${margin.left - 8}" y="${y + 4}" font-size="10" font-family="var(--mono)" fill="var(--ink-dim)" text-anchor="end">${db} dB</text>`;
     }
   }
 
   for (let i = 0; i <= 5; i++) {
     const fVal = fMin + (i / 5) * (fMax - fMin);
     const x = getX(fVal);
-    svgHtml += `<line x1="${x}" y1="${margin.top}" x2="${x}" y2="${H - margin.bottom}" stroke="#1e293b" stroke-width="1"/>`;
-    svgHtml += `<text x="${x}" y="${H - margin.bottom + 18}" font-size="10" font-family="var(--mono)" fill="#94a3b8" text-anchor="middle">${(fVal / fDiv).toFixed(2)} ${fUnit}</text>`;
+    svgHtml += `<line x1="${x}" y1="${margin.top}" x2="${x}" y2="${H - margin.bottom}" stroke="var(--grid-maj)" stroke-width="1"/>`;
+    svgHtml += `<text x="${x}" y="${H - margin.bottom + 18}" font-size="10" font-family="var(--mono)" fill="var(--ink-dim)" text-anchor="middle">${(fVal / fDiv).toFixed(2)} ${fUnit}</text>`;
   }
 
   const makePath = arr => {
@@ -5165,9 +5223,9 @@ function renderMarkerTable(res) {
     return isFinite(v) ? v.toFixed(2) + " dB" : "-";
   };
 
-  let h = `<table style="width:100%; border-collapse:collapse; font-size:12px; text-align:left; color:var(--ink,#e2e8f0)">
+  let h = `<table style="width:100%; border-collapse:collapse; font-size:12px; text-align:left; color:var(--ink)">
     <thead>
-      <tr style="border-bottom:1px solid #334155; color:#94a3b8">
+      <tr style="border-bottom:1px solid var(--line); color:var(--ink-dim)">
         <th style="padding:6px">Marker</th>
         <th style="padding:6px">Frequency (${fUnit})</th>`;
 
@@ -5186,11 +5244,11 @@ function renderMarkerTable(res) {
   linearMarkers.forEach((m, idx) => {
     const deltaF = ((m.f - m1F) / fDiv).toFixed(3);
 
-    h += `<tr style="border-bottom:1px solid #334155">
+    h += `<tr style="border-bottom:1px solid var(--line)">
       <td style="padding:6px; font-weight:bold">${m.id}</td>
       <td style="padding:6px">
-        <input type="number" step="0.01" value="${(m.f / fDiv).toFixed(3)}" data-midx="${idx}" class="sp-mkr-input" style="width:75px; padding:3px 6px; background:#0f172a; color:#e2e8f0; border:1px solid #334155; border-radius:4px"/>
-        ${idx > 0 ? `<span style="font-size:10px; color:#94a3b8; margin-left:4px">(Δ ${deltaF > 0 ? '+'+deltaF : deltaF})</span>` : ""}
+        <input type="number" step="0.01" value="${(m.f / fDiv).toFixed(3)}" data-midx="${idx}" class="sp-mkr-input" style="width:75px; padding:3px 6px; background:var(--chrome-2); color:var(--ink); border:1px solid var(--line); border-radius:4px"/>
+        ${idx > 0 ? `<span style="font-size:10px; color:var(--ink-dim); margin-left:4px">(Δ ${deltaF > 0 ? '+'+deltaF : deltaF})</span>` : ""}
       </td>`;
 
     invKeys.forEach(sKey => {
@@ -6077,6 +6135,7 @@ function initEvents() {
   if ($("tglLabels")) $("tglLabels").addEventListener("change", e => { settings.showLabels = e.target.checked; renderCanvas(); });
   if ($("tglNF")) $("tglNF").addEventListener("change", e => { settings.showNF = e.target.checked; renderCanvas(); renderInspector(); });
   if ($("tglColor")) $("tglColor").addEventListener("change", e => { settings.color = e.target.checked; renderPalette(); renderCanvas(); });
+  if ($("tglTheme")) $("tglTheme").addEventListener("change", e => { applyTheme(e.target.checked ? "light" : "dark"); renderPalette(); renderCanvas(); });
 
   if ($("zIn")) $("zIn").onclick = () => zoomAt(1.15);
   if ($("zOut")) $("zOut").onclick = () => zoomAt(1 / 1.15);
@@ -6176,6 +6235,9 @@ function hint(t) {
 /* Initialization */
 window.addEventListener("DOMContentLoaded", () => {
   initEvents();
+  const savedTheme = (function() { try { return localStorage.getItem("rfblock_theme"); } catch(e) { return null; } })() || settings.theme || "dark";
+  applyTheme(savedTheme);
+  if ($("tglTheme")) $("tglTheme").checked = (settings.theme === "light");
   if ($("palSearch")) $("palSearch").addEventListener("input", renderPalette);
   renderPalette();
   renderSheets();

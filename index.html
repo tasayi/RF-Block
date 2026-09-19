@@ -37,6 +37,7 @@
     <label class="toggle" title="Universally show or hide signal level labels on wires"><input type="checkbox" id="tglLabels" checked/> Labels</label>
     <label class="toggle" title="Show cascade noise figure on wires"><input type="checkbox" id="tglNF"/> NF</label>
     <label class="toggle" title="Tint blocks by category"><input type="checkbox" id="tglColor" checked/> Colour</label>
+    <label class="toggle" title="Toggle Light / Dark background theme"><input type="checkbox" id="tglTheme"/> Theme</label>
     <div class="zoombox">
       <button id="zOut" title="Zoom out">−</button>
       <div class="z" id="zLabel">100%</div>
@@ -88,7 +89,7 @@
           </ol>
         </div>
       </div>
-      <div id="spStagePanel" class="sp-stage-panel" style="display:none; position:absolute; inset:0; z-index:35; background:var(--chrome-2,#171c23); color:var(--ink,#e2e8f0); overflow-y:auto; padding:16px;"></div>
+      <div id="spStagePanel" class="sp-stage-panel" style="display:none; position:absolute; inset:0; z-index:35; background:var(--chrome-2); color:var(--ink); overflow-y:auto; padding:16px;"></div>
     </div>
 
     <aside class="inspector">

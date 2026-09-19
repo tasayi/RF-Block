@@ -89,7 +89,15 @@ function colorOf(k, type) {
   return (c && GROUP_TINT[c.group]) || "#ffffff";
 }
 
-function blockFill(b) { return settings.color ? colorOf(keyOfBlock(b), b.type) : "#ffffff"; }
+function blockFill(b) {
+  if (!settings.color) {
+    return (settings.theme === "light") ? "#ffffff" : "#1e293b";
+  }
+  if (b && b.type === "termination" && settings.theme === "light") {
+    return "#e2e8f0";
+  }
+  return colorOf(keyOfBlock(b), b.type);
+}
 
 function lumOf(hex) {
   const m = /^#?([0-9a-f]{6})$/i.exec(String(hex || ""));
@@ -101,6 +109,9 @@ function lumOf(hex) {
 const TERMINAL_TYPES = new Set(["rfin", "rfout", "antenna", "termination", "detector"]);
 
 function blockInk(fill, type) {
+  if (settings.theme === "light") {
+    return "#0f172a";
+  }
   if (type && TERMINAL_TYPES.has(type)) return "#f8fafc";
   return lumOf(fill) >= 0.55 ? "#0f172a" : "#f8fafc";
 }
@@ -108,6 +119,13 @@ function blockInk(fill, type) {
 function blockStyle(b) {
   const fill = blockFill(b), ink = blockInk(fill, b ? b.type : null);
   return `--blk-fill:${fill};--blk-stroke:${ink}`;
+}
+
+function applyTheme(themeName) {
+  const theme = (themeName === "light") ? "light" : "dark";
+  settings.theme = theme;
+  document.documentElement.setAttribute("data-theme", theme);
+  try { localStorage.setItem("rfblock_theme", theme); } catch (e) {}
 }
 
 function colorLabel(b) {

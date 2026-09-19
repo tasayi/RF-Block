@@ -129,6 +129,10 @@ function loadDoc(text, name, handle) {
   }
   settings = { ...settings, ...(d.settings || {}) };
   if ($("tglColor")) $("tglColor").checked = settings.color !== false;
+  if ($("tglTheme")) {
+    $("tglTheme").checked = (settings.theme === "light");
+    applyTheme(settings.theme || "dark");
+  }
   adoptSheet(cur);
   renderSheets();
   clearSel();

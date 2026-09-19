@@ -231,6 +231,7 @@ function initEvents() {
   if ($("tglLabels")) $("tglLabels").addEventListener("change", e => { settings.showLabels = e.target.checked; renderCanvas(); });
   if ($("tglNF")) $("tglNF").addEventListener("change", e => { settings.showNF = e.target.checked; renderCanvas(); renderInspector(); });
   if ($("tglColor")) $("tglColor").addEventListener("change", e => { settings.color = e.target.checked; renderPalette(); renderCanvas(); });
+  if ($("tglTheme")) $("tglTheme").addEventListener("change", e => { applyTheme(e.target.checked ? "light" : "dark"); renderPalette(); renderCanvas(); });
 
   if ($("zIn")) $("zIn").onclick = () => zoomAt(1.15);
   if ($("zOut")) $("zOut").onclick = () => zoomAt(1 / 1.15);
@@ -330,6 +331,9 @@ function hint(t) {
 /* Initialization */
 window.addEventListener("DOMContentLoaded", () => {
   initEvents();
+  const savedTheme = (function() { try { return localStorage.getItem("rfblock_theme"); } catch(e) { return null; } })() || settings.theme || "dark";
+  applyTheme(savedTheme);
+  if ($("tglTheme")) $("tglTheme").checked = (settings.theme === "light");
   if ($("palSearch")) $("palSearch").addEventListener("input", renderPalette);
   renderPalette();
   renderSheets();
