@@ -10,12 +10,14 @@ let linearMarkers = [{ id: "M1", f: 0 }];
 let invokedTraces = new Set(["S21", "S11", "S22"]); // Currently invoked S-parameter trace keys
 
 // Vibrant distinct colors for multi-port traces
+// Vibrant distinct colors for multi-port traces (dark theme optimized)
 const TRACE_COLORS = {
-  S21: "#2563eb", S11: "#dc2626", S22: "#16a34a", S31: "#9333ea",
-  S12: "#0d9488", S32: "#ea580c", S41: "#ca8a04", S23: "#db2777",
-  S33: "#059669", S44: "#e11d48", S51: "#7c3aed", S61: "#4f46e5"
+  S21: "#38bdf8", S11: "#f43f5e", S22: "#10b981", S31: "#a855f7",
+  S12: "#14b8a6", S32: "#f97316", S41: "#eab308", S23: "#ec4899",
+  S33: "#059669", S44: "#f43f5e", S51: "#8b5cf6", S61: "#6366f1",
+  "S1Σ": "#f59e0b", "S2Σ": "#f59e0b", "S3Σ": "#f59e0b", "S4Σ": "#f59e0b"
 };
-const FALLBACK_COLORS = ["#2563eb", "#dc2626", "#16a34a", "#9333ea", "#0d9488", "#ea580c", "#ca8a04", "#db2777"];
+const FALLBACK_COLORS = ["#38bdf8", "#f43f5e", "#10b981", "#a855f7", "#14b8a6", "#f97316", "#eab308", "#ec4899"];
 
 function getTraceColor(key, idx = 0) {
   return TRACE_COLORS[key] || FALLBACK_COLORS[idx % FALLBACK_COLORS.length];
@@ -37,47 +39,47 @@ function renderAnalyserSettings() {
 
   const band = settings.analysisBand || { startFreq: 1, startUnit: "GHz", stopFreq: 10, stopUnit: "GHz", points: 101, sweepType: "lin", z0: 50 };
 
-  let html = `<div style="padding:16px; font-family:sans-serif; max-width:600px; margin:0 auto; color:var(--txt,#1e293b)">
-    <h3 style="margin:0 0 12px 0; font-size:15px; display:flex; align-items:center; gap:8px">
+  let html = `<div style="padding:16px; font-family:var(--sans); max-width:600px; margin:0 auto; color:var(--ink,#f8fafc)">
+    <h3 style="margin:0 0 12px 0; font-size:15px; display:flex; align-items:center; gap:8px; color:var(--accent,#f59e0b)">
       <span>⚙️</span> Global Analyser & Frequency Sweep Parameters
     </h3>
-    <div style="font-size:12px; color:var(--txt2,#64748b); margin-bottom:16px">
+    <div style="font-size:12px; color:var(--ink-dim,#94a3b8); margin-bottom:16px">
       Configure global frequency sweep range, resolution, and reference impedance for multi-port (up to 8 ports P1–P8) S-parameter linear analysis.
     </div>
 
-    <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; background:var(--bg2,#f8fafc); padding:16px; border-radius:8px; border:1px solid var(--border,#e2e8f0); margin-bottom:16px">
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; background:var(--chrome,#111827); padding:16px; border-radius:8px; border:1px solid var(--line,#2d3748); margin-bottom:16px">
       <div>
-        <label style="font-size:12px; font-weight:600; display:block; margin-bottom:4px">Start Frequency</label>
+        <label style="font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.06em; color:var(--ink-dim,#94a3b8); display:block; margin-bottom:5px">Start Frequency</label>
         <div style="display:flex; gap:6px">
-          <input type="number" id="anStartFreq" value="${band.startFreq}" style="flex:1; padding:6px 8px; border:1px solid #cbd5e1; border-radius:4px"/>
-          <select id="anStartUnit" style="padding:6px; border-radius:4px"><option ${band.startUnit==="MHz"?"selected":""}>MHz</option><option ${band.startUnit==="GHz"?"selected":""}>GHz</option></select>
+          <input type="number" id="anStartFreq" value="${band.startFreq}" style="flex:1; padding:7px 10px; background:#1e293b; border:1px solid #334155; color:#f8fafc; border-radius:6px; font-family:var(--mono)"/>
+          <select id="anStartUnit" style="padding:7px; background:#1e293b; border:1px solid #334155; color:#f8fafc; border-radius:6px"><option ${band.startUnit==="MHz"?"selected":""}>MHz</option><option ${band.startUnit==="GHz"?"selected":""}>GHz</option></select>
         </div>
       </div>
 
       <div>
-        <label style="font-size:12px; font-weight:600; display:block; margin-bottom:4px">Stop Frequency</label>
+        <label style="font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.06em; color:var(--ink-dim,#94a3b8); display:block; margin-bottom:5px">Stop Frequency</label>
         <div style="display:flex; gap:6px">
-          <input type="number" id="anStopFreq" value="${band.stopFreq}" style="flex:1; padding:6px 8px; border:1px solid #cbd5e1; border-radius:4px"/>
-          <select id="anStopUnit" style="padding:6px; border-radius:4px"><option ${band.stopUnit==="MHz"?"selected":""}>MHz</option><option ${band.stopUnit==="GHz"?"selected":""}>GHz</option></select>
+          <input type="number" id="anStopFreq" value="${band.stopFreq}" style="flex:1; padding:7px 10px; background:#1e293b; border:1px solid #334155; color:#f8fafc; border-radius:6px; font-family:var(--mono)"/>
+          <select id="anStopUnit" style="padding:7px; background:#1e293b; border:1px solid #334155; color:#f8fafc; border-radius:6px"><option ${band.stopUnit==="MHz"?"selected":""}>MHz</option><option ${band.stopUnit==="GHz"?"selected":""}>GHz</option></select>
         </div>
       </div>
 
       <div>
-        <label style="font-size:12px; font-weight:600; display:block; margin-bottom:4px">Sweep Points (N)</label>
-        <input type="number" id="anPoints" value="${band.points}" style="width:100%; box-sizing:border-box; padding:6px 8px; border:1px solid #cbd5e1; border-radius:4px"/>
+        <label style="font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.06em; color:var(--ink-dim,#94a3b8); display:block; margin-bottom:5px">Sweep Points (N)</label>
+        <input type="number" id="anPoints" value="${band.points}" style="width:100%; box-sizing:border-box; padding:7px 10px; background:#1e293b; border:1px solid #334155; color:#f8fafc; border-radius:6px; font-family:var(--mono)"/>
       </div>
 
       <div>
-        <label style="font-size:12px; font-weight:600; display:block; margin-bottom:4px">Sweep Scale</label>
-        <select id="anSweepType" style="width:100%; padding:6px; border-radius:4px">
+        <label style="font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.06em; color:var(--ink-dim,#94a3b8); display:block; margin-bottom:5px">Sweep Scale</label>
+        <select id="anSweepType" style="width:100%; padding:7px; background:#1e293b; border:1px solid #334155; color:#f8fafc; border-radius:6px">
           <option value="lin" ${band.sweepType==="lin"?"selected":""}>Linear</option>
           <option value="log" ${band.sweepType==="log"?"selected":""}>Logarithmic</option>
         </select>
       </div>
 
       <div>
-        <label style="font-size:12px; font-weight:600; display:block; margin-bottom:4px">System Reference Impedance (Z₀)</label>
-        <select id="anZ0" style="width:100%; padding:6px; border-radius:4px">
+        <label style="font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.06em; color:var(--ink-dim,#94a3b8); display:block; margin-bottom:5px">System Reference Impedance (Z₀)</label>
+        <select id="anZ0" style="width:100%; padding:7px; background:#1e293b; border:1px solid #334155; color:#f8fafc; border-radius:6px">
           <option value="50" ${(band.z0||50)==50?"selected":""}>50 Ω (Standard)</option>
           <option value="75" ${(band.z0||50)==75?"selected":""}>75 Ω (Cable/CATV)</option>
           <option value="100" ${(band.z0||50)==100?"selected":""}>100 Ω (Differential)</option>
@@ -87,7 +89,7 @@ function renderAnalyserSettings() {
 
     <div style="display:flex; justify-content:flex-end; gap:8px">
       <button class="btn" id="anSaveOnly">Save Settings</button>
-      <button class="btn btn-pri" id="anRunSweep">⚡ Run Sweep & Open Results</button>
+      <button class="btn primary" id="anRunSweep">⚡ Run Sweep & Open Results</button>
     </div>
   </div>`;
 
@@ -168,25 +170,25 @@ function renderLinearAnalysis() {
   }
   const res = (activeTab && activeTab.res) || withAllSheets(() => computeLinearAnalysis(band));
 
-  let html = `<div style="max-width:1200px; margin:0 auto; font-family:sans-serif; color:var(--ink,#e2e8f0)">`;
+  let html = `<div style="max-width:1240px; margin:0 auto; font-family:var(--sans); color:var(--ink,#f8fafc)">`;
 
   // Top Header Bar
-  html += `<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; border-bottom:1px solid var(--line,#334155); padding-bottom:10px">
+  html += `<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; border-bottom:1px solid var(--line,#334155); padding-bottom:12px">
     <div style="display:flex; align-items:center; gap:12px">
-      <h3 style="margin:0; font-size:16px; display:flex; align-items:center; gap:8px">
+      <h3 style="margin:0; font-size:16px; font-weight:700; display:flex; align-items:center; gap:8px; color:#f8fafc">
         <span>📈</span> Multi-Port Transmission Analysis & Benchmark View
       </h3>
-      <button class="btn btn-sm btn-pri" id="spRerunSweep" title="Re-evaluate sweep for current schematic state">⚡ Re-run Sweep</button>
+      <button class="btn btn-sm primary" id="spRerunSweep" title="Re-evaluate sweep for current schematic state">⚡ Re-run Sweep</button>
       <button class="btn btn-sm" id="spOpenSettings" title="Open Analyser Settings">⚙️ Analyser Settings</button>
     </div>
     <button class="btn btn-sm" id="spClosePanel">✕ Close Analysis View</button>
   </div>`;
 
   // --- Results Tabs Bar ---
-  html += `<div style="display:flex; align-items:center; gap:6px; margin-bottom:14px; overflow-x:auto; border-bottom:2px solid var(--border,#334155); padding-bottom:6px">`;
+  html += `<div style="display:flex; align-items:center; gap:6px; margin-bottom:14px; overflow-x:auto; border-bottom:2px solid var(--line,#334155); padding-bottom:6px">`;
   sparamsTabs.forEach((tb, idx) => {
     const isCur = idx === activeTabIdx;
-    html += `<div class="sp-tab-item" style="display:flex; align-items:center; gap:6px; padding:6px 14px; border-radius:6px 6px 0 0; background:${isCur?'var(--accent,#2563eb)':'var(--chrome,#1e293b)'}; color:${isCur?'#fff':'var(--ink-dim,#94a3b8)'}; font-size:12px; font-weight:${isCur?'600':'normal'}; cursor:pointer" data-tidx="${idx}">
+    html += `<div class="sp-tab-item" style="display:flex; align-items:center; gap:6px; padding:7px 16px; border-radius:6px 6px 0 0; background:${isCur?'var(--accent,#f59e0b)':'var(--chrome-2,#1f2937)'}; color:${isCur?'#0f172a':'var(--ink-dim,#94a3b8)'}; font-size:12px; font-weight:${isCur?'700':'500'}; cursor:pointer" data-tidx="${idx}">
       <span class="sp-tab-name" data-tidx="${idx}" title="Double-click to rename">${esc(tb.name)}</span>
       ${sparamsTabs.length > 1 ? `<span class="sp-tab-del" data-tidx="${idx}" style="opacity:0.7; font-size:11px; margin-left:4px">✕</span>` : ""}
     </div>`;
@@ -196,11 +198,11 @@ function renderLinearAnalysis() {
 
   // Ports List Status Header
   const portsList = res.portsList || [];
-  const portsStr = portsList.length ? portsList.map(p => `<b>${p.tag} (${esc(p.label)})</b>`).join(", ") : "None";
+  const portsStr = portsList.length ? portsList.map(p => `<b style="color:var(--accent)">${p.tag} (${esc(p.label)})</b>`).join(", ") : "None";
 
-  html += `<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:12px">
+  html += `<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap; gap:12px">
     <div style="font-size:12.5px; color:var(--ink-dim,#94a3b8)">
-      Defined Ports (${portsList.length}): ${portsStr} | Active Tab: <b>${esc(activeTab ? activeTab.name : "Sweep")}</b>
+      Defined Ports (${portsList.length}): ${portsStr} | Active Tab: <b style="color:#f8fafc">${esc(activeTab ? activeTab.name : "Sweep")}</b>
     </div>
 
     <!-- Export Action Buttons -->
@@ -215,12 +217,12 @@ function renderLinearAnalysis() {
 
   // Warning Alerts Banner
   if (res.error) {
-    html += `<div style="background:#451a1a; color:#fca5a5; padding:12px; border-radius:6px; margin-bottom:14px; font-size:12.5px; border:1px solid #7f1d1d">
+    html += `<div style="background:#3f1717; color:#fca5a5; padding:12px 16px; border-radius:8px; margin-bottom:14px; font-size:12.5px; border:1px solid #991b1b">
       <b>⚠️ Notice:</b> ${esc(res.error)}
       <div style="margin-top:4px; font-size:11.5px; opacity:0.85">To resolve: Select schematic terminals in the Inspector and assign Analysis Ports (P1 through P8).</div>
     </div>`;
   } else if (res.warnings && res.warnings.length) {
-    html += `<div style="background:#451a03; color:#fcd34d; padding:10px; border-radius:6px; margin-bottom:14px; font-size:12px; border:1px solid #78350f">
+    html += `<div style="background:#3a2007; color:#fcd34d; padding:10px 14px; border-radius:8px; margin-bottom:14px; font-size:12px; border:1px solid #92400e">
       ${res.warnings.map(w => `<div>⚠️ ${esc(w)}</div>`).join("")}
     </div>`;
   }
@@ -233,12 +235,15 @@ function renderLinearAnalysis() {
     const availableTraces = [];
     for (let i = 1; i <= P; i++) {
       for (let j = 1; j <= P; j++) {
-        if (i === j) continue; // Focus strictly on transmission parameters
+        if (i === j) continue;
         const sKey = `S${i}${j}`;
         let label = sKey;
         if (j === 1) label += ` (Forward Transmission P1 → P${i})`;
         else label += ` (Transmission P${j} → P${i})`;
         availableTraces.push({ key: sKey, label });
+      }
+      if (res.matrix && res.matrix[`S${i}Σ`]) {
+        availableTraces.push({ key: `S${i}Σ`, label: `S${i}Σ (Total Linear Combined Power at P${i})` });
       }
     }
 
@@ -262,9 +267,9 @@ function renderLinearAnalysis() {
       availableTraces.forEach(tr => invokedTraces.add(tr.key));
     }
 
-    html += `<div style="background:var(--chrome,#1e293b); border:1px solid var(--line,#334155); border-radius:8px; padding:12px; margin-bottom:14px">
+    html += `<div style="background:var(--chrome-2,#1f2937); border:1px solid var(--line,#374151); border-radius:8px; padding:14px; margin-bottom:16px">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:8px">
-        <h4 style="margin:0; font-size:13px; color:var(--ink,#e2e8f0); display:flex; align-items:center; gap:6px">
+        <h4 style="margin:0; font-size:13px; font-weight:700; color:var(--ink,#f8fafc); display:flex; align-items:center; gap:6px">
           <span>🎛️</span> Transmission Parameter Selection (${P}-Port System)
         </h4>
         <div style="display:flex; gap:6px; flex-wrap:wrap">
@@ -295,7 +300,7 @@ function renderLinearAnalysis() {
     let chipIdx = 0;
     invokedTraces.forEach(sKey => {
       const col = getTraceColor(sKey, chipIdx++);
-      html += `<div style="display:inline-flex; align-items:center; gap:6px; padding:4px 10px; border-radius:4px; background:${col}; color:#ffffff; font-size:12px; font-weight:600; box-shadow:0 1px 2px rgba(0,0,0,0.2)">
+      html += `<div style="display:inline-flex; align-items:center; gap:6px; padding:4px 10px; border-radius:5px; background:${col}; color:#ffffff; font-size:12px; font-weight:700; box-shadow:0 2px 4px rgba(0,0,0,0.3)">
         <span>${sKey}</span>
         <span class="sp-chip-del" data-skey="${sKey}" style="cursor:pointer; opacity:0.85; font-size:11px; margin-left:2px" title="Remove trace">✕</span>
       </div>`;
@@ -306,13 +311,13 @@ function renderLinearAnalysis() {
     </div>`;
 
     // --- Chart Area ---
-    html += `<div style="position:relative; background:#ffffff; border:1px solid var(--border,#334155); border-radius:8px; padding:14px; margin-bottom:16px">
+    html += `<div style="position:relative; background:#0b0f19; border:1px solid var(--line,#374151); border-radius:8px; padding:16px; margin-bottom:16px; box-shadow:var(--shadow-md)">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; font-size:12px; flex-wrap:wrap; gap:8px">
-        <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap">
-          <span style="font-weight:600; color:#334155">Transmission Traces (${invokedTraces.size}):</span>`;
+        <div style="display:flex; gap:14px; align-items:center; flex-wrap:wrap">
+          <span style="font-weight:700; color:#cbd5e1">Transmission Traces (${invokedTraces.size}):</span>`;
     invokedTraces.forEach(sKey => {
       const col = getTraceColor(sKey);
-      html += `<span style="color:${col}; font-weight:600; font-size:12px">■ ${sKey}</span>`;
+      html += `<span style="color:${col}; font-weight:700; font-size:12px">■ ${sKey}</span>`;
     });
     html += `</div>
         <div>
@@ -325,8 +330,8 @@ function renderLinearAnalysis() {
     </div>`;
 
     // Markers Table
-    html += `<div style="background:var(--chrome,#1e293b); border:1px solid var(--line,#334155); border-radius:8px; padding:14px">
-      <h4 style="margin:0 0 10px 0; font-size:13px; color:var(--ink,#e2e8f0)">📌 Frequency Markers & Readouts</h4>
+    html += `<div style="background:var(--chrome-2,#1f2937); border:1px solid var(--line,#374151); border-radius:8px; padding:16px">
+      <h4 style="margin:0 0 12px 0; font-size:13px; font-weight:700; color:var(--ink,#f8fafc)">📌 Frequency Markers & Readouts</h4>
       <div id="spMarkerTable"></div>
     </div>`;
   }
@@ -476,7 +481,7 @@ function renderSvgPlot(res) {
 
   const W = container.clientWidth || 900;
   const H = 360;
-  const margin = { top: 20, right: 30, bottom: 35, left: 50 };
+  const margin = { top: 20, right: 30, bottom: 35, left: 55 };
   const pw = W - margin.left - margin.right;
   const ph = H - margin.top - margin.bottom;
 
@@ -508,25 +513,25 @@ function renderSvgPlot(res) {
   const getX = f => margin.left + ((f - fMin) / (fMax - fMin || 1)) * pw;
   const getY = val => margin.top + (1 - (val - yMin) / (yMax - yMin || 1)) * ph;
 
-  let svgHtml = `<svg id="spSvgPlot" width="100%" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="user-select:none; font-family:sans-serif; background:#fff">`;
+  let svgHtml = `<svg id="spSvgPlot" width="100%" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="user-select:none; font-family:var(--sans); background:#0b0f19; border-radius:6px">`;
 
   // Grid Lines & Axis Labels
-  svgHtml += `<rect x="${margin.left}" y="${margin.top}" width="${pw}" height="${ph}" fill="#fafafa" stroke="#cbd5e1"/>`;
+  svgHtml += `<rect x="${margin.left}" y="${margin.top}" width="${pw}" height="${ph}" fill="#0f172a" stroke="#334155"/>`;
 
   const yStep = Math.max(2, Math.ceil((yMax - yMin) / 6 / 2) * 2);
   for (let db = yMin; db <= yMax; db += yStep) {
     const y = getY(db);
     if (y >= margin.top && y <= H - margin.bottom) {
-      svgHtml += `<line x1="${margin.left}" y1="${y}" x2="${W - margin.right}" y2="${y}" stroke="${db===0?'#94a3b8':'#e2e8f0'}" stroke-width="${db===0?1.5:1}"/>`;
-      svgHtml += `<text x="${margin.left - 6}" y="${y + 4}" font-size="10" fill="#64748b" text-anchor="end">${db} dB</text>`;
+      svgHtml += `<line x1="${margin.left}" y1="${y}" x2="${W - margin.right}" y2="${y}" stroke="${db===0?'#475569':'#1e293b'}" stroke-width="${db===0?1.5:1}"/>`;
+      svgHtml += `<text x="${margin.left - 8}" y="${y + 4}" font-size="10" font-family="var(--mono)" fill="#94a3b8" text-anchor="end">${db} dB</text>`;
     }
   }
 
   for (let i = 0; i <= 5; i++) {
     const fVal = fMin + (i / 5) * (fMax - fMin);
     const x = getX(fVal);
-    svgHtml += `<line x1="${x}" y1="${margin.top}" x2="${x}" y2="${H - margin.bottom}" stroke="#e2e8f0" stroke-width="1"/>`;
-    svgHtml += `<text x="${x}" y="${H - margin.bottom + 16}" font-size="10" fill="#64748b" text-anchor="middle">${(fVal / fDiv).toFixed(2)} ${fUnit}</text>`;
+    svgHtml += `<line x1="${x}" y1="${margin.top}" x2="${x}" y2="${H - margin.bottom}" stroke="#1e293b" stroke-width="1"/>`;
+    svgHtml += `<text x="${x}" y="${H - margin.bottom + 18}" font-size="10" font-family="var(--mono)" fill="#94a3b8" text-anchor="middle">${(fVal / fDiv).toFixed(2)} ${fUnit}</text>`;
   }
 
   const makePath = arr => {
@@ -545,7 +550,7 @@ function renderSvgPlot(res) {
       if (idx === activeTabIdx || !tb.res || !tb.res.matrix) return;
       invokedTraces.forEach(sKey => {
         if (tb.res.matrix[sKey]) {
-          svgHtml += `<path d="${makePath(tb.res.matrix[sKey])}" fill="none" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="4 3"/>`;
+          svgHtml += `<path d="${makePath(tb.res.matrix[sKey])}" fill="none" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="4 3" opacity="0.75"/>`;
         }
       });
     });
@@ -556,7 +561,7 @@ function renderSvgPlot(res) {
   invokedTraces.forEach(sKey => {
     if (res.matrix[sKey]) {
       const col = getTraceColor(sKey, traceIdx++);
-      svgHtml += `<path d="${makePath(res.matrix[sKey])}" fill="none" stroke="${col}" stroke-width="2.2"/>`;
+      svgHtml += `<path d="${makePath(res.matrix[sKey])}" fill="none" stroke="${col}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>`;
     }
   });
 
@@ -566,9 +571,9 @@ function renderSvgPlot(res) {
 
     linearMarkers.forEach(m => {
       const mx = getX(m.f);
-      svgHtml += `<line x1="${mx}" y1="${margin.top}" x2="${mx}" y2="${H - margin.bottom}" stroke="#0f172a" stroke-width="1.5" stroke-dasharray="4 3"/>`;
-      svgHtml += `<polygon points="${mx-6},${margin.top} ${mx+6},${margin.top} ${mx},${margin.top+10}" fill="#0f172a"/>`;
-      svgHtml += `<text x="${mx}" y="${margin.top - 4}" font-size="11" font-weight="bold" fill="#0f172a" text-anchor="middle">${m.id}</text>`;
+      svgHtml += `<line x1="${mx}" y1="${margin.top}" x2="${mx}" y2="${H - margin.bottom}" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="4 3"/>`;
+      svgHtml += `<polygon points="${mx-6},${margin.top} ${mx+6},${margin.top} ${mx},${margin.top+10}" fill="#f59e0b"/>`;
+      svgHtml += `<text x="${mx}" y="${margin.top - 4}" font-size="11" font-family="var(--mono)" font-weight="bold" fill="#f59e0b" text-anchor="middle">${m.id}</text>`;
     });
   }
 
