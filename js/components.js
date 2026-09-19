@@ -285,7 +285,7 @@ def({
     const v = Object.values(m).filter(x => x !== undefined); if (!v.length) return undefined;
     return sumDbm(v) - 10 * Math.log10(cint(p.ways, 2, 8));
   },
-  out: p => ({ out: -Math.abs(p.exloss) }), val: p => cint(p.ways, 2, 8) + " : 1",
+  out: p => ({ out: -(10 * Math.log10(cint(p.ways, 2, 8)) + Math.abs(p.exloss || 0)) }), val: p => cint(p.ways, 2, 8) + " : 1",
   bidi: (m, p) => {
     const n = cint(p.ways, 2, 8), d = 10 * Math.log10(n) + Math.abs(p.exloss), o = {};
     const ins = []; for (let i = 1; i <= n; i++) { const v = m["i" + i]; if (v !== undefined) ins.push(v); }

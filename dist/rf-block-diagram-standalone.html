@@ -896,7 +896,7 @@ def({
     const v = Object.values(m).filter(x => x !== undefined); if (!v.length) return undefined;
     return sumDbm(v) - 10 * Math.log10(cint(p.ways, 2, 8));
   },
-  out: p => ({ out: -Math.abs(p.exloss) }), val: p => cint(p.ways, 2, 8) + " : 1",
+  out: p => ({ out: -(10 * Math.log10(cint(p.ways, 2, 8)) + Math.abs(p.exloss || 0)) }), val: p => cint(p.ways, 2, 8) + " : 1",
   bidi: (m, p) => {
     const n = cint(p.ways, 2, 8), d = 10 * Math.log10(n) + Math.abs(p.exloss), o = {};
     const ins = []; for (let i = 1; i <= n; i++) { const v = m["i" + i]; if (v !== undefined) ins.push(v); }
@@ -2162,7 +2162,7 @@ function parseTouchstone(text) {
 }
 
 /* Extract transmission magnitude vector in dB for a single block stage */
-function getSwitchThrowIndex(b, path) {
+function getBlockBranchIndex(b, path) {
   if (!b) return 1;
   const allConnections = (typeof allConns === "function") ? allConns() : (typeof conns !== "undefined" ? conns : []);
   const pathIds = new Set((path || []).map(x => x.id));
@@ -2170,11 +2170,11 @@ function getSwitchThrowIndex(b, path) {
 
   for (const cn of allConnections) {
     if (cn.from.block === b.id && pathIds.has(cn.to.block)) {
-      const m = String(cn.from.port || "").match(/^o(\d+)$/i);
+      const m = String(cn.from.port || "").match(/^[oi](\d+)$/i);
       if (m) return parseInt(m[1], 10);
     }
     if (cn.to.block === b.id && pathIds.has(cn.from.block)) {
-      const m = String(cn.to.port || "").match(/^o(\d+)$/i);
+      const m = String(cn.to.port || "").match(/^[oi](\d+)$/i);
       if (m) return parseInt(m[1], 10);
     }
   }
@@ -2189,7 +2189,7 @@ function getStageTransmissionDb(b, freqs, warnings, path) {
   if (b.type === "switch") {
     const nThrows = parseInt(b.params && b.params.throws) || 2;
     const stNum = swState(b.params || {}, nThrows);
-    const kThrow = getSwitchThrowIndex(b, path);
+    const kThrow = getBlockBranchIndex(b, path);
     const isoDb = -Math.abs(+b.params.iso >= 0 ? +b.params.iso : 60);
     const ilDb = -Math.abs(+b.params.il || 0.4);
 
@@ -2252,6 +2252,51 @@ function getStageTransmissionDb(b, freqs, warnings, path) {
 
     // Fallback to ideal switch loss
     const pathLossDb = (kThrow === stNum) ? ilDb : isoDb;
+    for (let k = 0; k < N; k++) tDb[k] = pathLossDb;
+    return tDb;
+  }
+
+  if (b.type === "splitter" || b.type === "combiner") {
+    const nWays = parseInt(b.params && b.params.ways) || 2;
+    const kBranch = getBlockBranchIndex(b, path);
+    const exLoss = Math.abs(+b.params.exloss || 0);
+    const pathLossDb = -(10 * Math.log10(Math.max(1, nWays)) + exLoss);
+
+    const sRaw = b.params && b.params.s2pData;
+    if (sRaw) {
+      const parsed = parseTouchstone(sRaw);
+      if (parsed) {
+        const dstPortIdx = (parsed.numPorts >= 3) ? kBranch : 1;
+        const pts = parsed.pts, numPts = pts.length;
+
+        for (let k = 0; k < N; k++) {
+          const f = freqs[k];
+          let cVal = CMath.zero();
+          if (f <= pts[0].f) {
+            const row = pts[0].s[dstPortIdx];
+            cVal = row ? row[0] : CMath.zero();
+          } else if (f >= pts[numPts - 1].f) {
+            const row = pts[numPts - 1].s[dstPortIdx];
+            cVal = row ? row[0] : CMath.zero();
+          } else {
+            let idx = 0;
+            while (idx < numPts - 1 && pts[idx + 1].f < f) idx++;
+            const p0 = pts[idx], p1 = pts[idx + 1];
+            const t = (f - p0.f) / (p1.f - p0.f);
+            const r0 = p0.s[dstPortIdx] ? p0.s[dstPortIdx][0] : CMath.zero();
+            const r1 = p1.s[dstPortIdx] ? p1.s[dstPortIdx][0] : CMath.zero();
+            cVal = CMath.fromRI(r0.r + t * (r1.r - r0.r), r0.i + t * (r1.i - r0.i));
+          }
+          tDb[k] = CMath.dB(cVal);
+        }
+
+        if ((freqs[0] < parsed.minFreq || freqs[N - 1] > parsed.maxFreq) && warnings) {
+          warnings.push(`Warning: Touchstone data for '${lbl}' (${(parsed.minFreq/1e9).toFixed(2)}–${(parsed.maxFreq/1e9).toFixed(2)} GHz) was extrapolated to match the analysis band.`);
+        }
+        return tDb;
+      }
+    }
+
     for (let k = 0; k < N; k++) tDb[k] = pathLossDb;
     return tDb;
   }
