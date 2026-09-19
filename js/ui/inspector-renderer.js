@@ -70,14 +70,63 @@ function renderInspector() {
     h += field(f, b.params[f.key], b.params);
   }
 
+  if (!c.isLabel && !c.isInterconnect && !c.isSubsystem && !c.isSource && c.type !== "rfin" && c.type !== "rfout" && c.type !== "antenna" && c.type !== "termination") {
+    h += `<div class="insp-sec" style="margin-top:10px; padding-top:10px; border-top:1px solid var(--border,#e2e8f0)">
+      <label style="font-weight:600; font-size:12px; display:block; margin-bottom:4px">S-Parameter File (.s2p / .sNp)</label>
+      <div style="display:flex; gap:6px; align-items:center">
+        <button class="btn btn-sm" id="ibS2pBtn" style="flex:1">${b.params.s2pFileName ? "📄 Change .s2p" : "📁 Attach Touchstone (.s2p)"}</button>
+        ${b.params.s2pFileName ? `<button class="btn btn-sm btn-del" id="ibS2pClr" title="Clear S2P">✕</button>` : ""}
+      </div>
+      <div style="font-size:11px; color:var(--txt2,#64748b); margin-top:4px">
+        ${b.params.s2pFileName ? `File: <b>${esc(b.params.s2pFileName)}</b>` : "No file attached (using constant fallback)"}
+      </div>
+      <input type="file" id="ibS2pFile" accept=".s1p,.s2p,.s3p,.s4p,.s5p,.s6p,.s7p,.s8p,.s9p,.snp,.ts" style="display:none"/>
+    </div>`;
+  }
+
   if (!c.isLabel) h += `<button class="btn ins-btn" id="ibRot1">⟳ Rotate 90° &nbsp;(R)</button>`;
   h += `<button class="btn btn-del" id="ibDel1">Delete block</button>`;
   box.innerHTML = h;
 
+  const s2pBtn = $("ibS2pBtn"), s2pFile = $("ibS2pFile"), s2pClr = $("ibS2pClr");
+  if (s2pBtn && s2pFile) {
+    s2pBtn.onclick = () => s2pFile.click();
+    s2pFile.onchange = e => {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = ev => {
+        pushHistory();
+        b.params.s2pFileName = file.name;
+        b.params.s2pData = ev.target.result;
+        renderAll();
+        hint(`Attached Touchstone file '${file.name}' to ${b.params.label || c.name}`);
+      };
+      reader.readAsText(file);
+    };
+  }
+  if (s2pClr) {
+    s2pClr.onclick = () => {
+      pushHistory();
+      delete b.params.s2pFileName;
+      delete b.params.s2pData;
+      renderAll();
+      hint("Removed Touchstone S-parameter file.");
+    };
+  }
+
   box.querySelectorAll("[data-fkey]").forEach(inp => {
     const k = inp.getAttribute("data-fkey"), isNum = inp.getAttribute("data-num") === "1";
     if (inp.tagName === "SELECT") {
-      inp.addEventListener("change", () => { pushHistory(); b.params[k] = inp.value; renderAll(); });
+      inp.addEventListener("change", () => {
+        pushHistory();
+        b.params[k] = inp.value;
+        renderAll();
+        const panel = $("spStagePanel");
+        if (panel && panel.style.display !== "none" && typeof renderLinearAnalysis === "function") {
+          renderLinearAnalysis();
+        }
+      });
     } else {
       const fdef = (c.fields || []).find(x => x.key === k);
       inp.addEventListener("focus", pushHistory);

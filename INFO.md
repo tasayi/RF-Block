@@ -92,3 +92,24 @@ This document provides a comprehensive specification of all supported RF compone
 - **Cascaded Friis Noise Figure**:
   $$F_{total} = F_1 + \frac{F_2 - 1}{G_1} + \frac{F_3 - 1}{G_1 G_2} + \dots$$
 
+---
+
+## 📈 S-Parameter Linear Analysis Engine
+
+### 1. 2-Port ABCD Matrix Cascading
+Converts 2-port S-parameters $[S]$ ($S_{11}, S_{21}, S_{12}, S_{22}$) into chain matrices $[ABCD]$:
+$$A = \frac{(1 + S_{11})(1 - S_{22}) + S_{12}S_{21}}{2 S_{21}}, \quad B = Z_0 \frac{(1 + S_{11})(1 + S_{22}) - S_{12}S_{21}}{2 S_{21}}$$
+$$C = \frac{1}{Z_0} \frac{(1 - S_{11})(1 - S_{22}) - S_{12}S_{21}}{2 S_{21}}, \quad D = \frac{(1 - S_{11})(1 + S_{22}) + S_{12}S_{21}}{2 S_{21}}$$
+
+Chain multiplication across stages:
+$$[ABCD]_{total}(f_k) = [ABCD]_1(f_k) \cdot [ABCD]_2(f_k) \dots [ABCD]_N(f_k)$$
+
+### 3. Analyser Settings & Comparative Analysis Sheets
+- **`Analyser` Settings Window**: Dedicated toolbar modal window configuring Start Frequency ($f_{start}$), Stop Frequency ($f_{stop}$), Sweep Points ($N$), Linear/Logarithmic Scale, and System Impedance ($Z_0$: $50\,\Omega, 75\,\Omega, 100\,\Omega$).
+- **S-Params Results Tabs**: Stores multiple analysis runs as tabbed sheets (`Sweep 1`, `Sweep 2`). Allows renaming tabs for comparative analysis across design states (e.g. *LNA Active* vs *LNA Bypassed*).
+- **Comparative Overlay**: Superimposes benchmark sweep curves (dashed lines) on top of the active sweep curves for direct visual comparison.
+- **Graph & Data Exporters**:
+  - **CSV Export**: Raw tabular data (`.csv`).
+  - **SVG / PNG Vector & Image Export**: High-resolution chart graphics.
+  - **Touchstone `.s2p` Export**: Synthesized system 2-port Touchstone data file export.
+

@@ -75,5 +75,6 @@ const DEFAULT_SETTINGS = {
   gridSize: 20,
   showNF: false,
   showLabels: true,
-  color: true
+  color: true,
+  analysisBand: { startFreq: 1, startUnit: "GHz", stopFreq: 10, stopUnit: "GHz", points: 101, sweepType: "lin" }
 };

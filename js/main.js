@@ -198,6 +198,7 @@ function initEvents() {
       return;
     }
     if ((e.key === "b" || e.key === "B") && !e.ctrlKey && !e.metaKey) { toggleBudget(); return; }
+    if ((e.key === "s" || e.key === "S") && !e.ctrlKey && !e.metaKey) { toggleSParamsDrawer(); return; }
     if ((e.key === "Delete" || e.key === "Backspace")) { e.preventDefault(); deleteSelection(); return; }
     if (e.key === "Escape") { hideCtx(); if (drag && drag.mode === "wire") { overlay.innerHTML = ""; drag = null; svg.classList.remove("connecting"); } clearSel(); renderAll(); }
   });
@@ -292,6 +293,11 @@ function initEvents() {
   if ($("btnBudget")) $("btnBudget").onclick = toggleBudget;
   if ($("bgClose")) $("bgClose").onclick = toggleBudget;
   if ($("bgCsv")) $("bgCsv").onclick = exportBudgetCsv;
+
+  if ($("btnAnalyser")) $("btnAnalyser").onclick = toggleAnalyserDrawer;
+  if ($("anClose")) $("anClose").onclick = toggleAnalyserDrawer;
+  if ($("btnSParams")) $("btnSParams").onclick = toggleSParamsDrawer;
+  if ($("spClose")) $("spClose").onclick = toggleSParamsDrawer;
 
   /* Color picker sliders & events */
   if ($("cpHue")) cpSliderKeys($("cpHue"), 0.25, 15);

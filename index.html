@@ -43,6 +43,8 @@
       <button id="zIn" title="Zoom in">+</button>
     </div>
     <button class="btn" id="btnBudget" title="Cascade budget & design checks (B)">Budget</button>
+    <button class="btn" id="btnAnalyser" title="Global RF Analyser & Frequency Sweep Settings">Analyser</button>
+    <button class="btn" id="btnSParams" title="Linear S-Parameter Analysis & Frequency Sweeper">S-Params</button>
     <button class="btn" id="btnFit" title="Fit diagram to view">Fit</button>
     <input type="file" id="fileInput" accept=".rfbd,.json,application/json" style="display:none"/>
   </div>
@@ -86,6 +88,7 @@
           </ol>
         </div>
       </div>
+      <div id="spStagePanel" class="sp-stage-panel" style="display:none; position:absolute; inset:0; z-index:35; background:var(--chrome-2,#171c23); color:var(--ink,#e2e8f0); overflow-y:auto; padding:16px;"></div>
     </div>
 
     <aside class="inspector">
@@ -115,6 +118,15 @@
       <button class="btn" id="bgClose">Close</button>
     </div>
     <div class="bg-body" id="bgBody"></div>
+  </div>
+
+  <div id="analyserDrawer" class="budget">
+    <div class="bg-hd">
+      <b>⚙️ Global Analyser Settings</b>
+      <div class="tb-spacer"></div>
+      <button class="btn" id="anClose">Close</button>
+    </div>
+    <div class="bg-body" id="analyserDrawerBody"></div>
   </div>
 
   <div id="colorPop" class="colorpop">
@@ -149,6 +161,7 @@
 <script src="js/solvers/power-solver.js"></script>
 <script src="js/solvers/noise-solver.js"></script>
 <script src="js/solvers/budget-solver.js"></script>
+<script src="js/solvers/sparams-solver.js"></script>
 <script src="js/layout/router.js"></script>
 <script src="js/subsystems.js"></script>
 <script src="js/io/xlsx-exporter.js"></script>
@@ -158,6 +171,7 @@
 <script src="js/ui/inspector-renderer.js"></script>
 <script src="js/ui/sheets-renderer.js"></script>
 <script src="js/ui/budget-renderer.js"></script>
+<script src="js/ui/sparams-renderer.js"></script>
 <script src="js/ui/colorpicker-renderer.js"></script>
 <script src="js/ui/contextmenu.js"></script>
 <script src="js/ui/interactions.js"></script>
