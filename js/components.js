@@ -319,10 +319,10 @@ function cplPorts(p) {
   const P = (id, side, dy) => ({ id, side, kind: "inout", dx: side === "left" ? 0 : 80, dy });
   if (k === "Power tap") return [P("in", "left", 20), P("thru", "right", 20), P("tap", "right", 60)];
   if (k === "Resistive") return [P("in", "left", 40), P("o1", "right", 20), P("o2", "right", 60)];
-  if (k === "Bi-directional") return [P("in", "left", 20), P("rev", "left", 60), P("thru", "right", 20), P("fwd", "right", 60)];
+  if (k === "Bi-directional") return [P("in", "left", 20), P("fwd", "left", 60), P("thru", "right", 20), P("rev", "right", 60)];
   if (k === "90\u00b0 hybrid") return [P("in", "left", 20), P("iso", "left", 60), P("out0", "right", 20), P("out90", "right", 60)];
   if (k === "180\u00b0 hybrid") return [P("sum", "left", 20), P("dif", "left", 60), P("o1", "right", 20), P("o2", "right", 60)];
-  return [P("in", "left", 20), P("iso", "left", 60), P("thru", "right", 20), P("cpl", "right", 60)];
+  return [P("in", "left", 20), P("cpl", "left", 60), P("thru", "right", 20), P("iso", "right", 60)];
 }
 
 function cplMatrix(p) {
@@ -394,22 +394,30 @@ def({
     const k = p.ctype || "Directional";
     let s = `<rect class="blk-shape" x="0" y="2" width="80" height="76" rx="6"/>`;
     if (k === "Power tap")
-      return s + L(0, 20, 80, 20) + `<path class="blk-line" d="M44 20V60H80"/>`
-        + `<circle class="blk-fillg" cx="44" cy="20" r="3.2"/>`
-        + `<path class="blk-glyph" d="M50 44V54M46 50l4 5l4 -5"/>`;
+      return s + L(0, 20, 80, 20) + `<path class="blk-line" d="M40 20V60H80"/>`
+        + `<circle class="blk-fillg" cx="40" cy="20" r="3"/>`
+        + `<path class="blk-glyph" d="M48 44V54M44 50l4 5l4-5"/>`;
     if (k === "Resistive")
-      return s + L(0, 40, 26, 40) + L(48, 20, 80, 20) + L(48, 60, 80, 60)
-        + `<path class="blk-glyph" d="M26 40h6l3-5 5 10 5-10 3 5h0"/>`
-        + `<path class="blk-line" d="M48 20V60"/><circle class="blk-fillg" cx="26" cy="40" r="2.6"/>`;
-    if (k === "90\u00b0 hybrid" || k === "180\u00b0 hybrid") {
-      s += L(0, 20, 80, 20) + L(0, 60, 80, 60) + `<path class="blk-line" d="M28 20V60M52 20V60"/>`;
-      if (k === "180\u00b0 hybrid") s += `<path class="blk-glyph" d="M34 34a6 6 0 1 0 12 0a6 6 0 1 0 -12 0"/>`;
-      return s;
-    }
-    s += L(0, 20, 80, 20) + L(0, 60, 80, 60);
-    s += `<path class="blk-glyph" d="M34 28L46 52"/>`;
-    s += (k === "Bi-directional") ? `<path class="blk-glyph" d="M46 28L34 52"/>` : `<path class="blk-glyph" d="M46 28L40 40"/>`;
-    return s;
+      return s + `<path class="blk-line" d="M0 40H18M38 40H40V24M40 56V40"/>`
+        + `<path class="blk-glyph" d="M18 40h3l2-4 4 8 4-8 4 8 2-4h3"/>`
+        + `<path class="blk-glyph" d="M40 24v-3l-4-2 8-4-8-4 8-4-4-2v-3"/>`
+        + `<path class="blk-glyph" d="M40 56v3l-4 2 8 4-8 4 8 4-4 2v3"/>`
+        + `<path class="blk-line" d="M40 20H80M40 60H80"/>`
+        + `<circle class="blk-fillg" cx="40" cy="40" r="2.5"/>`;
+    if (k === "90\u00b0 hybrid")
+      return s + L(0, 20, 80, 20) + L(0, 60, 80, 60) + `<path class="blk-line" d="M26 20V60M54 20V60"/>`
+        + `<text class="ic-tag" x="40" y="44" text-anchor="middle" font-size="11">90°</text>`;
+    if (k === "180\u00b0 hybrid")
+      return s + L(0, 20, 23, 20) + L(0, 60, 23, 60) + L(57, 20, 80, 20) + L(57, 60, 80, 60)
+        + `<circle class="blk-line" cx="40" cy="40" r="17"/>`
+        + `<text class="ic-tag" x="28" y="32" font-size="10">Σ</text>`
+        + `<text class="ic-tag" x="28" y="55" font-size="10">Δ</text>`
+        + `<text class="ic-tag" x="50" y="44" font-size="9">180°</text>`;
+    if (k === "Bi-directional")
+      return s + L(0, 20, 80, 20) + L(0, 60, 80, 60)
+        + `<path class="blk-glyph" d="M34 28L46 52M46 28L34 52"/>`;
+    return s + L(0, 20, 80, 20) + L(0, 60, 80, 60)
+      + `<path class="blk-glyph" d="M46 28L34 52"/>`;
   }
 });
 
