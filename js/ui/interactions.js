@@ -199,12 +199,15 @@ function onMove(e) {
   }
 }
 
+let rightPanMoved = false;
+
 function onUp(e) {
   window.removeEventListener("mousemove", onMove); window.removeEventListener("mouseup", onUp);
   svg.classList.remove("panning", "connecting");
   if (!drag) return;
   if (drag.mode === "pan") {
-    if (!drag.moved) { clearSel(); renderAll(); }
+    if (drag.right && drag.moved) rightPanMoved = true;
+    if (!drag.moved && !drag.right) { clearSel(); renderAll(); }
   }
   if (drag.mode === "nodedrag") {
     if (drag.moved) { pushHistoryState(drag.pre); hint("Waypoint moved."); }

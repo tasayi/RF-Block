@@ -29,6 +29,10 @@ function initEvents() {
       drag = { mode: "pan", sx: e.clientX, sy: e.clientY, tx0: view.tx, ty0: view.ty, moved: false };
       svg.classList.add("panning"); attachDrag(); return;
     }
+    if (e.button === 2) {
+      drag = { mode: "pan", right: true, sx: e.clientX, sy: e.clientY, tx0: view.tx, ty0: view.ty, moved: false };
+      attachDrag(); return;
+    }
     if (e.button !== 0) return;
     const nodeEl = e.target.closest(".wire-node-g, .wire-node");
     const pillEl = e.target.closest(".pill"); let portEl = e.target.closest(".port");
@@ -96,11 +100,11 @@ function initEvents() {
     }
 
     const w = screenToWorld(e.clientX, e.clientY);
-    if (e.shiftKey || e.ctrlKey || e.metaKey) {
-      drag = { mode: "marquee", sx: w.x, sy: w.y, cur: { x: w.x, y: w.y }, moved: false };
-    } else {
+    if (e.shiftKey) {
       drag = { mode: "pan", sx: e.clientX, sy: e.clientY, tx0: view.tx, ty0: view.ty, moved: false };
       svg.classList.add("panning");
+    } else {
+      drag = { mode: "marquee", sx: w.x, sy: w.y, cur: { x: w.x, y: w.y }, moved: false };
     }
     attachDrag();
   });
@@ -176,6 +180,11 @@ function initEvents() {
 
   /* Context menu trigger */
   svg.addEventListener("contextmenu", e => {
+    if (typeof rightPanMoved !== "undefined" && rightPanMoved) {
+      rightPanMoved = false;
+      e.preventDefault();
+      return;
+    }
     e.preventDefault();
     const nodeEl = e.target.closest(".wire-node-g, .wire-node");
     if (nodeEl) {
