@@ -281,10 +281,22 @@ def({
     const o = {}; for (let i = 1; i <= n; i++) o["o" + i] = -d; return o;
   },
   bidi: (m, p) => {
-    const n = cint(p.ways, 2, 8), d = 10 * Math.log10(n) + Math.abs(p.exloss), o = {};
-    if (m.in !== undefined) for (let i = 1; i <= n; i++) o["o" + i] = m.in - d;
-    const back = []; for (let i = 1; i <= n; i++) { const v = m["o" + i]; if (v !== undefined) back.push(v - d); }
-    if (back.length) o.in = (back.length === 1 ? back[0] : sumDbm(back));
+    const n = cint(p.ways, 2, 8), ex = Math.abs(p.exloss || 0), d = 10 * Math.log10(n) + ex, o = {};
+    if (m.in !== undefined && isFinite(m.in)) {
+      for (let i = 1; i <= n; i++) o["o" + i] = m.in - d;
+    }
+    let vSum = 0, count = 0;
+    for (let i = 1; i <= n; i++) {
+      const v = m["o" + i];
+      if (v !== undefined && isFinite(v)) {
+        vSum += Math.sqrt(Math.pow(10, v / 10));
+        count++;
+      }
+    }
+    if (count > 0 && vSum > 0) {
+      const pMw = (vSum * vSum / n) * Math.pow(10, -ex / 10);
+      o.in = 10 * Math.log10(pMw);
+    }
     return o;
   },
   val: p => { const n = cint(p.ways, 2, 8), loss = dsp(10 * Math.log10(n) + Math.abs(p.exloss || 0)); return "1:" + n + " · IL " + loss + " dB ea"; },
@@ -309,18 +321,36 @@ def({
   fields: [{ key: "ways", label: "Ways (n : 1)", type: "select", options: ["2", "3", "4", "5", "6", "7", "8"] },
            { key: "exloss", label: "Excess loss", unit: "dB", step: 0.1, min: 0 }],
   ref: (m, p) => {
-    const v = Object.values(m).filter(x => x !== undefined && isFinite(x)); if (!v.length) return undefined;
     const n = cint(p.ways, 2, 8), ex = Math.abs(p.exloss || 0);
-    return v.length === 1 ? v[0] - (10 * Math.log10(n) + ex) : sumDbm(v) - ex;
+    let vSum = 0, count = 0;
+    for (let i = 1; i <= n; i++) {
+      const v = m["i" + i];
+      if (v !== undefined && isFinite(v)) {
+        vSum += Math.sqrt(Math.pow(10, v / 10));
+        count++;
+      }
+    }
+    if (!count || vSum <= 0) return undefined;
+    return 10 * Math.log10((vSum * vSum / n) * Math.pow(10, -ex / 10));
   },
   out: p => ({ out: -(10 * Math.log10(cint(p.ways, 2, 8)) + Math.abs(p.exloss || 0)) }), val: p => { const n = cint(p.ways, 2, 8), loss = dsp(10 * Math.log10(n) + Math.abs(p.exloss || 0)); return n + ":1 · IL " + loss + " dB"; },
   bidi: (m, p) => {
     const n = cint(p.ways, 2, 8), ex = Math.abs(p.exloss || 0), d = 10 * Math.log10(n) + ex, o = {};
-    const ins = []; for (let i = 1; i <= n; i++) { const v = m["i" + i]; if (v !== undefined && isFinite(v)) ins.push(v); }
-    if (ins.length) {
-      o.out = (ins.length === 1) ? (ins[0] - d) : (sumDbm(ins) - ex);
+    let vSum = 0, count = 0;
+    for (let i = 1; i <= n; i++) {
+      const v = m["i" + i];
+      if (v !== undefined && isFinite(v)) {
+        vSum += Math.sqrt(Math.pow(10, v / 10));
+        count++;
+      }
     }
-    if (m.out !== undefined) for (let i = 1; i <= n; i++) o["i" + i] = m.out - d;
+    if (count > 0 && vSum > 0) {
+      const pMw = (vSum * vSum / n) * Math.pow(10, -ex / 10);
+      o.out = 10 * Math.log10(pMw);
+    }
+    if (m.out !== undefined && isFinite(m.out)) {
+      for (let i = 1; i <= n; i++) o["i" + i] = m.out - d;
+    }
     return o;
   },
   sym(p) {
