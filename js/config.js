@@ -32,6 +32,7 @@ const TYPE_TINT = {
   "bamp":        "#bbf7d0",  // Crisp Emerald Green (Bypass Amplifier)
   "atten":       "#fed7aa",  // Warm Peach (Attenuator)
   "dsa":         "#fed7aa",  // Warm Peach (Digital Attenuator)
+  "eq":          "#fed7aa",  // Warm Peach (Equalizer)
   "limiter":     "#fde68a",  // Warm Yellow (Limiter)
   "trace":       "#e2e8f0",  // Light Slate Trace
 
@@ -75,6 +76,7 @@ const DEFAULT_SETTINGS = {
   gridSize: 20,
   showNF: false,
   showLabels: true,
+  enableJumpers: true,
   color: true,
   theme: "dark",
   analysisBand: { startFreq: 1, startUnit: "GHz", stopFreq: 10, stopUnit: "GHz", points: 101, sweepType: "lin" }

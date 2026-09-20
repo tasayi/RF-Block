@@ -494,6 +494,11 @@ button.btn.primary:hover {
 .conn.sel .wire { stroke: var(--wire-sel); stroke-width: 2.5; }
 #arrow path { fill: var(--wire); } #arrowSel path { fill: var(--wire-sel); }
 
+.wire-node-g { cursor: move; pointer-events: all; }
+.wire-node-hit { fill: transparent; stroke: none; }
+.wire-node { fill: var(--chrome); stroke: var(--wire-sel); stroke-width: 2.2; pointer-events: none; transition: r 0.12s, fill 0.12s; }
+.wire-node-g:hover .wire-node { fill: var(--wire-sel); r: 7.5; }
+
 /* Level Readout Pills on Wires */
 .pill { pointer-events: all; cursor: grab; }
 .pill:active { cursor: grabbing; }
@@ -756,6 +761,7 @@ table.bg tr:hover td { background: rgba(255, 255, 255, 0.04); cursor: pointer; }
     <label class="toggle" title="Snap to the grid"><input type="checkbox" id="tglSnap" checked/> Snap</label>
     <label class="toggle" title="Show the grid"><input type="checkbox" id="tglGrid" checked/> Grid</label>
     <label class="toggle" title="Universally show or hide signal level labels on wires"><input type="checkbox" id="tglLabels" checked/> Labels</label>
+    <label class="toggle" title="Enable IEEE 315 wire crossing jumpers (arc hops)"><input type="checkbox" id="tglJumpers" checked/> Jumpers</label>
     <label class="toggle" title="Show cascade noise figure on wires"><input type="checkbox" id="tglNF"/> NF</label>
     <label class="toggle" title="Tint blocks by category"><input type="checkbox" id="tglColor" checked/> Colour</label>
     <label class="toggle" title="Toggle Light / Dark background theme"><input type="checkbox" id="tglTheme"/> Theme</label>
@@ -910,6 +916,7 @@ const TYPE_TINT = {
   "bamp":        "#bbf7d0",  // Crisp Emerald Green (Bypass Amplifier)
   "atten":       "#fed7aa",  // Warm Peach (Attenuator)
   "dsa":         "#fed7aa",  // Warm Peach (Digital Attenuator)
+  "eq":          "#fed7aa",  // Warm Peach (Equalizer)
   "limiter":     "#fde68a",  // Warm Yellow (Limiter)
   "trace":       "#e2e8f0",  // Light Slate Trace
 
@@ -953,6 +960,7 @@ const DEFAULT_SETTINGS = {
   gridSize: 20,
   showNF: false,
   showLabels: true,
+  enableJumpers: true,
   color: true,
   theme: "dark",
   analysisBand: { startFreq: 1, startUnit: "GHz", stopFreq: 10, stopUnit: "GHz", points: 101, sweepType: "lin" }
@@ -1189,6 +1197,28 @@ def({
 });
 
 def({
+  type: "eq", keys: "equalizer equaliser slope cable compensation gain loss tilt pad", name: "Equalizer", group: "Gain / Loss", w: 40, h: 40,
+  ports: [{ id: "in", side: "left", kind: "inout", dx: 0, dy: 20 }, { id: "out", side: "right", kind: "inout", dx: 40, dy: 20 }],
+  params: { label: "EQ", slope: 3, minLoss: 1 },
+  fields: [{ key: "slope", label: "Slope compensation", unit: "dB", step: 0.5, min: 0 },
+           { key: "minLoss", label: "Min insertion loss", unit: "dB", step: 0.1, min: 0 }],
+  nf: p => Math.abs(+p.minLoss || 0) + Math.abs(+p.slope || 0) / 2,
+  out: p => ({ out: -(Math.abs(+p.minLoss || 0) + Math.abs(+p.slope || 0) / 2) }),
+  val: p => {
+    const sl = fmt(Math.abs(+p.slope || 0)), ml = fmt(Math.abs(+p.minLoss || 0));
+    return "Slope " + sl + " dB · IL " + ml + " dB";
+  },
+  bidi: (m, p) => rl(m, Math.abs(+p.minLoss || 0) + Math.abs(+p.slope || 0) / 2),
+  sym() {
+    return `<rect class="blk-shape" x="0" y="4" width="40" height="32" rx="4"/>` +
+           `<path class="blk-glyph" d="M8 28L32 12"/>` +
+           `<path class="blk-fillg" d="M32 12L24 14L28 18Z"/>` +
+           `<path class="blk-glyph" d="M10 14Q14 20 18 14"/>` +
+           `<path class="blk-glyph" d="M22 26Q26 20 30 26"/>`;
+  }
+});
+
+def({
   type: "limiter", keys: "clip clamp protection limit", name: "Limiter", group: "Gain / Loss", w: 40, h: 40,
   ports: [{ id: "in", side: "left", kind: "inout", dx: 0, dy: 20 }, { id: "out", side: "right", kind: "inout", dx: 40, dy: 20 }],
   params: { label: "LIM", thresh: 10, il: 0.5 },
@@ -1230,7 +1260,7 @@ def({
            { key: "il", label: "Passband IL", unit: "dB", step: 0.1, min: 0 },
            { key: "rej", label: "Stopband rejection", unit: "dB", step: 1, min: 0 },
            { key: "fc", label: "Corner / center", type: "text" }], nf: p => fLoss(p),
-  out: p => ({ out: -fLoss(p) }), val: p => (p.band === "stopband") ? ("REJ " + fmt(fLoss(p)) + " dB") : ("IL " + fmt(Math.abs(p.il)) + " dB"),
+  out: p => ({ out: -fLoss(p) }), val: p => (p.fc ? (p.fc + " · " + ((p.band === "stopband") ? ("REJ " + fmt(fLoss(p)) + " dB") : ("IL " + fmt(Math.abs(p.il)) + " dB"))) : ((p.band === "stopband") ? ("REJ " + fmt(fLoss(p)) + " dB") : ("IL " + fmt(Math.abs(p.il)) + " dB"))),
   bidi: (m, p) => rl(m, fLoss(p)),
   sym(p) {
     const ix = 8, iw = 24, iy = 10, ih = 17, yB = iy + ih, yT = iy + 3, m = f => ix + iw * f;
@@ -1254,7 +1284,7 @@ def({
            { key: "il", label: "Passband IL", unit: "dB", step: 0.1, min: 0 },
            { key: "rej", label: "Stopband rejection", unit: "dB", step: 1, min: 0 },
            { key: "fc", label: "Tuning range / fc", type: "text" }], nf: p => fLoss(p),
-  out: p => ({ out: -fLoss(p) }), val: p => (p.fc ? p.fc : ((p.band === "stopband") ? ("REJ " + fmt(fLoss(p)) + " dB") : ("IL " + fmt(Math.abs(p.il)) + " dB"))),
+  out: p => ({ out: -fLoss(p) }), val: p => (p.fc ? (p.fc + " · " + ((p.band === "stopband") ? ("REJ " + fmt(fLoss(p)) + " dB") : ("IL " + fmt(Math.abs(p.il)) + " dB"))) : ((p.band === "stopband") ? ("REJ " + fmt(fLoss(p)) + " dB") : ("IL " + fmt(Math.abs(p.il)) + " dB"))),
   bidi: (m, p) => rl(m, fLoss(p)),
   sym(p) {
     const ix = 8, iw = 24, iy = 10, ih = 17, yB = iy + ih, yT = iy + 3, m = f => ix + iw * f;
@@ -1352,7 +1382,7 @@ def({
     if (back.length) o.in = (back.length === 1 ? back[0] : sumDbm(back));
     return o;
   },
-  val: p => { const n = cint(p.ways, 2, 8); return "\u2212" + dsp(10 * Math.log10(n) + Math.abs(p.exloss)) + " dB ea"; },
+  val: p => { const n = cint(p.ways, 2, 8), loss = dsp(10 * Math.log10(n) + Math.abs(p.exloss || 0)); return "1:" + n + " · IL " + loss + " dB ea"; },
   sym(p) {
     const n = cint(p.ways, 2, 8), h = 40 * n;
     let s = `<rect class="blk-shape" x="0" y="2" width="40" height="${h - 4}" rx="6"/>`;
@@ -1378,7 +1408,7 @@ def({
     const n = cint(p.ways, 2, 8), ex = Math.abs(p.exloss || 0);
     return v.length === 1 ? v[0] - (10 * Math.log10(n) + ex) : sumDbm(v) - ex;
   },
-  out: p => ({ out: -(10 * Math.log10(cint(p.ways, 2, 8)) + Math.abs(p.exloss || 0)) }), val: p => cint(p.ways, 2, 8) + " : 1",
+  out: p => ({ out: -(10 * Math.log10(cint(p.ways, 2, 8)) + Math.abs(p.exloss || 0)) }), val: p => { const n = cint(p.ways, 2, 8), loss = dsp(10 * Math.log10(n) + Math.abs(p.exloss || 0)); return n + ":1 · IL " + loss + " dB"; },
   bidi: (m, p) => {
     const n = cint(p.ways, 2, 8), ex = Math.abs(p.exloss || 0), d = 10 * Math.log10(n) + ex, o = {};
     const ins = []; for (let i = 1; i <= n; i++) { const v = m["i" + i]; if (v !== undefined && isFinite(v)) ins.push(v); }
@@ -3067,6 +3097,104 @@ function computeLinearAnalysis(band) {
 "use strict";
 
 /* Orthogonal Line Router & Obstacle Avoidance */
+function buildPathWithJumpers(pts, allVerticalSegs, currentConnId) {
+  if (!pts || pts.length < 2) return "";
+  if (typeof settings !== "undefined" && settings.enableJumpers === false) {
+    return "M" + pts.map(p => `${p.x} ${p.y}`).join("L");
+  }
+
+  const r = 5;
+  let d = `M ${pts[0].x} ${pts[0].y}`;
+
+  for (let i = 0; i < pts.length - 1; i++) {
+    const p = pts[i], q = pts[i + 1];
+    const isHoriz = Math.abs(p.y - q.y) < 0.5;
+
+    if (isHoriz) {
+      const y = p.y;
+      const xMin = Math.min(p.x, q.x);
+      const xMax = Math.max(p.x, q.x);
+      const dirRight = q.x > p.x;
+
+      const crossings = [];
+      if (allVerticalSegs) {
+        for (const vs of allVerticalSegs) {
+          if (vs.connId === currentConnId) continue;
+          const vx = vs.p.x;
+          const vyMin = Math.min(vs.p.y, vs.q.y);
+          const vyMax = Math.max(vs.p.y, vs.q.y);
+
+          if (y > vyMin + 3 && y < vyMax - 3 && vx > xMin + r + 3 && vx < xMax - r - 3) {
+            crossings.push(vx);
+          }
+        }
+      }
+
+      if (crossings.length > 0) {
+        if (dirRight) {
+          crossings.sort((a, b) => a - b);
+        } else {
+          crossings.sort((a, b) => b - a);
+        }
+
+        const filtered = [];
+        for (const cx of crossings) {
+          if (!filtered.length || Math.abs(cx - filtered[filtered.length - 1]) >= 2 * r + 2) {
+            filtered.push(cx);
+          }
+        }
+
+        for (const cx of filtered) {
+          if (dirRight) {
+            d += ` L ${cx - r} ${y} A ${r} ${r} 0 0 1 ${cx + r} ${y}`;
+          } else {
+            d += ` L ${cx + r} ${y} A ${r} ${r} 0 0 0 ${cx - r} ${y}`;
+          }
+        }
+      }
+      d += ` L ${q.x} ${q.y}`;
+    } else {
+      d += ` L ${q.x} ${q.y}`;
+    }
+  }
+
+  return d;
+}
+
+function distToSeg(pt, p, q) {
+  const dx = q.x - p.x, dy = q.y - p.y;
+  const len2 = dx * dx + dy * dy;
+  if (len2 < 1e-6) return Math.hypot(pt.x - p.x, pt.y - p.y);
+  let t = ((pt.x - p.x) * dx + (pt.y - p.y) * dy) / len2;
+  t = Math.max(0, Math.min(1, t));
+  const projX = p.x + t * dx, projY = p.y + t * dy;
+  return Math.hypot(pt.x - projX, pt.y - projY);
+}
+
+function insertWaypointInOrder(cn, pt) {
+  if (!cn.waypoints || !cn.waypoints.length) {
+    cn.waypoints = [pt];
+    return;
+  }
+  const fb = findBlock(cn.from.block), tb = findBlock(cn.to.block);
+  const a = portPt(fb, cn.from.port), z = portPt(tb, cn.to.port);
+  if (!a || !z) {
+    cn.waypoints.push(pt);
+    return;
+  }
+
+  const nodes = [a, ...cn.waypoints, z];
+  let bestDist = Infinity, bestIdx = 0;
+  for (let i = 0; i < nodes.length - 1; i++) {
+    const d = distToSeg(pt, nodes[i], nodes[i + 1]);
+    if (d < bestDist) {
+      bestDist = d;
+      bestIdx = i;
+    }
+  }
+  cn.waypoints.splice(bestIdx, 0, pt);
+}
+
 function obstacleRects(m) {
   const out = [];
   for (const b of blocks) {
@@ -3086,7 +3214,21 @@ function route(a, z, cn) {
   const jogAxis = (hA && hZ) ? "x" : ((!hA && !hZ) ? "y" : null);
   let pts;
 
-  if (cn && cn.jog != null && jogAxis === "x") {
+  if (cn && cn.waypoints && cn.waypoints.length > 0) {
+    pts = [a, a2];
+    for (const wp of cn.waypoints) {
+      const last = pts[pts.length - 1];
+      if (Math.abs(last.x - wp.x) > 0.5 && Math.abs(last.y - wp.y) > 0.5) {
+        pts.push({ x: wp.x, y: last.y });
+      }
+      pts.push({ x: wp.x, y: wp.y });
+    }
+    const last = pts[pts.length - 1];
+    if (Math.abs(last.x - z2.x) > 0.5 && Math.abs(last.y - z2.y) > 0.5) {
+      pts.push({ x: z2.x, y: last.y });
+    }
+    pts.push(z2, z);
+  } else if (cn && cn.jog != null && jogAxis === "x") {
     pts = [a, a2, { x: cn.jog, y: a2.y }, { x: cn.jog, y: z2.y }, z2, z];
   } else if (cn && cn.jog != null && jogAxis === "y") {
     pts = [a, a2, { x: a2.x, y: cn.jog }, { x: z2.x, y: cn.jog }, z2, z];
@@ -3129,13 +3271,21 @@ function route(a, z, cn) {
     for (const c of cands) { const cs = cost(c); if (cs < bc) { bc = cs; best = c; } }
     pts = best;
   }
+  const cleanPts = [];
+  for (let i = 0; i < pts.length; i++) {
+    if (i === 0 || Math.hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y) > 0.01) {
+      cleanPts.push(pts[i]);
+    }
+  }
+  pts = cleanPts;
+
   const d = "M" + pts.map(p => `${p.x} ${p.y}`).join("L");
   const segs = []; let total = 0;
   for (let i = 0; i < pts.length - 1; i++) {
     const p = pts[i], q = pts[i + 1];
     const len = Math.hypot(q.x - p.x, q.y - p.y);
     if (len < 0.001) continue;
-    segs.push({ p, q, len, horiz: Math.abs(p.y - q.y) < 0.5 });
+    segs.push({ p, q, len, horiz: Math.abs(p.y - q.y) < 0.5, connId: cn ? cn.id : null });
     total += len;
   }
   let mx, my, orient = "h", segSel = null;
@@ -3151,7 +3301,7 @@ function route(a, z, cn) {
     orient = chosen.horiz ? "h" : "v";
     segSel = chosen;
   }
-  return { d, mx, my, orient, jogAxis, segs, seg: segSel };
+  return { d, pts, mx, my, orient, jogAxis, segs, seg: segSel };
 }
 
 function pillDims(lvl, nf) {
@@ -3719,20 +3869,20 @@ function buildExportSVG(scale = 1) {
   }
   const W = Math.max(200, maxx - minx), H = Math.max(150, maxy - miny);
   const css = `
-    svg{font-family:ui-sans-serif,system-ui,sans-serif;background:#fff}
+    svg{font-family:ui-sans-serif,system-ui,sans-serif;background:#ffffff}
     .block-hit,.sel-ring,.port-hit,.port-mark{display:none}
-    .blk-shape{fill:#fff;stroke:#2b3440;stroke-width:2;stroke-linejoin:round}
-    .blk-line{fill:none;stroke:#2b3440;stroke-width:2;stroke-linecap:round}
-    .blk-glyph{fill:none;stroke:#2b3440;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
-    .blk-fillg{fill:#2b3440;stroke:none}
-    .lbl-name{fill:#2b3440;font-family:monospace;font-size:11px;font-weight:600;text-anchor:middle}
-    .lbl-val{fill:#6b7683;font-family:monospace;font-size:9.5px;text-anchor:middle}
-    .ic-tag{fill:#2b3440;font-family:monospace;font-size:13px;font-weight:700}
-    .cust-tx{fill:#2b3440;font-family:sans-serif;font-size:12.5px;font-weight:600}
-    .port-lbl{fill:#2b3440;opacity:.62;font-family:monospace;font-size:8.5px;font-weight:600}
-    .free-label{fill:#2b3440;font-family:monospace;font-size:14px;font-weight:600}
-    .wire{fill:none;stroke:#3c4756;stroke-width:1.8}
-    .pbg{fill:#fff;stroke:#efd3a0;stroke-width:1}
+    .blk-shape{fill:var(--blk-fill,#ffffff);stroke:var(--blk-stroke,#0f172a);stroke-width:2;stroke-linejoin:round}
+    .blk-line{fill:none;stroke:var(--blk-stroke,#0f172a);stroke-width:2;stroke-linecap:round}
+    .blk-glyph{fill:none;stroke:var(--blk-stroke,#0f172a);stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+    .blk-fillg{fill:var(--blk-stroke,#0f172a);stroke:none}
+    .lbl-name{fill:#000000;font-family:monospace;font-size:11px;font-weight:700;text-anchor:middle}
+    .lbl-val{fill:#334155;font-family:monospace;font-size:9.5px;font-weight:600;text-anchor:middle}
+    .ic-tag{fill:#000000;font-family:monospace;font-size:13px;font-weight:700}
+    .cust-tx{fill:#000000;font-family:sans-serif;font-size:12.5px;font-weight:600}
+    .port-lbl{fill:#000000;opacity:.7;font-family:monospace;font-size:8.5px;font-weight:600}
+    .free-label{fill:#000000;font-family:monospace;font-size:14px;font-weight:600}
+    .wire{fill:none;stroke:#0f172a;stroke-width:1.8}
+    .pbg{fill:#ffffff;stroke:#efd3a0;stroke-width:1}
     .ptx{fill:#b45309;font-family:monospace;font-size:10.5px;font-weight:600;text-anchor:middle}
     .pun{fill:#b45309;opacity:.7;font-family:monospace;font-size:8px;font-weight:600;text-anchor:middle}
     .unk .pbg{fill:#f4f6f8;stroke:#d7dde3}.unk .ptx{fill:#94a1af}.unk .pun{fill:#94a1af}`;
@@ -3744,11 +3894,20 @@ function buildExportSVG(scale = 1) {
     if (!a || !z) continue;
     ERS.push({ cn, R: route(a, z, cn) });
   }
+  const allVertSegs = [];
+  for (const { cn, R } of ERS) {
+    if (R.segs) {
+      for (const s of R.segs) {
+        if (!s.horiz) allVertSegs.push({ ...s, connId: cn.id });
+      }
+    }
+  }
   const esegs = [].concat(...ERS.map(r => r.R.segs || []));
   const erects = obstacleRects(0);
   const eNF = settings.showNF ? computeNoise(P) : null;
   for (const { cn, R } of ERS) {
-    body += `<path class="wire" d="${R.d}" marker-end="url(#ea)"/>`;
+    const pathD = buildPathWithJumpers(R.pts, allVertSegs, cn.id);
+    body += `<path class="wire" d="${pathD}" marker-end="url(#ea)"/>`;
     if (settings.showLabels === false || cn.hidePill) continue;
     const lv = P[key(cn.from.block, cn.from.port)];
     const nf = eNF ? nfDb(eNF[key(cn.from.block, cn.from.port)]) : undefined;
@@ -3836,12 +3995,30 @@ function renderCanvas() {
     if (!a || !z) continue;
     RS.push({ cn, R: route(a, z, cn), lvl: P[key(cn.from.block, cn.from.port)] });
   }
+
+  const allVertSegs = [];
+  for (const { cn, R } of RS) {
+    if (R.segs) {
+      for (const s of R.segs) {
+        if (!s.horiz) allVertSegs.push({ ...s, connId: cn.id });
+      }
+    }
+  }
+
   const segsAll = [].concat(...RS.map(r => r.R.segs || []));
   const rectsAll = obstacleRects(0);
   const NFm = settings.showNF ? computeNoise(P) : null;
   for (const { cn, R, lvl } of RS) {
     const selc = selConn === cn.id, mk = selc ? "arrowSel" : "arrow";
-    wireHtml += `<g class="conn${selc ? " sel" : ""}" data-conn="${cn.id}"><path class="conn-hit" d="${R.d}"/><path class="wire" d="${R.d}" marker-end="url(#${mk})"/></g>`;
+    const pathD = buildPathWithJumpers(R.pts, allVertSegs, cn.id);
+    wireHtml += `<g class="conn${selc ? " sel" : ""}" data-conn="${cn.id}"><path class="conn-hit" d="${pathD}"/><path class="wire" d="${pathD}" marker-end="url(#${mk})"/>`;
+    if (selc && cn.waypoints && cn.waypoints.length) {
+      cn.waypoints.forEach((wp, idx) => {
+        wireHtml += `<g class="wire-node-g" data-conn="${cn.id}" data-node="${idx}"><circle class="wire-node-hit" cx="${wp.x}" cy="${wp.y}" r="14"/><circle class="wire-node" cx="${wp.x}" cy="${wp.y}" r="6"/></g>`;
+      });
+    }
+    wireHtml += `</g>`;
+
     if (settings.showLabels !== false && !cn.hidePill) {
       const nf = NFm ? nfDb(NFm[key(cn.from.block, cn.from.port)]) : undefined;
       const base = pillCenter(R, lvl, segsAll, rectsAll, nf), off = cn.labelOff || { dx: 0, dy: 0 };
@@ -3982,12 +4159,16 @@ function renderInspector() {
     const P = computePowers(), lvl = P[key(cn.from.block, cn.from.port)];
     const nfv = nfDb(computeNoise(P)[key(cn.from.block, cn.from.port)]);
     const fb = findBlock(cn.from.block), tb = findBlock(cn.to.block);
+    const hasCustom = (cn.jog != null) || (cn.waypoints && cn.waypoints.length > 0);
+    const wpCount = cn.waypoints ? cn.waypoints.length : 0;
     box.innerHTML = `<div class="insp-title"><span class="chip">Link</span><h3>Connection</h3></div>
       <div class="readout"><div class="r big"><span>Level on wire</span><span>${esc(dbm(lvl))}</span></div>
         <div class="r"><span>Cascade NF</span><span>${nfv === undefined ? "\u2014" : esc(fmt(nfv) + " dB")}</span></div>
         <div class="r"><span>From</span><span>${esc((fb && fb.params.label) || (fb && COMP[fb.type].name) || "?")}·${esc(cn.from.port)}</span></div>
-        <div class="r"><span>To</span><span>${esc((tb && tb.params.label) || (tb && COMP[tb.type].name) || "?")}·${esc(cn.to.port)}</span></div></div>
+        <div class="r"><span>To</span><span>${esc((tb && tb.params.label) || (tb && COMP[tb.type].name) || "?")}·${esc(cn.to.port)}</span></div>
+        ${wpCount ? `<div class="r"><span>Waypoints</span><span>${wpCount} node${wpCount > 1 ? "s" : ""}</span></div>` : ""}</div>
       <label class="insp-check"><input type="checkbox" id="ibPill"${cn.hidePill ? "" : " checked"}/> Show the dBm label on this wire</label>
+      ${hasCustom ? `<button class="btn ins-btn" id="ibClearWp" style="margin-bottom:8px">⟲ Straighten wire</button>` : ""}
       <button class="btn btn-del" id="ibDelC">Delete connection</button>`;
     const ibP = $("ibPill");
     if (ibP) ibP.onchange = e => {
@@ -3995,6 +4176,14 @@ function renderInspector() {
       if (e.target.checked) delete cn.hidePill; else cn.hidePill = true;
       renderCanvas();
       hint(cn.hidePill ? "Label hidden on this wire." : "Label shown.");
+    };
+    const ibClr = $("ibClearWp");
+    if (ibClr) ibClr.onclick = () => {
+      pushHistory();
+      delete cn.jog;
+      delete cn.waypoints;
+      renderAll();
+      hint("Wire straightened.");
     };
     const ibD = $("ibDelC");
     if (ibD) ibD.onclick = () => { pushHistory(); conns = conns.filter(c => c.id !== cn.id); selConn = null; renderAll(); };
@@ -5589,6 +5778,27 @@ function ctxItems(list) {
       const cn = conns.find(c => c.id === selConn);
       if (cn) { pushHistory(); cn.hidePill = !cn.hidePill; renderAll(); hint(cn.hidePill ? "Label hidden. Right-click the wire to show it." : "Label shown."); }
     }
+    else if (a === "wp-add") {
+      const cn = conns.find(c => c.id === selConn);
+      if (cn) {
+        pushHistory();
+        const w = screenToWorld(ctxAt.x, ctxAt.y);
+        insertWaypointInOrder(cn, { x: snap(w.x), y: snap(w.y) });
+        delete cn.jog;
+        renderAll();
+        hint("Added routing waypoint.");
+      }
+    }
+    else if (a === "wp-clear") {
+      const cn = conns.find(c => c.id === selConn);
+      if (cn) {
+        pushHistory();
+        delete cn.jog;
+        delete cn.waypoints;
+        renderAll();
+        hint("Wire straightened.");
+      }
+    }
     else if (a === "delc") {
       if (selConn) { pushHistory(); conns = conns.filter(c => c.id !== selConn); selConn = null; renderAll(); }
     }
@@ -5761,6 +5971,16 @@ function onMove(e) {
     if (Math.abs(e.clientX - drag.sx) + Math.abs(e.clientY - drag.sy) > 3) drag.moved = true;
     applyView(); return;
   }
+  if (drag.mode === "nodedrag") {
+    const w = screenToWorld(e.clientX, e.clientY);
+    const cn = conns.find(c => c.id === drag.conn);
+    if (!cn || !cn.waypoints || drag.index == null) return;
+    const wx = settings.snap ? snap(w.x) : w.x;
+    const wy = settings.snap ? snap(w.y) : w.y;
+    cn.waypoints[drag.index] = { x: wx, y: wy };
+    drag.moved = true;
+    renderCanvas(); return;
+  }
   if (drag.mode === "move") {
     const w = screenToWorld(e.clientX, e.clientY);
     let dx = w.x - drag.sx, dy = w.y - drag.sy;
@@ -5811,6 +6031,12 @@ function onUp(e) {
   window.removeEventListener("mousemove", onMove); window.removeEventListener("mouseup", onUp);
   svg.classList.remove("panning", "connecting");
   if (!drag) return;
+  if (drag.mode === "pan") {
+    if (!drag.moved) { clearSel(); renderAll(); }
+  }
+  if (drag.mode === "nodedrag") {
+    if (drag.moved) { pushHistoryState(drag.pre); hint("Waypoint moved."); }
+  }
   if (drag.mode === "move") {
     overlay.innerHTML = "";
     if (!drag.moved && drag.reduce) { selectOnly(drag.clickId); renderAll(); }
@@ -5934,8 +6160,18 @@ function initEvents() {
       svg.classList.add("panning"); attachDrag(); return;
     }
     if (e.button !== 0) return;
+    const nodeEl = e.target.closest(".wire-node-g, .wire-node");
     const pillEl = e.target.closest(".pill"); let portEl = e.target.closest(".port");
     const blockEl = e.target.closest(".block"), connEl = e.target.closest(".conn");
+
+    if (nodeEl) {
+      e.preventDefault();
+      const cid = nodeEl.getAttribute("data-conn");
+      const idx = parseInt(nodeEl.getAttribute("data-node"));
+      selConn = cid; selected = new Set(); renderAll();
+      drag = { mode: "nodedrag", conn: cid, index: idx, moved: false, pre: snapState() };
+      attachDrag(); return;
+    }
 
     if (portEl && blockEl) {
       const pb = findBlock(portEl.getAttribute("data-block"));
@@ -5990,11 +6226,31 @@ function initEvents() {
     }
 
     const w = screenToWorld(e.clientX, e.clientY);
-    drag = { mode: "marquee", sx: w.x, sy: w.y, cur: { x: w.x, y: w.y }, moved: false };
+    if (e.shiftKey || e.ctrlKey || e.metaKey) {
+      drag = { mode: "marquee", sx: w.x, sy: w.y, cur: { x: w.x, y: w.y }, moved: false };
+    } else {
+      drag = { mode: "pan", sx: e.clientX, sy: e.clientY, tx0: view.tx, ty0: view.ty, moved: false };
+      svg.classList.add("panning");
+    }
     attachDrag();
   });
 
   svg.addEventListener("dblclick", e => {
+    const nodeEl = e.target.closest(".wire-node-g, .wire-node");
+    if (nodeEl) {
+      e.preventDefault();
+      const cid = nodeEl.getAttribute("data-conn");
+      const idx = parseInt(nodeEl.getAttribute("data-node"));
+      const cn = conns.find(c => c.id === cid);
+      if (cn && cn.waypoints) {
+        pushHistory();
+        cn.waypoints.splice(idx, 1);
+        if (!cn.waypoints.length) delete cn.waypoints;
+        renderAll();
+        hint("Waypoint node removed.");
+      }
+      return;
+    }
     const blkEl = e.target.closest(".block");
     if (blkEl) {
       const b = findBlock(blkEl.getAttribute("data-block"));
@@ -6002,7 +6258,20 @@ function initEvents() {
     }
     const pillEl = e.target.closest(".pill"), connEl = e.target.closest(".conn");
     if (pillEl && pillEl.getAttribute("data-conn")) { const cn = conns.find(c => c.id === pillEl.getAttribute("data-conn")); if (cn && cn.labelOff) { delete cn.labelOff; renderCanvas(); hint("Label reset to default."); } return; }
-    if (connEl) { const cn = conns.find(c => c.id === connEl.getAttribute("data-conn")); if (cn && cn.jog != null) { delete cn.jog; renderCanvas(); hint("Wire straightened."); } }
+    if (connEl) {
+      const cid = connEl.getAttribute("data-conn");
+      const cn = conns.find(c => c.id === cid);
+      if (cn) {
+        pushHistory();
+        const w = screenToWorld(e.clientX, e.clientY);
+        const pt = { x: snap(w.x), y: snap(w.y) };
+        insertWaypointInOrder(cn, pt);
+        delete cn.jog;
+        renderAll();
+        hint("Added routing waypoint. Drag node handle to shape wire.");
+      }
+      return;
+    }
   });
 
   svg.addEventListener("wheel", e => {
@@ -6038,6 +6307,20 @@ function initEvents() {
   /* Context menu trigger */
   svg.addEventListener("contextmenu", e => {
     e.preventDefault();
+    const nodeEl = e.target.closest(".wire-node-g, .wire-node");
+    if (nodeEl) {
+      const cid = nodeEl.getAttribute("data-conn");
+      const idx = parseInt(nodeEl.getAttribute("data-node"));
+      const cn = conns.find(c => c.id === cid);
+      if (cn && cn.waypoints) {
+        pushHistory();
+        cn.waypoints.splice(idx, 1);
+        if (!cn.waypoints.length) delete cn.waypoints;
+        renderAll();
+        hint("Waypoint node removed.");
+      }
+      return;
+    }
     const blockEl = e.target.closest(".block"), connEl = e.target.closest(".conn"), pillCtx = e.target.closest(".pill");
     if (blockEl) {
       const id = blockEl.getAttribute("data-block"); if (!selected.has(id)) selectOnly(id); renderAll();
@@ -6061,9 +6344,15 @@ function initEvents() {
       selConn = (connEl ? connEl.getAttribute("data-conn") : pillCtx.getAttribute("data-conn"));
       selected = new Set(); renderAll();
       const cn = conns.find(c => c.id === selConn);
-      ctxItems([ctxItem(cn && cn.hidePill ? "Show the dBm label" : "Hide the dBm label on this wire", "", "pill"),
-        "divider",
-        ctxItem("Delete connection", "Del", "delc", "danger")]); showCtx(e.clientX, e.clientY);
+      const items = [
+        ctxItem(cn && cn.hidePill ? "Show the dBm label" : "Hide the dBm label on this wire", "", "pill"),
+        ctxItem("Add routing waypoint here", "", "wp-add")
+      ];
+      if (cn && (cn.jog != null || (cn.waypoints && cn.waypoints.length))) {
+        items.push(ctxItem("Straighten wire (clear waypoints)", "", "wp-clear"));
+      }
+      items.push("divider", ctxItem("Delete connection", "Del", "delc", "danger"));
+      ctxItems(items); showCtx(e.clientX, e.clientY);
     }
     else { ctxItems([ctxItem("Select all", "⌘A", "all"), ctxItem("Fit view", "", "fit")]); showCtx(e.clientX, e.clientY); }
   });
@@ -6133,6 +6422,7 @@ function initEvents() {
   if ($("tglSnap")) $("tglSnap").addEventListener("change", e => { settings.snap = e.target.checked; });
   if ($("tglGrid")) $("tglGrid").addEventListener("change", e => { settings.grid = e.target.checked; renderCanvas(); });
   if ($("tglLabels")) $("tglLabels").addEventListener("change", e => { settings.showLabels = e.target.checked; renderCanvas(); });
+  if ($("tglJumpers")) $("tglJumpers").addEventListener("change", e => { settings.enableJumpers = e.target.checked; renderCanvas(); });
   if ($("tglNF")) $("tglNF").addEventListener("change", e => { settings.showNF = e.target.checked; renderCanvas(); renderInspector(); });
   if ($("tglColor")) $("tglColor").addEventListener("change", e => { settings.color = e.target.checked; renderPalette(); renderCanvas(); });
   if ($("tglTheme")) $("tglTheme").addEventListener("change", e => { applyTheme(e.target.checked ? "light" : "dark"); renderPalette(); renderCanvas(); });

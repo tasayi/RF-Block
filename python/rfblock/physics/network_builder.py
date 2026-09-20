@@ -20,6 +20,14 @@ def build_block_network(block: Dict[str, Any], freq: skrf.Frequency) -> skrf.Net
     # Determine forward gain/loss (in dB)
     gain_db = float(params.get("gain", params.get("g", 0)))
     il_db = float(params.get("il", params.get("atten", params.get("loss", params.get("conv_loss", 0)))))
+    if btype in ("splitter", "combiner") and "exloss" in params:
+        ways = int(params.get("ways", 2))
+        exloss = float(params.get("exloss", 0.3))
+        il_db = 10.0 * np.log10(max(1, ways)) + exloss
+    elif btype == "eq":
+        min_loss = float(params.get("minLoss", 1.0))
+        slope = float(params.get("slope", 3.0))
+        il_db = min_loss + (slope / 2.0)
     net_gain = gain_db - il_db
     
     # Return Loss & Isolation

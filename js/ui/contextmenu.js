@@ -36,6 +36,27 @@ function ctxItems(list) {
       const cn = conns.find(c => c.id === selConn);
       if (cn) { pushHistory(); cn.hidePill = !cn.hidePill; renderAll(); hint(cn.hidePill ? "Label hidden. Right-click the wire to show it." : "Label shown."); }
     }
+    else if (a === "wp-add") {
+      const cn = conns.find(c => c.id === selConn);
+      if (cn) {
+        pushHistory();
+        const w = screenToWorld(ctxAt.x, ctxAt.y);
+        insertWaypointInOrder(cn, { x: snap(w.x), y: snap(w.y) });
+        delete cn.jog;
+        renderAll();
+        hint("Added routing waypoint.");
+      }
+    }
+    else if (a === "wp-clear") {
+      const cn = conns.find(c => c.id === selConn);
+      if (cn) {
+        pushHistory();
+        delete cn.jog;
+        delete cn.waypoints;
+        renderAll();
+        hint("Wire straightened.");
+      }
+    }
     else if (a === "delc") {
       if (selConn) { pushHistory(); conns = conns.filter(c => c.id !== selConn); selConn = null; renderAll(); }
     }

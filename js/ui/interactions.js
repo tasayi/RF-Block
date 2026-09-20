@@ -143,6 +143,16 @@ function onMove(e) {
     if (Math.abs(e.clientX - drag.sx) + Math.abs(e.clientY - drag.sy) > 3) drag.moved = true;
     applyView(); return;
   }
+  if (drag.mode === "nodedrag") {
+    const w = screenToWorld(e.clientX, e.clientY);
+    const cn = conns.find(c => c.id === drag.conn);
+    if (!cn || !cn.waypoints || drag.index == null) return;
+    const wx = settings.snap ? snap(w.x) : w.x;
+    const wy = settings.snap ? snap(w.y) : w.y;
+    cn.waypoints[drag.index] = { x: wx, y: wy };
+    drag.moved = true;
+    renderCanvas(); return;
+  }
   if (drag.mode === "move") {
     const w = screenToWorld(e.clientX, e.clientY);
     let dx = w.x - drag.sx, dy = w.y - drag.sy;
@@ -193,6 +203,12 @@ function onUp(e) {
   window.removeEventListener("mousemove", onMove); window.removeEventListener("mouseup", onUp);
   svg.classList.remove("panning", "connecting");
   if (!drag) return;
+  if (drag.mode === "pan") {
+    if (!drag.moved) { clearSel(); renderAll(); }
+  }
+  if (drag.mode === "nodedrag") {
+    if (drag.moved) { pushHistoryState(drag.pre); hint("Waypoint moved."); }
+  }
   if (drag.mode === "move") {
     overlay.innerHTML = "";
     if (!drag.moved && drag.reduce) { selectOnly(drag.clickId); renderAll(); }

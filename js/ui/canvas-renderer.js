@@ -31,12 +31,30 @@ function renderCanvas() {
     if (!a || !z) continue;
     RS.push({ cn, R: route(a, z, cn), lvl: P[key(cn.from.block, cn.from.port)] });
   }
+
+  const allVertSegs = [];
+  for (const { cn, R } of RS) {
+    if (R.segs) {
+      for (const s of R.segs) {
+        if (!s.horiz) allVertSegs.push({ ...s, connId: cn.id });
+      }
+    }
+  }
+
   const segsAll = [].concat(...RS.map(r => r.R.segs || []));
   const rectsAll = obstacleRects(0);
   const NFm = settings.showNF ? computeNoise(P) : null;
   for (const { cn, R, lvl } of RS) {
     const selc = selConn === cn.id, mk = selc ? "arrowSel" : "arrow";
-    wireHtml += `<g class="conn${selc ? " sel" : ""}" data-conn="${cn.id}"><path class="conn-hit" d="${R.d}"/><path class="wire" d="${R.d}" marker-end="url(#${mk})"/></g>`;
+    const pathD = buildPathWithJumpers(R.pts, allVertSegs, cn.id);
+    wireHtml += `<g class="conn${selc ? " sel" : ""}" data-conn="${cn.id}"><path class="conn-hit" d="${pathD}"/><path class="wire" d="${pathD}" marker-end="url(#${mk})"/>`;
+    if (selc && cn.waypoints && cn.waypoints.length) {
+      cn.waypoints.forEach((wp, idx) => {
+        wireHtml += `<g class="wire-node-g" data-conn="${cn.id}" data-node="${idx}"><circle class="wire-node-hit" cx="${wp.x}" cy="${wp.y}" r="14"/><circle class="wire-node" cx="${wp.x}" cy="${wp.y}" r="6"/></g>`;
+      });
+    }
+    wireHtml += `</g>`;
+
     if (settings.showLabels !== false && !cn.hidePill) {
       const nf = NFm ? nfDb(NFm[key(cn.from.block, cn.from.port)]) : undefined;
       const base = pillCenter(R, lvl, segsAll, rectsAll, nf), off = cn.labelOff || { dx: 0, dy: 0 };

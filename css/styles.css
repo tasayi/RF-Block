@@ -487,6 +487,11 @@ button.btn.primary:hover {
 .conn.sel .wire { stroke: var(--wire-sel); stroke-width: 2.5; }
 #arrow path { fill: var(--wire); } #arrowSel path { fill: var(--wire-sel); }
 
+.wire-node-g { cursor: move; pointer-events: all; }
+.wire-node-hit { fill: transparent; stroke: none; }
+.wire-node { fill: var(--chrome); stroke: var(--wire-sel); stroke-width: 2.2; pointer-events: none; transition: r 0.12s, fill 0.12s; }
+.wire-node-g:hover .wire-node { fill: var(--wire-sel); r: 7.5; }
+
 /* Level Readout Pills on Wires */
 .pill { pointer-events: all; cursor: grab; }
 .pill:active { cursor: grabbing; }

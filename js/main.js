@@ -30,8 +30,18 @@ function initEvents() {
       svg.classList.add("panning"); attachDrag(); return;
     }
     if (e.button !== 0) return;
+    const nodeEl = e.target.closest(".wire-node-g, .wire-node");
     const pillEl = e.target.closest(".pill"); let portEl = e.target.closest(".port");
     const blockEl = e.target.closest(".block"), connEl = e.target.closest(".conn");
+
+    if (nodeEl) {
+      e.preventDefault();
+      const cid = nodeEl.getAttribute("data-conn");
+      const idx = parseInt(nodeEl.getAttribute("data-node"));
+      selConn = cid; selected = new Set(); renderAll();
+      drag = { mode: "nodedrag", conn: cid, index: idx, moved: false, pre: snapState() };
+      attachDrag(); return;
+    }
 
     if (portEl && blockEl) {
       const pb = findBlock(portEl.getAttribute("data-block"));
@@ -86,11 +96,31 @@ function initEvents() {
     }
 
     const w = screenToWorld(e.clientX, e.clientY);
-    drag = { mode: "marquee", sx: w.x, sy: w.y, cur: { x: w.x, y: w.y }, moved: false };
+    if (e.shiftKey || e.ctrlKey || e.metaKey) {
+      drag = { mode: "marquee", sx: w.x, sy: w.y, cur: { x: w.x, y: w.y }, moved: false };
+    } else {
+      drag = { mode: "pan", sx: e.clientX, sy: e.clientY, tx0: view.tx, ty0: view.ty, moved: false };
+      svg.classList.add("panning");
+    }
     attachDrag();
   });
 
   svg.addEventListener("dblclick", e => {
+    const nodeEl = e.target.closest(".wire-node-g, .wire-node");
+    if (nodeEl) {
+      e.preventDefault();
+      const cid = nodeEl.getAttribute("data-conn");
+      const idx = parseInt(nodeEl.getAttribute("data-node"));
+      const cn = conns.find(c => c.id === cid);
+      if (cn && cn.waypoints) {
+        pushHistory();
+        cn.waypoints.splice(idx, 1);
+        if (!cn.waypoints.length) delete cn.waypoints;
+        renderAll();
+        hint("Waypoint node removed.");
+      }
+      return;
+    }
     const blkEl = e.target.closest(".block");
     if (blkEl) {
       const b = findBlock(blkEl.getAttribute("data-block"));
@@ -98,7 +128,20 @@ function initEvents() {
     }
     const pillEl = e.target.closest(".pill"), connEl = e.target.closest(".conn");
     if (pillEl && pillEl.getAttribute("data-conn")) { const cn = conns.find(c => c.id === pillEl.getAttribute("data-conn")); if (cn && cn.labelOff) { delete cn.labelOff; renderCanvas(); hint("Label reset to default."); } return; }
-    if (connEl) { const cn = conns.find(c => c.id === connEl.getAttribute("data-conn")); if (cn && cn.jog != null) { delete cn.jog; renderCanvas(); hint("Wire straightened."); } }
+    if (connEl) {
+      const cid = connEl.getAttribute("data-conn");
+      const cn = conns.find(c => c.id === cid);
+      if (cn) {
+        pushHistory();
+        const w = screenToWorld(e.clientX, e.clientY);
+        const pt = { x: snap(w.x), y: snap(w.y) };
+        insertWaypointInOrder(cn, pt);
+        delete cn.jog;
+        renderAll();
+        hint("Added routing waypoint. Drag node handle to shape wire.");
+      }
+      return;
+    }
   });
 
   svg.addEventListener("wheel", e => {
@@ -134,6 +177,20 @@ function initEvents() {
   /* Context menu trigger */
   svg.addEventListener("contextmenu", e => {
     e.preventDefault();
+    const nodeEl = e.target.closest(".wire-node-g, .wire-node");
+    if (nodeEl) {
+      const cid = nodeEl.getAttribute("data-conn");
+      const idx = parseInt(nodeEl.getAttribute("data-node"));
+      const cn = conns.find(c => c.id === cid);
+      if (cn && cn.waypoints) {
+        pushHistory();
+        cn.waypoints.splice(idx, 1);
+        if (!cn.waypoints.length) delete cn.waypoints;
+        renderAll();
+        hint("Waypoint node removed.");
+      }
+      return;
+    }
     const blockEl = e.target.closest(".block"), connEl = e.target.closest(".conn"), pillCtx = e.target.closest(".pill");
     if (blockEl) {
       const id = blockEl.getAttribute("data-block"); if (!selected.has(id)) selectOnly(id); renderAll();
@@ -157,9 +214,15 @@ function initEvents() {
       selConn = (connEl ? connEl.getAttribute("data-conn") : pillCtx.getAttribute("data-conn"));
       selected = new Set(); renderAll();
       const cn = conns.find(c => c.id === selConn);
-      ctxItems([ctxItem(cn && cn.hidePill ? "Show the dBm label" : "Hide the dBm label on this wire", "", "pill"),
-        "divider",
-        ctxItem("Delete connection", "Del", "delc", "danger")]); showCtx(e.clientX, e.clientY);
+      const items = [
+        ctxItem(cn && cn.hidePill ? "Show the dBm label" : "Hide the dBm label on this wire", "", "pill"),
+        ctxItem("Add routing waypoint here", "", "wp-add")
+      ];
+      if (cn && (cn.jog != null || (cn.waypoints && cn.waypoints.length))) {
+        items.push(ctxItem("Straighten wire (clear waypoints)", "", "wp-clear"));
+      }
+      items.push("divider", ctxItem("Delete connection", "Del", "delc", "danger"));
+      ctxItems(items); showCtx(e.clientX, e.clientY);
     }
     else { ctxItems([ctxItem("Select all", "⌘A", "all"), ctxItem("Fit view", "", "fit")]); showCtx(e.clientX, e.clientY); }
   });
@@ -229,6 +292,7 @@ function initEvents() {
   if ($("tglSnap")) $("tglSnap").addEventListener("change", e => { settings.snap = e.target.checked; });
   if ($("tglGrid")) $("tglGrid").addEventListener("change", e => { settings.grid = e.target.checked; renderCanvas(); });
   if ($("tglLabels")) $("tglLabels").addEventListener("change", e => { settings.showLabels = e.target.checked; renderCanvas(); });
+  if ($("tglJumpers")) $("tglJumpers").addEventListener("change", e => { settings.enableJumpers = e.target.checked; renderCanvas(); });
   if ($("tglNF")) $("tglNF").addEventListener("change", e => { settings.showNF = e.target.checked; renderCanvas(); renderInspector(); });
   if ($("tglColor")) $("tglColor").addEventListener("change", e => { settings.color = e.target.checked; renderPalette(); renderCanvas(); });
   if ($("tglTheme")) $("tglTheme").addEventListener("change", e => { applyTheme(e.target.checked ? "light" : "dark"); renderPalette(); renderCanvas(); });

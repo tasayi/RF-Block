@@ -102,6 +102,28 @@ def({
 });
 
 def({
+  type: "eq", keys: "equalizer equaliser slope cable compensation gain loss tilt pad", name: "Equalizer", group: "Gain / Loss", w: 40, h: 40,
+  ports: [{ id: "in", side: "left", kind: "inout", dx: 0, dy: 20 }, { id: "out", side: "right", kind: "inout", dx: 40, dy: 20 }],
+  params: { label: "EQ", slope: 3, minLoss: 1 },
+  fields: [{ key: "slope", label: "Slope compensation", unit: "dB", step: 0.5, min: 0 },
+           { key: "minLoss", label: "Min insertion loss", unit: "dB", step: 0.1, min: 0 }],
+  nf: p => Math.abs(+p.minLoss || 0) + Math.abs(+p.slope || 0) / 2,
+  out: p => ({ out: -(Math.abs(+p.minLoss || 0) + Math.abs(+p.slope || 0) / 2) }),
+  val: p => {
+    const sl = fmt(Math.abs(+p.slope || 0)), ml = fmt(Math.abs(+p.minLoss || 0));
+    return "Slope " + sl + " dB · IL " + ml + " dB";
+  },
+  bidi: (m, p) => rl(m, Math.abs(+p.minLoss || 0) + Math.abs(+p.slope || 0) / 2),
+  sym() {
+    return `<rect class="blk-shape" x="0" y="4" width="40" height="32" rx="4"/>` +
+           `<path class="blk-glyph" d="M8 28L32 12"/>` +
+           `<path class="blk-fillg" d="M32 12L24 14L28 18Z"/>` +
+           `<path class="blk-glyph" d="M10 14Q14 20 18 14"/>` +
+           `<path class="blk-glyph" d="M22 26Q26 20 30 26"/>`;
+  }
+});
+
+def({
   type: "limiter", keys: "clip clamp protection limit", name: "Limiter", group: "Gain / Loss", w: 40, h: 40,
   ports: [{ id: "in", side: "left", kind: "inout", dx: 0, dy: 20 }, { id: "out", side: "right", kind: "inout", dx: 40, dy: 20 }],
   params: { label: "LIM", thresh: 10, il: 0.5 },
@@ -143,7 +165,7 @@ def({
            { key: "il", label: "Passband IL", unit: "dB", step: 0.1, min: 0 },
            { key: "rej", label: "Stopband rejection", unit: "dB", step: 1, min: 0 },
            { key: "fc", label: "Corner / center", type: "text" }], nf: p => fLoss(p),
-  out: p => ({ out: -fLoss(p) }), val: p => (p.band === "stopband") ? ("REJ " + fmt(fLoss(p)) + " dB") : ("IL " + fmt(Math.abs(p.il)) + " dB"),
+  out: p => ({ out: -fLoss(p) }), val: p => (p.fc ? (p.fc + " · " + ((p.band === "stopband") ? ("REJ " + fmt(fLoss(p)) + " dB") : ("IL " + fmt(Math.abs(p.il)) + " dB"))) : ((p.band === "stopband") ? ("REJ " + fmt(fLoss(p)) + " dB") : ("IL " + fmt(Math.abs(p.il)) + " dB"))),
   bidi: (m, p) => rl(m, fLoss(p)),
   sym(p) {
     const ix = 8, iw = 24, iy = 10, ih = 17, yB = iy + ih, yT = iy + 3, m = f => ix + iw * f;
@@ -167,7 +189,7 @@ def({
            { key: "il", label: "Passband IL", unit: "dB", step: 0.1, min: 0 },
            { key: "rej", label: "Stopband rejection", unit: "dB", step: 1, min: 0 },
            { key: "fc", label: "Tuning range / fc", type: "text" }], nf: p => fLoss(p),
-  out: p => ({ out: -fLoss(p) }), val: p => (p.fc ? p.fc : ((p.band === "stopband") ? ("REJ " + fmt(fLoss(p)) + " dB") : ("IL " + fmt(Math.abs(p.il)) + " dB"))),
+  out: p => ({ out: -fLoss(p) }), val: p => (p.fc ? (p.fc + " · " + ((p.band === "stopband") ? ("REJ " + fmt(fLoss(p)) + " dB") : ("IL " + fmt(Math.abs(p.il)) + " dB"))) : ((p.band === "stopband") ? ("REJ " + fmt(fLoss(p)) + " dB") : ("IL " + fmt(Math.abs(p.il)) + " dB"))),
   bidi: (m, p) => rl(m, fLoss(p)),
   sym(p) {
     const ix = 8, iw = 24, iy = 10, ih = 17, yB = iy + ih, yT = iy + 3, m = f => ix + iw * f;
@@ -265,7 +287,7 @@ def({
     if (back.length) o.in = (back.length === 1 ? back[0] : sumDbm(back));
     return o;
   },
-  val: p => { const n = cint(p.ways, 2, 8); return "\u2212" + dsp(10 * Math.log10(n) + Math.abs(p.exloss)) + " dB ea"; },
+  val: p => { const n = cint(p.ways, 2, 8), loss = dsp(10 * Math.log10(n) + Math.abs(p.exloss || 0)); return "1:" + n + " · IL " + loss + " dB ea"; },
   sym(p) {
     const n = cint(p.ways, 2, 8), h = 40 * n;
     let s = `<rect class="blk-shape" x="0" y="2" width="40" height="${h - 4}" rx="6"/>`;
@@ -291,7 +313,7 @@ def({
     const n = cint(p.ways, 2, 8), ex = Math.abs(p.exloss || 0);
     return v.length === 1 ? v[0] - (10 * Math.log10(n) + ex) : sumDbm(v) - ex;
   },
-  out: p => ({ out: -(10 * Math.log10(cint(p.ways, 2, 8)) + Math.abs(p.exloss || 0)) }), val: p => cint(p.ways, 2, 8) + " : 1",
+  out: p => ({ out: -(10 * Math.log10(cint(p.ways, 2, 8)) + Math.abs(p.exloss || 0)) }), val: p => { const n = cint(p.ways, 2, 8), loss = dsp(10 * Math.log10(n) + Math.abs(p.exloss || 0)); return n + ":1 · IL " + loss + " dB"; },
   bidi: (m, p) => {
     const n = cint(p.ways, 2, 8), ex = Math.abs(p.exloss || 0), d = 10 * Math.log10(n) + ex, o = {};
     const ins = []; for (let i = 1; i <= n; i++) { const v = m["i" + i]; if (v !== undefined && isFinite(v)) ins.push(v); }

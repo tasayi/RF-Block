@@ -193,20 +193,20 @@ function buildExportSVG(scale = 1) {
   }
   const W = Math.max(200, maxx - minx), H = Math.max(150, maxy - miny);
   const css = `
-    svg{font-family:ui-sans-serif,system-ui,sans-serif;background:#fff}
+    svg{font-family:ui-sans-serif,system-ui,sans-serif;background:#ffffff}
     .block-hit,.sel-ring,.port-hit,.port-mark{display:none}
-    .blk-shape{fill:#fff;stroke:#2b3440;stroke-width:2;stroke-linejoin:round}
-    .blk-line{fill:none;stroke:#2b3440;stroke-width:2;stroke-linecap:round}
-    .blk-glyph{fill:none;stroke:#2b3440;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
-    .blk-fillg{fill:#2b3440;stroke:none}
-    .lbl-name{fill:#2b3440;font-family:monospace;font-size:11px;font-weight:600;text-anchor:middle}
-    .lbl-val{fill:#6b7683;font-family:monospace;font-size:9.5px;text-anchor:middle}
-    .ic-tag{fill:#2b3440;font-family:monospace;font-size:13px;font-weight:700}
-    .cust-tx{fill:#2b3440;font-family:sans-serif;font-size:12.5px;font-weight:600}
-    .port-lbl{fill:#2b3440;opacity:.62;font-family:monospace;font-size:8.5px;font-weight:600}
-    .free-label{fill:#2b3440;font-family:monospace;font-size:14px;font-weight:600}
-    .wire{fill:none;stroke:#3c4756;stroke-width:1.8}
-    .pbg{fill:#fff;stroke:#efd3a0;stroke-width:1}
+    .blk-shape{fill:var(--blk-fill,#ffffff);stroke:var(--blk-stroke,#0f172a);stroke-width:2;stroke-linejoin:round}
+    .blk-line{fill:none;stroke:var(--blk-stroke,#0f172a);stroke-width:2;stroke-linecap:round}
+    .blk-glyph{fill:none;stroke:var(--blk-stroke,#0f172a);stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+    .blk-fillg{fill:var(--blk-stroke,#0f172a);stroke:none}
+    .lbl-name{fill:#000000;font-family:monospace;font-size:11px;font-weight:700;text-anchor:middle}
+    .lbl-val{fill:#334155;font-family:monospace;font-size:9.5px;font-weight:600;text-anchor:middle}
+    .ic-tag{fill:#000000;font-family:monospace;font-size:13px;font-weight:700}
+    .cust-tx{fill:#000000;font-family:sans-serif;font-size:12.5px;font-weight:600}
+    .port-lbl{fill:#000000;opacity:.7;font-family:monospace;font-size:8.5px;font-weight:600}
+    .free-label{fill:#000000;font-family:monospace;font-size:14px;font-weight:600}
+    .wire{fill:none;stroke:#0f172a;stroke-width:1.8}
+    .pbg{fill:#ffffff;stroke:#efd3a0;stroke-width:1}
     .ptx{fill:#b45309;font-family:monospace;font-size:10.5px;font-weight:600;text-anchor:middle}
     .pun{fill:#b45309;opacity:.7;font-family:monospace;font-size:8px;font-weight:600;text-anchor:middle}
     .unk .pbg{fill:#f4f6f8;stroke:#d7dde3}.unk .ptx{fill:#94a1af}.unk .pun{fill:#94a1af}`;
@@ -218,11 +218,20 @@ function buildExportSVG(scale = 1) {
     if (!a || !z) continue;
     ERS.push({ cn, R: route(a, z, cn) });
   }
+  const allVertSegs = [];
+  for (const { cn, R } of ERS) {
+    if (R.segs) {
+      for (const s of R.segs) {
+        if (!s.horiz) allVertSegs.push({ ...s, connId: cn.id });
+      }
+    }
+  }
   const esegs = [].concat(...ERS.map(r => r.R.segs || []));
   const erects = obstacleRects(0);
   const eNF = settings.showNF ? computeNoise(P) : null;
   for (const { cn, R } of ERS) {
-    body += `<path class="wire" d="${R.d}" marker-end="url(#ea)"/>`;
+    const pathD = buildPathWithJumpers(R.pts, allVertSegs, cn.id);
+    body += `<path class="wire" d="${pathD}" marker-end="url(#ea)"/>`;
     if (settings.showLabels === false || cn.hidePill) continue;
     const lv = P[key(cn.from.block, cn.from.port)];
     const nf = eNF ? nfDb(eNF[key(cn.from.block, cn.from.port)]) : undefined;

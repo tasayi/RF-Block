@@ -1,6 +1,104 @@
 "use strict";
 
 /* Orthogonal Line Router & Obstacle Avoidance */
+function buildPathWithJumpers(pts, allVerticalSegs, currentConnId) {
+  if (!pts || pts.length < 2) return "";
+  if (typeof settings !== "undefined" && settings.enableJumpers === false) {
+    return "M" + pts.map(p => `${p.x} ${p.y}`).join("L");
+  }
+
+  const r = 5;
+  let d = `M ${pts[0].x} ${pts[0].y}`;
+
+  for (let i = 0; i < pts.length - 1; i++) {
+    const p = pts[i], q = pts[i + 1];
+    const isHoriz = Math.abs(p.y - q.y) < 0.5;
+
+    if (isHoriz) {
+      const y = p.y;
+      const xMin = Math.min(p.x, q.x);
+      const xMax = Math.max(p.x, q.x);
+      const dirRight = q.x > p.x;
+
+      const crossings = [];
+      if (allVerticalSegs) {
+        for (const vs of allVerticalSegs) {
+          if (vs.connId === currentConnId) continue;
+          const vx = vs.p.x;
+          const vyMin = Math.min(vs.p.y, vs.q.y);
+          const vyMax = Math.max(vs.p.y, vs.q.y);
+
+          if (y > vyMin + 3 && y < vyMax - 3 && vx > xMin + r + 3 && vx < xMax - r - 3) {
+            crossings.push(vx);
+          }
+        }
+      }
+
+      if (crossings.length > 0) {
+        if (dirRight) {
+          crossings.sort((a, b) => a - b);
+        } else {
+          crossings.sort((a, b) => b - a);
+        }
+
+        const filtered = [];
+        for (const cx of crossings) {
+          if (!filtered.length || Math.abs(cx - filtered[filtered.length - 1]) >= 2 * r + 2) {
+            filtered.push(cx);
+          }
+        }
+
+        for (const cx of filtered) {
+          if (dirRight) {
+            d += ` L ${cx - r} ${y} A ${r} ${r} 0 0 1 ${cx + r} ${y}`;
+          } else {
+            d += ` L ${cx + r} ${y} A ${r} ${r} 0 0 0 ${cx - r} ${y}`;
+          }
+        }
+      }
+      d += ` L ${q.x} ${q.y}`;
+    } else {
+      d += ` L ${q.x} ${q.y}`;
+    }
+  }
+
+  return d;
+}
+
+function distToSeg(pt, p, q) {
+  const dx = q.x - p.x, dy = q.y - p.y;
+  const len2 = dx * dx + dy * dy;
+  if (len2 < 1e-6) return Math.hypot(pt.x - p.x, pt.y - p.y);
+  let t = ((pt.x - p.x) * dx + (pt.y - p.y) * dy) / len2;
+  t = Math.max(0, Math.min(1, t));
+  const projX = p.x + t * dx, projY = p.y + t * dy;
+  return Math.hypot(pt.x - projX, pt.y - projY);
+}
+
+function insertWaypointInOrder(cn, pt) {
+  if (!cn.waypoints || !cn.waypoints.length) {
+    cn.waypoints = [pt];
+    return;
+  }
+  const fb = findBlock(cn.from.block), tb = findBlock(cn.to.block);
+  const a = portPt(fb, cn.from.port), z = portPt(tb, cn.to.port);
+  if (!a || !z) {
+    cn.waypoints.push(pt);
+    return;
+  }
+
+  const nodes = [a, ...cn.waypoints, z];
+  let bestDist = Infinity, bestIdx = 0;
+  for (let i = 0; i < nodes.length - 1; i++) {
+    const d = distToSeg(pt, nodes[i], nodes[i + 1]);
+    if (d < bestDist) {
+      bestDist = d;
+      bestIdx = i;
+    }
+  }
+  cn.waypoints.splice(bestIdx, 0, pt);
+}
+
 function obstacleRects(m) {
   const out = [];
   for (const b of blocks) {
@@ -20,7 +118,21 @@ function route(a, z, cn) {
   const jogAxis = (hA && hZ) ? "x" : ((!hA && !hZ) ? "y" : null);
   let pts;
 
-  if (cn && cn.jog != null && jogAxis === "x") {
+  if (cn && cn.waypoints && cn.waypoints.length > 0) {
+    pts = [a, a2];
+    for (const wp of cn.waypoints) {
+      const last = pts[pts.length - 1];
+      if (Math.abs(last.x - wp.x) > 0.5 && Math.abs(last.y - wp.y) > 0.5) {
+        pts.push({ x: wp.x, y: last.y });
+      }
+      pts.push({ x: wp.x, y: wp.y });
+    }
+    const last = pts[pts.length - 1];
+    if (Math.abs(last.x - z2.x) > 0.5 && Math.abs(last.y - z2.y) > 0.5) {
+      pts.push({ x: z2.x, y: last.y });
+    }
+    pts.push(z2, z);
+  } else if (cn && cn.jog != null && jogAxis === "x") {
     pts = [a, a2, { x: cn.jog, y: a2.y }, { x: cn.jog, y: z2.y }, z2, z];
   } else if (cn && cn.jog != null && jogAxis === "y") {
     pts = [a, a2, { x: a2.x, y: cn.jog }, { x: z2.x, y: cn.jog }, z2, z];
@@ -63,13 +175,21 @@ function route(a, z, cn) {
     for (const c of cands) { const cs = cost(c); if (cs < bc) { bc = cs; best = c; } }
     pts = best;
   }
+  const cleanPts = [];
+  for (let i = 0; i < pts.length; i++) {
+    if (i === 0 || Math.hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y) > 0.01) {
+      cleanPts.push(pts[i]);
+    }
+  }
+  pts = cleanPts;
+
   const d = "M" + pts.map(p => `${p.x} ${p.y}`).join("L");
   const segs = []; let total = 0;
   for (let i = 0; i < pts.length - 1; i++) {
     const p = pts[i], q = pts[i + 1];
     const len = Math.hypot(q.x - p.x, q.y - p.y);
     if (len < 0.001) continue;
-    segs.push({ p, q, len, horiz: Math.abs(p.y - q.y) < 0.5 });
+    segs.push({ p, q, len, horiz: Math.abs(p.y - q.y) < 0.5, connId: cn ? cn.id : null });
     total += len;
   }
   let mx, my, orient = "h", segSel = null;
@@ -85,7 +205,7 @@ function route(a, z, cn) {
     orient = chosen.horiz ? "h" : "v";
     segSel = chosen;
   }
-  return { d, mx, my, orient, jogAxis, segs, seg: segSel };
+  return { d, pts, mx, my, orient, jogAxis, segs, seg: segSel };
 }
 
 function pillDims(lvl, nf) {
