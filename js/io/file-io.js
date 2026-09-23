@@ -16,7 +16,7 @@ function docText() {
   commitSheet();
   return JSON.stringify({
     format: "rf-block-diagram", version: 3, settings: { ...settings }, typeColor: { ...typeColor }, cur,
-    sheets: sheets.map(sh => ({ id: sh.id, name: sh.name, view: sh.view, parent: sh.parent || null, blocks: sh.blocks, connections: sh.conns }))
+    sheets: sheets.map(sh => ({ id: sh.id, name: sh.name, view: sh.view, layoutPreset: sh.layoutPreset || "free", parent: sh.parent || null, blocks: sh.blocks, connections: sh.conns }))
   }, null, 2);
 }
 
@@ -141,6 +141,7 @@ function loadDoc(text, name, handle) {
   $("tglGrid").checked = settings.grid;
   if ($("tglLabels")) $("tglLabels").checked = settings.showLabels !== false;
   if ($("tglNF")) $("tglNF").checked = !!settings.showNF;
+  if ($("selLayout")) $("selLayout").value = (sheets[cur] && sheets[cur].layoutPreset) || settings.layoutPreset || "free";
   applyView();
   renderAll();
   setFile(name, handle || null);
@@ -184,32 +185,45 @@ function saveDoc(forceSaveAs) {
 
 /* SVG / PNG Export Generator */
 function buildExportSVG(scale = 1) {
-  let minx = 1e9, miny = 1e9, maxx = -1e9, maxy = -1e9;
   if (!blocks.length) return null;
+
+  const pad = DESIGN_TOKENS.exportPadding || 24;
+  let minx = 1e9, miny = 1e9, maxx = -1e9, maxy = -1e9;
   for (const b of blocks) {
     const bb = bboxOf(b);
-    minx = Math.min(minx, bb.x - 16); miny = Math.min(miny, bb.y - 16);
-    maxx = Math.max(maxx, bb.x + bb.w + 16); maxy = Math.max(maxy, bb.y + bb.h + 30);
+    minx = Math.min(minx, bb.x - pad); miny = Math.min(miny, bb.y - pad);
+    maxx = Math.max(maxx, bb.x + bb.w + pad); maxy = Math.max(maxy, bb.y + bb.h + pad + 16);
   }
+  for (const cn of conns) {
+    if (cn.waypoints && cn.waypoints.length) {
+      for (const wp of cn.waypoints) {
+        minx = Math.min(minx, wp.x - pad); miny = Math.min(miny, wp.y - pad);
+        maxx = Math.max(maxx, wp.x + pad); maxy = Math.max(maxy, wp.y + pad);
+      }
+    }
+  }
+
   const W = Math.max(200, maxx - minx), H = Math.max(150, maxy - miny);
+  const fontSans = DESIGN_TOKENS.fontFamily;
   const css = `
-    svg{font-family:ui-sans-serif,system-ui,sans-serif;background:#ffffff}
+    svg{font-family:${fontSans};background:#ffffff;text-rendering:geometricPrecision}
     .block-hit,.sel-ring,.port-hit,.port-mark{display:none}
     .blk-shape{fill:var(--blk-fill,#ffffff);stroke:var(--blk-stroke,#0f172a);stroke-width:2;stroke-linejoin:round}
     .blk-line{fill:none;stroke:var(--blk-stroke,#0f172a);stroke-width:2;stroke-linecap:round}
     .blk-glyph{fill:none;stroke:var(--blk-stroke,#0f172a);stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
     .blk-fillg{fill:var(--blk-stroke,#0f172a);stroke:none}
-    .lbl-name{fill:#000000;font-family:monospace;font-size:11px;font-weight:700;text-anchor:middle}
-    .lbl-val{fill:#334155;font-family:monospace;font-size:9.5px;font-weight:600;text-anchor:middle}
-    .ic-tag{fill:#000000;font-family:monospace;font-size:13px;font-weight:700}
-    .cust-tx{fill:#000000;font-family:sans-serif;font-size:12.5px;font-weight:600}
-    .port-lbl{fill:#000000;opacity:.7;font-family:monospace;font-size:8.5px;font-weight:600}
-    .free-label{fill:#000000;font-family:monospace;font-size:14px;font-weight:600}
-    .wire{fill:none;stroke:#0f172a;stroke-width:1.8}
-    .pbg{fill:#ffffff;stroke:#efd3a0;stroke-width:1}
-    .ptx{fill:#b45309;font-family:monospace;font-size:10.5px;font-weight:600;text-anchor:middle}
-    .pun{fill:#b45309;opacity:.7;font-family:monospace;font-size:8px;font-weight:600;text-anchor:middle}
-    .unk .pbg{fill:#f4f6f8;stroke:#d7dde3}.unk .ptx{fill:#94a1af}.unk .pun{fill:#94a1af}`;
+    .lbl-name{fill:#000000;font-family:${fontSans};font-size:${DESIGN_TOKENS.fontSizes.large}px;font-weight:700;text-anchor:middle}
+    .lbl-val{fill:#1e293b;font-family:${fontSans};font-size:${DESIGN_TOKENS.fontSizes.normal}px;font-weight:600;text-anchor:middle}
+    .ic-tag{fill:#000000;font-family:${fontSans};font-size:${DESIGN_TOKENS.fontSizes.large}px;font-weight:700}
+    .cust-tx{fill:#000000;font-family:${fontSans};font-size:${DESIGN_TOKENS.fontSizes.large}px;font-weight:600}
+    .port-lbl{fill:#000000;opacity:.9;font-family:${fontSans};font-size:${DESIGN_TOKENS.fontSizes.small}px;font-weight:600}
+    .free-label{fill:#000000;font-family:${fontSans};font-size:${DESIGN_TOKENS.fontSizes.heading}px;font-weight:600}
+    .wire{fill:none;stroke:#0f172a;stroke-width:2.2}
+    .pbg{fill:#ffffff;stroke:#efd3a0;stroke-width:1.2}
+    .ptx{fill:#b45309;font-family:${fontSans};font-size:15px;font-weight:700;text-anchor:middle}
+    .pun{fill:#b45309;opacity:.9;font-family:${fontSans};font-size:${DESIGN_TOKENS.fontSizes.small}px;font-weight:600;text-anchor:middle}
+    .unk .pbg{fill:#f4f6f8;stroke:#d7dde3}.unk .ptx{fill:#64748b}.unk .pun{fill:#64748b}`;
+
   const P = computePowers();
   let body = "", pillsBody = "";
   const ERS = [];
@@ -244,8 +258,9 @@ function buildExportSVG(scale = 1) {
     if (c.isLabel) {
       body += `<text class="free-label" x="0" y="0" dominant-baseline="middle">${esc(b.params.text || "Label")}</text>`;
     } else {
-      const tf = rotTransform(b);
-      body += `<g${tf ? ` transform="${tf}"` : ""}>${c.sym(b.params)}</g>`;
+      const rotTf = rotTransform(b);
+      const symTf = (rotTf ? `${rotTf} ` : "") + `translate(${f.w / 2} ${f.h / 2}) scale(${DESIGN_TOKENS.symbolScale}) translate(${-f.w / 2} ${-f.h / 2})`;
+      body += `<g${symTf ? ` transform="${symTf}"` : ""}>${c.sym(b.params)}</g>`;
       if (c.isInterconnect) {
         const rt = (b.params.tag || "?"), disp = icTagText(isSubTag(rt) ? subTagPort(rt) : rt);
         const tx = (b.rot || b.flip) ? f.w / 2 : (icSend(b.params) ? 16 : 23);
@@ -263,16 +278,16 @@ function buildExportSVG(scale = 1) {
       const v = c.val ? c.val(b.params) : "";
       if (c.topLabel || c.lblPos === "top") {
         if (nm && v) {
-          body += `<text class="lbl-name" x="${f.w / 2}" y="-22">${esc(nm)}</text>`;
-          body += `<text class="lbl-val" x="${f.w / 2}" y="-10">${esc(v)}</text>`;
+          body += `<text class="lbl-name" x="${f.w / 2}" y="-28">${esc(nm)}</text>`;
+          body += `<text class="lbl-val" x="${f.w / 2}" y="-13">${esc(v)}</text>`;
         } else if (nm) {
-          body += `<text class="lbl-name" x="${f.w / 2}" y="-10">${esc(nm)}</text>`;
+          body += `<text class="lbl-name" x="${f.w / 2}" y="-14">${esc(nm)}</text>`;
         } else if (v) {
-          body += `<text class="lbl-val" x="${f.w / 2}" y="-10">${esc(v)}</text>`;
+          body += `<text class="lbl-val" x="${f.w / 2}" y="-14">${esc(v)}</text>`;
         }
       } else {
-        if (nm) body += `<text class="lbl-name" x="${f.w / 2}" y="${f.h + 13}">${esc(nm)}</text>`;
-        if (v) body += `<text class="lbl-val" x="${f.w / 2}" y="${f.h + (nm ? 25 : 13)}">${esc(v)}</text>`;
+        if (nm) body += `<text class="lbl-name" x="${f.w / 2}" y="${f.h + 18}">${esc(nm)}</text>`;
+        if (v) body += `<text class="lbl-val" x="${f.w / 2}" y="${f.h + (nm ? 33 : 18)}">${esc(v)}</text>`;
       }
     }
     body += `</g>`;

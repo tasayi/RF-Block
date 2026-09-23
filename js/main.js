@@ -8,13 +8,13 @@ function seedDemo() {
     return b;
   };
   const ant = mk("antenna", 60, 140, { label: "ANT", role: "Rx", power: -70 });
-  const lna = mk("amp", 200, 140, { label: "LNA", gain: 18, nf: 1.2 });
-  const bpf = mk("filter", 340, 140, { label: "RF BPF", ftype: "BPF", il: 1.5, fc: "2.4 GHz" });
-  const mix = mk("mixer", 480, 140, { label: "MIX", cl: 7 });
-  const lo = mk("lo", 480, 280, { label: "LO", power: 8, freq: "2.0 GHz" });
-  const ifa = mk("amp", 620, 140, { label: "IF AMP", gain: 20, nf: 3 });
-  const ifl = mk("filter", 760, 140, { label: "IF BPF", ftype: "BPF", il: 2, fc: "400 MHz" });
-  const det = mk("detector", 900, 140, { label: "DET" });
+  const lna = mk("amp", 220, 140, { label: "LNA", gain: 18, nf: 1.2 });
+  const bpf = mk("filter", 380, 140, { label: "RF BPF", ftype: "BPF", il: 1.5, fc: "2.4 GHz" });
+  const mix = mk("mixer", 540, 140, { label: "MIX", cl: 7 });
+  const lo = mk("lo", 540, 280, { label: "LO", power: 8, freq: "2.0 GHz" });
+  const ifa = mk("amp", 700, 140, { label: "IF AMP", gain: 20, nf: 3 });
+  const ifl = mk("filter", 860, 140, { label: "IF BPF", ftype: "BPF", il: 2, fc: "400 MHz" });
+  const det = mk("detector", 1020, 140, { label: "DET" });
 
   const C = (fb, fp, tb, tp) => conns.push({ id: uid("c"), from: { block: fb.id, port: fp }, to: { block: tb.id, port: tp } });
   C(ant, "ant", lna, "in"); C(lna, "out", bpf, "in"); C(bpf, "out", mix, "rf");
@@ -305,6 +305,15 @@ function initEvents() {
   if ($("tglNF")) $("tglNF").addEventListener("change", e => { settings.showNF = e.target.checked; renderCanvas(); renderInspector(); });
   if ($("tglColor")) $("tglColor").addEventListener("change", e => { settings.color = e.target.checked; renderPalette(); renderCanvas(); });
   if ($("tglTheme")) $("tglTheme").addEventListener("change", e => { applyTheme(e.target.checked ? "light" : "dark"); renderPalette(); renderCanvas(); });
+  if ($("selLayout")) $("selLayout").addEventListener("change", e => {
+    pushHistory();
+    const val = e.target.value;
+    if (sheets[cur]) sheets[cur].layoutPreset = val;
+    settings.layoutPreset = val;
+    renderCanvas();
+    const lObj = LAYOUT_PRESETS[val] || LAYOUT_PRESETS.free;
+    hint(`Layout preset set to ${lObj.name}`);
+  });
 
   if ($("zIn")) $("zIn").onclick = () => zoomAt(1.15);
   if ($("zOut")) $("zOut").onclick = () => zoomAt(1 / 1.15);
@@ -338,12 +347,18 @@ function initEvents() {
     a.href = url; a.download = "rf-chain.svg"; a.click(); URL.revokeObjectURL(url); hint("Exported rf-chain.svg");
   };
 
-  if ($("btnPng")) $("btnPng").onclick = () => {
+  if ($("btnPng")) $("btnPng").onclick = async () => {
+    if (document.fonts && document.fonts.ready) {
+      try { await document.fonts.ready; } catch (e) {}
+    }
     const s = buildExportSVG(2); if (!s) { hint("Nothing to export yet."); return; }
     const img = new Image(), url = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(s);
     img.onload = () => {
       const cv = document.createElement("canvas"); cv.width = img.width; cv.height = img.height;
-      const g = cv.getContext("2d"); g.fillStyle = "#fff"; g.fillRect(0, 0, cv.width, cv.height); g.drawImage(img, 0, 0);
+      const g = cv.getContext("2d");
+      g.fillStyle = "#ffffff"; g.fillRect(0, 0, cv.width, cv.height);
+      g.imageSmoothingEnabled = true; g.imageSmoothingQuality = "high";
+      g.drawImage(img, 0, 0);
       cv.toBlob(b => { const u = URL.createObjectURL(b), a = document.createElement("a"); a.href = u; a.download = "rf-chain.png"; a.click(); URL.revokeObjectURL(u); hint("Exported rf-chain.png"); });
     };
     img.onerror = () => hint("PNG export failed in this browser — try SVG."); img.src = url;
@@ -388,11 +403,26 @@ function initEvents() {
 }
 
 function fitView() {
-  if (!blocks.length) { view = { tx: 60, ty: 56, scale: 1 }; applyView(); return; }
+  const curSheet = sheets[cur];
+  const presetKey = (curSheet && curSheet.layoutPreset) || settings.layoutPreset || "free";
+  const layoutObj = LAYOUT_PRESETS[presetKey] || LAYOUT_PRESETS.free;
+
   let minx = 1e9, miny = 1e9, maxx = -1e9, maxy = -1e9;
-  for (const b of blocks) { const bb = bboxOf(b); minx = Math.min(minx, bb.x - 8); miny = Math.min(miny, bb.y - 8); maxx = Math.max(maxx, bb.x + bb.w + 8); maxy = Math.max(maxy, bb.y + bb.h + 30); }
+  if (layoutObj && !layoutObj.isFree) {
+    minx = 40; miny = 40;
+    maxx = minx + layoutObj.w; maxy = miny + layoutObj.h;
+  }
+  if (blocks.length) {
+    for (const b of blocks) {
+      const bb = bboxOf(b);
+      minx = Math.min(minx, bb.x - 16); miny = Math.min(miny, bb.y - 16);
+      maxx = Math.max(maxx, bb.x + bb.w + 16); maxy = Math.max(maxy, bb.y + bb.h + 30);
+    }
+  } else if (layoutObj.isFree) {
+    view = { tx: 60, ty: 56, scale: 1 }; applyView(); return;
+  }
   const r = svg.getBoundingClientRect(), pad = 40;
-  const s = clamp(Math.min((r.width - pad * 2) / (maxx - minx), (r.height - pad * 2) / (maxy - miny)), 0.3, 2);
+  const s = clamp(Math.min((r.width - pad * 2) / (maxx - minx), (r.height - pad * 2) / (maxy - miny)), 0.25, 2);
   view.scale = s; view.tx = pad - minx * s + (r.width - pad * 2 - (maxx - minx) * s) / 2; view.ty = pad - miny * s + (r.height - pad * 2 - (maxy - miny) * s) / 2; applyView();
 }
 

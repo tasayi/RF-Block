@@ -26,8 +26,8 @@
   --pill-ink: #f59e0b;
   --pill-unk: #94a3b8;
   --danger: #ef4444;
-  --mono: ui-monospace, "JetBrains Mono", "SF Mono", "Cascadia Code", "Roboto Mono", Menlo, Consolas, monospace;
-  --sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --mono: Calibri, "Calibri Light", "Segoe UI", Arial, sans-serif;
+  --sans: Calibri, "Calibri Light", "Segoe UI", Arial, sans-serif;
   --radius-sm: 6px;
   --radius-md: 8px;
   --radius-lg: 12px;
@@ -457,19 +457,67 @@ button.btn.primary:hover {
 .empty-card b { color: var(--accent); }
 
 /* Blocks & Wires on SVG Canvas */
+select.tb-select {
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ink);
+  background: var(--chrome-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 5px 8px;
+  cursor: pointer;
+  outline: none;
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: var(--shadow-sm);
+}
+select.tb-select:hover {
+  background: #273549;
+  border-color: #475569;
+  color: #ffffff;
+}
+
+/* Page Boundary Overlay for Document Presets */
+.page-bg-frame {
+  fill: var(--canvas);
+  stroke: var(--line);
+  stroke-width: 1.5;
+  filter: drop-shadow(0 4px 16px rgba(0, 0, 0, 0.35));
+}
+.page-boundary {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 2;
+  stroke-dasharray: 8 5;
+  opacity: 0.85;
+}
+.page-badge-bg {
+  fill: var(--chrome-2);
+  stroke: var(--accent);
+  stroke-width: 1.2;
+}
+.page-badge {
+  fill: var(--accent);
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+/* Blocks & Wires on SVG Canvas (Document-Optimized Typography) */
 .block-hit { fill: transparent; stroke: none; }
 .blk-shape { fill: var(--blk-fill); stroke: var(--blk-stroke); stroke-width: 2; stroke-linejoin: round; }
 .blk-line { fill: none; stroke: var(--blk-stroke); stroke-width: 2; stroke-linecap: round; }
 .blk-glyph { fill: none; stroke: var(--blk-stroke); stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
 .blk-fillg { fill: var(--blk-stroke); stroke: none; }
-.ic-tag { fill: var(--blk-stroke); font-family: var(--mono); font-size: 13px; font-weight: 700; }
-.cust-tx { fill: var(--blk-stroke); font-family: var(--sans); font-size: 12.5px; font-weight: 600; }
-.port-lbl { fill: var(--blk-stroke); opacity: 0.75; font-family: var(--mono); font-size: 8.5px; font-weight: 600; }
+.ic-tag { fill: var(--blk-stroke); font-family: var(--sans); font-size: 16px; font-weight: 700; }
+.cust-tx { fill: var(--blk-stroke); font-family: var(--sans); font-size: 16px; font-weight: 600; }
+.port-lbl { fill: var(--blk-stroke); opacity: 0.9; font-family: var(--sans); font-size: 13px; font-weight: 600; }
 .block.hot .blk-shape { stroke: #ef4444; stroke-width: 2.5; }
 .block.hot .lbl-name { fill: #f87171; }
-.lbl-name { fill: var(--lbl-ink); font-family: var(--mono); font-size: 11px; font-weight: 700; text-anchor: middle; letter-spacing: 0.02em; }
-.lbl-val { fill: var(--lbl-val-ink); font-family: var(--mono); font-size: 9.5px; font-weight: 600; text-anchor: middle; letter-spacing: 0.01em; opacity: 0.95; }
-.free-label { fill: var(--lbl-ink); font-family: var(--mono); font-size: 14px; font-weight: 600; }
+.lbl-name { fill: var(--lbl-ink); font-family: var(--sans); font-size: 16px; font-weight: 700; text-anchor: middle; letter-spacing: 0.02em; }
+.lbl-val { fill: var(--lbl-val-ink); font-family: var(--sans); font-size: 14px; font-weight: 600; text-anchor: middle; letter-spacing: 0.01em; opacity: 0.95; }
+.free-label { fill: var(--lbl-ink); font-family: var(--sans); font-size: 18px; font-weight: 600; }
 .block .sel-ring { fill: none; stroke: var(--accent); stroke-width: 2.2; stroke-dasharray: 6 4; opacity: 0; transition: opacity 0.15s; }
 .block.sel .sel-ring { opacity: 1; }
 .block.sel .blk-shape { stroke: var(--accent); }
@@ -483,8 +531,8 @@ button.btn.primary:hover {
 .port.tgt-ok .port-mark { opacity: 1; r: 6; fill: var(--accent); stroke: #ffffff; }
 
 .conn-hit { fill: none; stroke: transparent; stroke-width: 16; pointer-events: stroke; cursor: move; }
-.wire { fill: none; stroke: var(--wire); stroke-width: 2; pointer-events: none; transition: stroke 0.15s; }
-.conn.sel .wire { stroke: var(--wire-sel); stroke-width: 2.5; }
+.wire { fill: none; stroke: var(--wire); stroke-width: 2.2; pointer-events: none; transition: stroke 0.15s; }
+.conn.sel .wire { stroke: var(--wire-sel); stroke-width: 2.8; }
 #arrow path { fill: var(--wire); } #arrowSel path { fill: var(--wire-sel); }
 
 .wire-node-g { cursor: move; pointer-events: all; }
@@ -496,8 +544,8 @@ button.btn.primary:hover {
 .pill { pointer-events: all; cursor: grab; }
 .pill:active { cursor: grabbing; }
 .pill .pbg { fill: var(--pill-bg); stroke: var(--pill-bd); stroke-width: 1.2; filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2)); rx: 4; }
-.pill .ptx { fill: var(--pill-ink); font-family: var(--mono); font-size: 11px; font-weight: 700; text-anchor: middle; letter-spacing: 0.01em; }
-.pill .pun { fill: var(--pill-unk); font-family: var(--mono); font-size: 8.5px; font-weight: 600; text-anchor: middle; letter-spacing: 0.04em; }
+.pill .ptx { fill: var(--pill-ink); font-family: var(--sans); font-size: 15px; font-weight: 700; text-anchor: middle; letter-spacing: 0.01em; }
+.pill .pun { fill: var(--pill-unk); font-family: var(--sans); font-size: 13px; font-weight: 600; text-anchor: middle; letter-spacing: 0.04em; }
 .pill.unk .pbg { stroke: #334155; fill: #0f172a; filter: none; }
 .pill.unk .ptx { fill: #64748b; font-weight: 500; }
 .pill.unk .pun { fill: #64748b; }

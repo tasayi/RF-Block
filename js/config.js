@@ -1,5 +1,21 @@
 "use strict";
 
+/* Centralized Design System Tokens */
+const DESIGN_TOKENS = {
+  fontMin: 13,
+  fontSizes: {
+    small: 13,      // port-lbl, pun (units)
+    normal: 14,     // lbl-val (parameters)
+    large: 16,      // lbl-name, cust-tx, ic-tag
+    heading: 18,    // free-label (annotations)
+    title: 20       // header titles
+  },
+  fontFamily: 'Calibri, "Calibri Light", "Segoe UI", Arial, sans-serif',
+  fontFamilyMono: 'Calibri, "Calibri Light", "Segoe UI", Arial, sans-serif',
+  symbolScale: 1.2, // +20% icon/symbol scaling
+  exportPadding: 24
+};
+
 /* Group default tints (fallback) */
 const GROUP_TINT = {
   "Terminals": "#eef2f7",
@@ -69,6 +85,15 @@ const SWATCHES = [
   "#e0f2fe", "#e0e7ff", "#f3e8ff", "#fce7f3", "#fee2e2", "#fef9c3"
 ];
 
+/* Layout Presets for Document & Print Compatibility */
+const LAYOUT_PRESETS = {
+  free:         { id: "free",         name: "Free / Custom", isFree: true,  w: 0,    h: 0,    mmW: 0,   mmH: 0 },
+  a4_landscape: { id: "a4_landscape", name: "A4 Landscape", isFree: false, w: 1400, h: 990,  mmW: 297, mmH: 210 },
+  a4_portrait:  { id: "a4_portrait",  name: "A4 Portrait",  isFree: false, w: 990,  h: 1400, mmW: 210, mmH: 297 },
+  a3_landscape: { id: "a3_landscape", name: "A3 Landscape", isFree: false, w: 1980, h: 1400, mmW: 420, mmH: 297 },
+  a3_portrait:  { id: "a3_portrait",  name: "A3 Portrait",  isFree: false, w: 1400, h: 1980, mmW: 297, mmH: 420 }
+};
+
 /* Default application configuration settings */
 const DEFAULT_SETTINGS = {
   snap: true,
@@ -79,5 +104,7 @@ const DEFAULT_SETTINGS = {
   enableJumpers: true,
   color: true,
   theme: "dark",
+  layoutPreset: "free",
   analysisBand: { startFreq: 1, startUnit: "GHz", stopFreq: 10, stopUnit: "GHz", points: 101, sweepType: "lin" }
 };
+

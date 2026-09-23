@@ -1,7 +1,7 @@
 "use strict";
 
 /* Canvas SVG Render Loop */
-const layerConn = $("layerConn"), layerBlock = $("layerBlock"), layerPill = $("layerPill"), overlay = $("overlay"), gridRect = $("gridRect");
+const layerPage = $("layerPage"), layerConn = $("layerConn"), layerBlock = $("layerBlock"), layerPill = $("layerPill"), overlay = $("overlay"), gridRect = $("gridRect");
 
 function applyView() {
   world.setAttribute("transform", `translate(${view.tx} ${view.ty}) scale(${view.scale})`);
@@ -11,6 +11,32 @@ function applyView() {
 
 function renderCanvas() {
   gridRect.style.display = settings.grid ? "" : "none";
+
+  /* Render Page Layout Frame for Document Presets */
+  const curSheet = sheets[cur];
+  const presetKey = (curSheet && curSheet.layoutPreset) || settings.layoutPreset || "free";
+  const layoutObj = LAYOUT_PRESETS[presetKey] || LAYOUT_PRESETS.free;
+
+  if (layerPage) {
+    if (layoutObj && !layoutObj.isFree) {
+      const margin = 40;
+      const pxW = layoutObj.w, pxH = layoutObj.h;
+      const x0 = margin, y0 = margin;
+      const badgeText = `${layoutObj.name} · ${layoutObj.mmW} × ${layoutObj.mmH} mm`;
+      const badgeWidth = badgeText.length * 8 + 24;
+
+      layerPage.innerHTML = `<g class="page-frame-group">`
+        + `<rect class="page-bg-frame" x="${x0}" y="${y0}" width="${pxW}" height="${pxH}" rx="6"/>`
+        + `<rect class="page-boundary" x="${x0}" y="${y0}" width="${pxW}" height="${pxH}" rx="6"/>`
+        + `<g transform="translate(${x0 + 16}, ${y0 + 26})">`
+        + `<rect class="page-badge-bg" x="-8" y="-16" width="${badgeWidth}" height="24" rx="4"/>`
+        + `<text class="page-badge" x="0" y="0" dominant-baseline="middle">${esc(badgeText)}</text>`
+        + `</g></g>`;
+    } else {
+      layerPage.innerHTML = "";
+    }
+  }
+
   const P = computePowers();
   const hotSet = new Set();
   for (const b of blocks) {
@@ -75,10 +101,11 @@ function renderCanvas() {
         + `<rect class="block-hit" x="-4" y="-16" width="${f.w}" height="22" rx="4"/>`
         + `<text class="free-label" x="0" y="0" dominant-baseline="middle">${esc(b.params.text || "Label")}</text>`;
     } else {
-      const tf = rotTransform(b);
+      const rotTf = rotTransform(b);
+      const symTf = (rotTf ? `${rotTf} ` : "") + `translate(${f.w / 2} ${f.h / 2}) scale(${DESIGN_TOKENS.symbolScale}) translate(${-f.w / 2} ${-f.h / 2})`;
       bh += `<rect class="sel-ring" x="-8" y="-8" width="${f.w + 16}" height="${f.h + 16}" rx="9"/>`
         + `<rect class="block-hit" x="0" y="0" width="${f.w}" height="${f.h}"/>`
-        + `<g${tf ? ` transform="${tf}"` : ""}>${c.sym(b.params)}</g>`;
+        + `<g${symTf ? ` transform="${symTf}"` : ""}>${c.sym(b.params)}</g>`;
       if (c.isInterconnect) {
         const rt = (b.params.tag || "?"), disp = icTagText(isSubTag(rt) ? subTagPort(rt) : rt);
         const tx = (b.rot || b.flip) ? f.w / 2 : (icSend(b.params) ? 16 : 23);
@@ -106,16 +133,16 @@ function renderCanvas() {
       const v = c.val ? c.val(b.params) : "";
       if (c.topLabel || c.lblPos === "top") {
         if (nm && v) {
-          bh += `<text class="lbl-name" x="${f.w / 2}" y="-22">${esc(nm)}</text>`;
-          bh += `<text class="lbl-val" x="${f.w / 2}" y="-10">${esc(v)}</text>`;
+          bh += `<text class="lbl-name" x="${f.w / 2}" y="-28">${esc(nm)}</text>`;
+          bh += `<text class="lbl-val" x="${f.w / 2}" y="-13">${esc(v)}</text>`;
         } else if (nm) {
-          bh += `<text class="lbl-name" x="${f.w / 2}" y="-10">${esc(nm)}</text>`;
+          bh += `<text class="lbl-name" x="${f.w / 2}" y="-14">${esc(nm)}</text>`;
         } else if (v) {
-          bh += `<text class="lbl-val" x="${f.w / 2}" y="-10">${esc(v)}</text>`;
+          bh += `<text class="lbl-val" x="${f.w / 2}" y="-14">${esc(v)}</text>`;
         }
       } else {
-        if (nm) bh += `<text class="lbl-name" x="${f.w / 2}" y="${f.h + 13}">${esc(nm)}</text>`;
-        if (v) bh += `<text class="lbl-val" x="${f.w / 2}" y="${f.h + (nm ? 25 : 13)}">${esc(v)}</text>`;
+        if (nm) bh += `<text class="lbl-name" x="${f.w / 2}" y="${f.h + 18}">${esc(nm)}</text>`;
+        if (v) bh += `<text class="lbl-val" x="${f.w / 2}" y="${f.h + (nm ? 33 : 18)}">${esc(v)}</text>`;
       }
       for (const p of getPorts(b)) {
         const m = markInside(p, f.w, f.h);

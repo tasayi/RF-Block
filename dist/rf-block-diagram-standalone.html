@@ -33,8 +33,8 @@
   --pill-ink: #f59e0b;
   --pill-unk: #94a3b8;
   --danger: #ef4444;
-  --mono: ui-monospace, "JetBrains Mono", "SF Mono", "Cascadia Code", "Roboto Mono", Menlo, Consolas, monospace;
-  --sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --mono: Calibri, "Calibri Light", "Segoe UI", Arial, sans-serif;
+  --sans: Calibri, "Calibri Light", "Segoe UI", Arial, sans-serif;
   --radius-sm: 6px;
   --radius-md: 8px;
   --radius-lg: 12px;
@@ -464,19 +464,67 @@ button.btn.primary:hover {
 .empty-card b { color: var(--accent); }
 
 /* Blocks & Wires on SVG Canvas */
+select.tb-select {
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ink);
+  background: var(--chrome-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 5px 8px;
+  cursor: pointer;
+  outline: none;
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: var(--shadow-sm);
+}
+select.tb-select:hover {
+  background: #273549;
+  border-color: #475569;
+  color: #ffffff;
+}
+
+/* Page Boundary Overlay for Document Presets */
+.page-bg-frame {
+  fill: var(--canvas);
+  stroke: var(--line);
+  stroke-width: 1.5;
+  filter: drop-shadow(0 4px 16px rgba(0, 0, 0, 0.35));
+}
+.page-boundary {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 2;
+  stroke-dasharray: 8 5;
+  opacity: 0.85;
+}
+.page-badge-bg {
+  fill: var(--chrome-2);
+  stroke: var(--accent);
+  stroke-width: 1.2;
+}
+.page-badge {
+  fill: var(--accent);
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+/* Blocks & Wires on SVG Canvas (Document-Optimized Typography) */
 .block-hit { fill: transparent; stroke: none; }
 .blk-shape { fill: var(--blk-fill); stroke: var(--blk-stroke); stroke-width: 2; stroke-linejoin: round; }
 .blk-line { fill: none; stroke: var(--blk-stroke); stroke-width: 2; stroke-linecap: round; }
 .blk-glyph { fill: none; stroke: var(--blk-stroke); stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
 .blk-fillg { fill: var(--blk-stroke); stroke: none; }
-.ic-tag { fill: var(--blk-stroke); font-family: var(--mono); font-size: 13px; font-weight: 700; }
-.cust-tx { fill: var(--blk-stroke); font-family: var(--sans); font-size: 12.5px; font-weight: 600; }
-.port-lbl { fill: var(--blk-stroke); opacity: 0.75; font-family: var(--mono); font-size: 8.5px; font-weight: 600; }
+.ic-tag { fill: var(--blk-stroke); font-family: var(--sans); font-size: 16px; font-weight: 700; }
+.cust-tx { fill: var(--blk-stroke); font-family: var(--sans); font-size: 16px; font-weight: 600; }
+.port-lbl { fill: var(--blk-stroke); opacity: 0.9; font-family: var(--sans); font-size: 13px; font-weight: 600; }
 .block.hot .blk-shape { stroke: #ef4444; stroke-width: 2.5; }
 .block.hot .lbl-name { fill: #f87171; }
-.lbl-name { fill: var(--lbl-ink); font-family: var(--mono); font-size: 11px; font-weight: 700; text-anchor: middle; letter-spacing: 0.02em; }
-.lbl-val { fill: var(--lbl-val-ink); font-family: var(--mono); font-size: 9.5px; font-weight: 600; text-anchor: middle; letter-spacing: 0.01em; opacity: 0.95; }
-.free-label { fill: var(--lbl-ink); font-family: var(--mono); font-size: 14px; font-weight: 600; }
+.lbl-name { fill: var(--lbl-ink); font-family: var(--sans); font-size: 16px; font-weight: 700; text-anchor: middle; letter-spacing: 0.02em; }
+.lbl-val { fill: var(--lbl-val-ink); font-family: var(--sans); font-size: 14px; font-weight: 600; text-anchor: middle; letter-spacing: 0.01em; opacity: 0.95; }
+.free-label { fill: var(--lbl-ink); font-family: var(--sans); font-size: 18px; font-weight: 600; }
 .block .sel-ring { fill: none; stroke: var(--accent); stroke-width: 2.2; stroke-dasharray: 6 4; opacity: 0; transition: opacity 0.15s; }
 .block.sel .sel-ring { opacity: 1; }
 .block.sel .blk-shape { stroke: var(--accent); }
@@ -490,8 +538,8 @@ button.btn.primary:hover {
 .port.tgt-ok .port-mark { opacity: 1; r: 6; fill: var(--accent); stroke: #ffffff; }
 
 .conn-hit { fill: none; stroke: transparent; stroke-width: 16; pointer-events: stroke; cursor: move; }
-.wire { fill: none; stroke: var(--wire); stroke-width: 2; pointer-events: none; transition: stroke 0.15s; }
-.conn.sel .wire { stroke: var(--wire-sel); stroke-width: 2.5; }
+.wire { fill: none; stroke: var(--wire); stroke-width: 2.2; pointer-events: none; transition: stroke 0.15s; }
+.conn.sel .wire { stroke: var(--wire-sel); stroke-width: 2.8; }
 #arrow path { fill: var(--wire); } #arrowSel path { fill: var(--wire-sel); }
 
 .wire-node-g { cursor: move; pointer-events: all; }
@@ -503,8 +551,8 @@ button.btn.primary:hover {
 .pill { pointer-events: all; cursor: grab; }
 .pill:active { cursor: grabbing; }
 .pill .pbg { fill: var(--pill-bg); stroke: var(--pill-bd); stroke-width: 1.2; filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2)); rx: 4; }
-.pill .ptx { fill: var(--pill-ink); font-family: var(--mono); font-size: 11px; font-weight: 700; text-anchor: middle; letter-spacing: 0.01em; }
-.pill .pun { fill: var(--pill-unk); font-family: var(--mono); font-size: 8.5px; font-weight: 600; text-anchor: middle; letter-spacing: 0.04em; }
+.pill .ptx { fill: var(--pill-ink); font-family: var(--sans); font-size: 15px; font-weight: 700; text-anchor: middle; letter-spacing: 0.01em; }
+.pill .pun { fill: var(--pill-unk); font-family: var(--sans); font-size: 13px; font-weight: 600; text-anchor: middle; letter-spacing: 0.04em; }
 .pill.unk .pbg { stroke: #334155; fill: #0f172a; filter: none; }
 .pill.unk .ptx { fill: #64748b; font-weight: 500; }
 .pill.unk .pun { fill: #64748b; }
@@ -765,6 +813,13 @@ table.bg tr:hover td { background: rgba(255, 255, 255, 0.04); cursor: pointer; }
     <label class="toggle" title="Show cascade noise figure on wires"><input type="checkbox" id="tglNF"/> NF</label>
     <label class="toggle" title="Tint blocks by category"><input type="checkbox" id="tglColor" checked/> Colour</label>
     <label class="toggle" title="Toggle Light / Dark background theme"><input type="checkbox" id="tglTheme"/> Theme</label>
+    <select id="selLayout" class="tb-select" title="Canvas Page Layout Preset for Document & Print Compatibility">
+      <option value="free">Layout: Free</option>
+      <option value="a4_landscape">A4 Landscape (297×210mm)</option>
+      <option value="a4_portrait">A4 Portrait (210×297mm)</option>
+      <option value="a3_landscape">A3 Landscape (420×297mm)</option>
+      <option value="a3_portrait">A3 Portrait (297×420mm)</option>
+    </select>
     <div class="zoombox">
       <button id="zOut" title="Zoom out">−</button>
       <div class="z" id="zLabel">100%</div>
@@ -799,6 +854,7 @@ table.bg tr:hover td { background: rgba(255, 255, 255, 0.04); cursor: pointer; }
         </defs>
         <g id="world">
           <rect id="gridRect" x="-4000" y="-4000" width="9000" height="9000" fill="url(#grid)"/>
+          <g id="layerPage"></g>
           <g id="layerConn"></g>
           <g id="layerBlock"></g>
           <g id="layerPill"></g>
@@ -884,6 +940,22 @@ table.bg tr:hover td { background: rgba(255, 255, 255, 0.04); cursor: pointer; }
 /* --- File: js/config.js --- */
 "use strict";
 
+/* Centralized Design System Tokens */
+const DESIGN_TOKENS = {
+  fontMin: 13,
+  fontSizes: {
+    small: 13,      // port-lbl, pun (units)
+    normal: 14,     // lbl-val (parameters)
+    large: 16,      // lbl-name, cust-tx, ic-tag
+    heading: 18,    // free-label (annotations)
+    title: 20       // header titles
+  },
+  fontFamily: 'Calibri, "Calibri Light", "Segoe UI", Arial, sans-serif',
+  fontFamilyMono: 'Calibri, "Calibri Light", "Segoe UI", Arial, sans-serif',
+  symbolScale: 1.2, // +20% icon/symbol scaling
+  exportPadding: 24
+};
+
 /* Group default tints (fallback) */
 const GROUP_TINT = {
   "Terminals": "#eef2f7",
@@ -953,6 +1025,15 @@ const SWATCHES = [
   "#e0f2fe", "#e0e7ff", "#f3e8ff", "#fce7f3", "#fee2e2", "#fef9c3"
 ];
 
+/* Layout Presets for Document & Print Compatibility */
+const LAYOUT_PRESETS = {
+  free:         { id: "free",         name: "Free / Custom", isFree: true,  w: 0,    h: 0,    mmW: 0,   mmH: 0 },
+  a4_landscape: { id: "a4_landscape", name: "A4 Landscape", isFree: false, w: 1400, h: 990,  mmW: 297, mmH: 210 },
+  a4_portrait:  { id: "a4_portrait",  name: "A4 Portrait",  isFree: false, w: 990,  h: 1400, mmW: 210, mmH: 297 },
+  a3_landscape: { id: "a3_landscape", name: "A3 Landscape", isFree: false, w: 1980, h: 1400, mmW: 420, mmH: 297 },
+  a3_portrait:  { id: "a3_portrait",  name: "A3 Portrait",  isFree: false, w: 1400, h: 1980, mmW: 297, mmH: 420 }
+};
+
 /* Default application configuration settings */
 const DEFAULT_SETTINGS = {
   snap: true,
@@ -963,8 +1044,10 @@ const DEFAULT_SETTINGS = {
   enableJumpers: true,
   color: true,
   theme: "dark",
+  layoutPreset: "free",
   analysisBand: { startFreq: 1, startUnit: "GHz", stopFreq: 10, stopUnit: "GHz", points: 101, sweepType: "lin" }
 };
+
 
 
 /* --- File: js/utils.js --- */
@@ -2158,12 +2241,12 @@ function markInside(p, w, h) {
 
 function bboxOf(b) {
   const c = COMP[b.type];
-  if (c.isLabel) { return { x: b.x - 4, y: b.y - 16, w: measureLabel(b), h: 22 }; }
+  if (c.isLabel) { return { x: b.x - 4, y: b.y - 18, w: measureLabel(b), h: 28 }; }
   const s = footprint(b);
   if (c.topLabel || c.lblPos === "top") {
-    return { x: b.x, y: b.y - 26, w: s.w, h: s.h + 26 };
+    return { x: b.x, y: b.y - 32, w: s.w, h: s.h + 32 };
   }
-  return { x: b.x, y: b.y, w: s.w, h: s.h };
+  return { x: b.x, y: b.y, w: s.w, h: s.h + 40 };
 }
 
 function screenToWorld(cx, cy) {
@@ -3337,8 +3420,14 @@ function route(a, z, cn) {
 function pillDims(lvl, nf) {
   const full = dbm(lvl);
   const nrow = (nf === undefined || !isFinite(nf)) ? null : ("NF " + fmt(nf) + " dB");
-  const w = Math.max(full.length * 6.4 + 14, nrow ? nrow.length * 5.4 + 14 : 0, 52);
-  return { full, nrow, w, h: nrow ? 32 : 20 };
+  const charWidthMain = 9.5;
+  const charWidthSub = 8.5;
+  const paddingH = 10;
+  const wMain = full.length * charWidthMain + paddingH;
+  const wSub = nrow ? (nrow.length * charWidthSub + paddingH) : 0;
+  const w = Math.max(wMain, wSub, 44);
+  const h = nrow ? 36 : 24;
+  return { full, nrow, w, h };
 }
 
 function segHitsRect(s, rx1, ry1, rx2, ry2) {
@@ -3349,7 +3438,7 @@ function segHitsRect(s, rx1, ry1, rx2, ry2) {
   }
   const x = s.p.x; if (x < rx1 || x > rx2) return false;
   const y1 = Math.min(s.p.y, s.q.y), y2 = Math.max(s.p.y, s.q.y);
-  return y2 >= ry1 && y1 <= ry2;
+  return y2 >= ry1 && y1 <= rx2;
 }
 
 function pickClear(cands, d, segs, rects) {
@@ -3364,26 +3453,23 @@ function pickClear(cands, d, segs, rects) {
 
 function pillCenter(R, lvl, allSegs, rects, nf) {
   const d = pillDims(lvl, nf);
-  const segs = allSegs || R.segs || [];
   let seg = R.seg, cx = R.mx, cy = R.my;
   if (seg && R.segs && R.segs.length) {
-    const need = (seg.horiz ? d.w : d.h) + 24;
+    const need = (seg.horiz ? d.w : d.h) + 20;
     if (seg.len < need) {
       const L = R.segs.reduce((a, b) => b.len > a.len ? b : a);
       if (L.len > seg.len) { seg = L; cx = (L.p.x + L.q.x) / 2; cy = (L.p.y + L.q.y) / 2; }
     }
   }
-  if (!seg) return { x: cx, y: cy - (d.h / 2 + 7) };
+  if (!seg) return { x: cx, y: cy - (d.h / 2 + 4) };
   if (seg.horiz) {
-    const lo = Math.min(seg.p.x, seg.q.x) + d.w / 2 + 12, hi = Math.max(seg.p.x, seg.q.x) - d.w / 2 - 12;
+    const lo = Math.min(seg.p.x, seg.q.x) + d.w / 2 + 8, hi = Math.max(seg.p.x, seg.q.x) - d.w / 2 - 8;
     cx = lo <= hi ? Math.min(Math.max(cx, lo), hi) : (seg.p.x + seg.q.x) / 2;
-    const off = d.h / 2 + 7, far = d.h / 2 + 35;
-    cy = pickClear([{ x: cx, y: cy - off }, { x: cx, y: cy + off }, { x: cx, y: cy - far }, { x: cx, y: cy + far }], d, segs, rects).y;
+    cy = seg.p.y - (d.h / 2 + 4); // Positioned directly ABOVE the wire line
   } else {
-    const lo = Math.min(seg.p.y, seg.q.y) + d.h / 2 + 12, hi = Math.max(seg.p.y, seg.q.y) - d.h / 2 - 12;
+    const lo = Math.min(seg.p.y, seg.q.y) + d.h / 2 + 8, hi = Math.max(seg.p.y, seg.q.y) - d.h / 2 - 8;
     cy = lo <= hi ? Math.min(Math.max(cy, lo), hi) : (seg.p.y + seg.q.y) / 2;
-    const off = d.w / 2 + 8, far = d.w / 2 + 36;
-    cx = pickClear([{ x: cx + off, y: cy }, { x: cx - off, y: cy }, { x: cx + far, y: cy }, { x: cx - far, y: cy }], d, segs, rects).x;
+    cx = seg.p.x + (d.w / 2 + 6); // Positioned directly to the RIGHT of vertical wire line
   }
   return { x: cx, y: cy };
 }
@@ -3392,7 +3478,7 @@ function pill(cx, cy, lvl, connId, nf) {
   const unk = (lvl === undefined || !isFinite(lvl));
   const d = pillDims(lvl, nf);
   const rows = d.nrow
-    ? `<text class="ptx" x="0" y="-6" dominant-baseline="central" text-anchor="middle">${esc(d.full)}</text><text class="pun" x="0" y="7" dominant-baseline="central" text-anchor="middle">${esc(d.nrow)}</text>`
+    ? `<text class="ptx" x="0" y="-7" dominant-baseline="central" text-anchor="middle">${esc(d.full)}</text><text class="pun" x="0" y="8" dominant-baseline="central" text-anchor="middle">${esc(d.nrow)}</text>`
     : `<text class="ptx" x="0" y="0" dominant-baseline="central" text-anchor="middle">${esc(d.full)}</text>`;
   return `<g class="pill${unk ? " unk" : ""}"${connId ? ` data-conn="${connId}"` : ""} transform="translate(${cx} ${cy})"><rect class="pbg" x="${-d.w / 2}" y="${-d.h / 2}" width="${d.w}" height="${d.h}" rx="6"/>${rows}</g>`;
 }
@@ -3722,7 +3808,7 @@ function docText() {
   commitSheet();
   return JSON.stringify({
     format: "rf-block-diagram", version: 3, settings: { ...settings }, typeColor: { ...typeColor }, cur,
-    sheets: sheets.map(sh => ({ id: sh.id, name: sh.name, view: sh.view, parent: sh.parent || null, blocks: sh.blocks, connections: sh.conns }))
+    sheets: sheets.map(sh => ({ id: sh.id, name: sh.name, view: sh.view, layoutPreset: sh.layoutPreset || "free", parent: sh.parent || null, blocks: sh.blocks, connections: sh.conns }))
   }, null, 2);
 }
 
@@ -3847,6 +3933,7 @@ function loadDoc(text, name, handle) {
   $("tglGrid").checked = settings.grid;
   if ($("tglLabels")) $("tglLabels").checked = settings.showLabels !== false;
   if ($("tglNF")) $("tglNF").checked = !!settings.showNF;
+  if ($("selLayout")) $("selLayout").value = (sheets[cur] && sheets[cur].layoutPreset) || settings.layoutPreset || "free";
   applyView();
   renderAll();
   setFile(name, handle || null);
@@ -3890,32 +3977,45 @@ function saveDoc(forceSaveAs) {
 
 /* SVG / PNG Export Generator */
 function buildExportSVG(scale = 1) {
-  let minx = 1e9, miny = 1e9, maxx = -1e9, maxy = -1e9;
   if (!blocks.length) return null;
+
+  const pad = DESIGN_TOKENS.exportPadding || 24;
+  let minx = 1e9, miny = 1e9, maxx = -1e9, maxy = -1e9;
   for (const b of blocks) {
     const bb = bboxOf(b);
-    minx = Math.min(minx, bb.x - 16); miny = Math.min(miny, bb.y - 16);
-    maxx = Math.max(maxx, bb.x + bb.w + 16); maxy = Math.max(maxy, bb.y + bb.h + 30);
+    minx = Math.min(minx, bb.x - pad); miny = Math.min(miny, bb.y - pad);
+    maxx = Math.max(maxx, bb.x + bb.w + pad); maxy = Math.max(maxy, bb.y + bb.h + pad + 16);
   }
+  for (const cn of conns) {
+    if (cn.waypoints && cn.waypoints.length) {
+      for (const wp of cn.waypoints) {
+        minx = Math.min(minx, wp.x - pad); miny = Math.min(miny, wp.y - pad);
+        maxx = Math.max(maxx, wp.x + pad); maxy = Math.max(maxy, wp.y + pad);
+      }
+    }
+  }
+
   const W = Math.max(200, maxx - minx), H = Math.max(150, maxy - miny);
+  const fontSans = DESIGN_TOKENS.fontFamily;
   const css = `
-    svg{font-family:ui-sans-serif,system-ui,sans-serif;background:#ffffff}
+    svg{font-family:${fontSans};background:#ffffff;text-rendering:geometricPrecision}
     .block-hit,.sel-ring,.port-hit,.port-mark{display:none}
     .blk-shape{fill:var(--blk-fill,#ffffff);stroke:var(--blk-stroke,#0f172a);stroke-width:2;stroke-linejoin:round}
     .blk-line{fill:none;stroke:var(--blk-stroke,#0f172a);stroke-width:2;stroke-linecap:round}
     .blk-glyph{fill:none;stroke:var(--blk-stroke,#0f172a);stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
     .blk-fillg{fill:var(--blk-stroke,#0f172a);stroke:none}
-    .lbl-name{fill:#000000;font-family:monospace;font-size:11px;font-weight:700;text-anchor:middle}
-    .lbl-val{fill:#334155;font-family:monospace;font-size:9.5px;font-weight:600;text-anchor:middle}
-    .ic-tag{fill:#000000;font-family:monospace;font-size:13px;font-weight:700}
-    .cust-tx{fill:#000000;font-family:sans-serif;font-size:12.5px;font-weight:600}
-    .port-lbl{fill:#000000;opacity:.7;font-family:monospace;font-size:8.5px;font-weight:600}
-    .free-label{fill:#000000;font-family:monospace;font-size:14px;font-weight:600}
-    .wire{fill:none;stroke:#0f172a;stroke-width:1.8}
-    .pbg{fill:#ffffff;stroke:#efd3a0;stroke-width:1}
-    .ptx{fill:#b45309;font-family:monospace;font-size:10.5px;font-weight:600;text-anchor:middle}
-    .pun{fill:#b45309;opacity:.7;font-family:monospace;font-size:8px;font-weight:600;text-anchor:middle}
-    .unk .pbg{fill:#f4f6f8;stroke:#d7dde3}.unk .ptx{fill:#94a1af}.unk .pun{fill:#94a1af}`;
+    .lbl-name{fill:#000000;font-family:${fontSans};font-size:${DESIGN_TOKENS.fontSizes.large}px;font-weight:700;text-anchor:middle}
+    .lbl-val{fill:#1e293b;font-family:${fontSans};font-size:${DESIGN_TOKENS.fontSizes.normal}px;font-weight:600;text-anchor:middle}
+    .ic-tag{fill:#000000;font-family:${fontSans};font-size:${DESIGN_TOKENS.fontSizes.large}px;font-weight:700}
+    .cust-tx{fill:#000000;font-family:${fontSans};font-size:${DESIGN_TOKENS.fontSizes.large}px;font-weight:600}
+    .port-lbl{fill:#000000;opacity:.9;font-family:${fontSans};font-size:${DESIGN_TOKENS.fontSizes.small}px;font-weight:600}
+    .free-label{fill:#000000;font-family:${fontSans};font-size:${DESIGN_TOKENS.fontSizes.heading}px;font-weight:600}
+    .wire{fill:none;stroke:#0f172a;stroke-width:2.2}
+    .pbg{fill:#ffffff;stroke:#efd3a0;stroke-width:1.2}
+    .ptx{fill:#b45309;font-family:${fontSans};font-size:15px;font-weight:700;text-anchor:middle}
+    .pun{fill:#b45309;opacity:.9;font-family:${fontSans};font-size:${DESIGN_TOKENS.fontSizes.small}px;font-weight:600;text-anchor:middle}
+    .unk .pbg{fill:#f4f6f8;stroke:#d7dde3}.unk .ptx{fill:#64748b}.unk .pun{fill:#64748b}`;
+
   const P = computePowers();
   let body = "", pillsBody = "";
   const ERS = [];
@@ -3950,8 +4050,9 @@ function buildExportSVG(scale = 1) {
     if (c.isLabel) {
       body += `<text class="free-label" x="0" y="0" dominant-baseline="middle">${esc(b.params.text || "Label")}</text>`;
     } else {
-      const tf = rotTransform(b);
-      body += `<g${tf ? ` transform="${tf}"` : ""}>${c.sym(b.params)}</g>`;
+      const rotTf = rotTransform(b);
+      const symTf = (rotTf ? `${rotTf} ` : "") + `translate(${f.w / 2} ${f.h / 2}) scale(${DESIGN_TOKENS.symbolScale}) translate(${-f.w / 2} ${-f.h / 2})`;
+      body += `<g${symTf ? ` transform="${symTf}"` : ""}>${c.sym(b.params)}</g>`;
       if (c.isInterconnect) {
         const rt = (b.params.tag || "?"), disp = icTagText(isSubTag(rt) ? subTagPort(rt) : rt);
         const tx = (b.rot || b.flip) ? f.w / 2 : (icSend(b.params) ? 16 : 23);
@@ -3969,16 +4070,16 @@ function buildExportSVG(scale = 1) {
       const v = c.val ? c.val(b.params) : "";
       if (c.topLabel || c.lblPos === "top") {
         if (nm && v) {
-          body += `<text class="lbl-name" x="${f.w / 2}" y="-22">${esc(nm)}</text>`;
-          body += `<text class="lbl-val" x="${f.w / 2}" y="-10">${esc(v)}</text>`;
+          body += `<text class="lbl-name" x="${f.w / 2}" y="-28">${esc(nm)}</text>`;
+          body += `<text class="lbl-val" x="${f.w / 2}" y="-13">${esc(v)}</text>`;
         } else if (nm) {
-          body += `<text class="lbl-name" x="${f.w / 2}" y="-10">${esc(nm)}</text>`;
+          body += `<text class="lbl-name" x="${f.w / 2}" y="-14">${esc(nm)}</text>`;
         } else if (v) {
-          body += `<text class="lbl-val" x="${f.w / 2}" y="-10">${esc(v)}</text>`;
+          body += `<text class="lbl-val" x="${f.w / 2}" y="-14">${esc(v)}</text>`;
         }
       } else {
-        if (nm) body += `<text class="lbl-name" x="${f.w / 2}" y="${f.h + 13}">${esc(nm)}</text>`;
-        if (v) body += `<text class="lbl-val" x="${f.w / 2}" y="${f.h + (nm ? 25 : 13)}">${esc(v)}</text>`;
+        if (nm) body += `<text class="lbl-name" x="${f.w / 2}" y="${f.h + 18}">${esc(nm)}</text>`;
+        if (v) body += `<text class="lbl-val" x="${f.w / 2}" y="${f.h + (nm ? 33 : 18)}">${esc(v)}</text>`;
       }
     }
     body += `</g>`;
@@ -3995,7 +4096,7 @@ function buildExportSVG(scale = 1) {
 "use strict";
 
 /* Canvas SVG Render Loop */
-const layerConn = $("layerConn"), layerBlock = $("layerBlock"), layerPill = $("layerPill"), overlay = $("overlay"), gridRect = $("gridRect");
+const layerPage = $("layerPage"), layerConn = $("layerConn"), layerBlock = $("layerBlock"), layerPill = $("layerPill"), overlay = $("overlay"), gridRect = $("gridRect");
 
 function applyView() {
   world.setAttribute("transform", `translate(${view.tx} ${view.ty}) scale(${view.scale})`);
@@ -4005,6 +4106,32 @@ function applyView() {
 
 function renderCanvas() {
   gridRect.style.display = settings.grid ? "" : "none";
+
+  /* Render Page Layout Frame for Document Presets */
+  const curSheet = sheets[cur];
+  const presetKey = (curSheet && curSheet.layoutPreset) || settings.layoutPreset || "free";
+  const layoutObj = LAYOUT_PRESETS[presetKey] || LAYOUT_PRESETS.free;
+
+  if (layerPage) {
+    if (layoutObj && !layoutObj.isFree) {
+      const margin = 40;
+      const pxW = layoutObj.w, pxH = layoutObj.h;
+      const x0 = margin, y0 = margin;
+      const badgeText = `${layoutObj.name} · ${layoutObj.mmW} × ${layoutObj.mmH} mm`;
+      const badgeWidth = badgeText.length * 8 + 24;
+
+      layerPage.innerHTML = `<g class="page-frame-group">`
+        + `<rect class="page-bg-frame" x="${x0}" y="${y0}" width="${pxW}" height="${pxH}" rx="6"/>`
+        + `<rect class="page-boundary" x="${x0}" y="${y0}" width="${pxW}" height="${pxH}" rx="6"/>`
+        + `<g transform="translate(${x0 + 16}, ${y0 + 26})">`
+        + `<rect class="page-badge-bg" x="-8" y="-16" width="${badgeWidth}" height="24" rx="4"/>`
+        + `<text class="page-badge" x="0" y="0" dominant-baseline="middle">${esc(badgeText)}</text>`
+        + `</g></g>`;
+    } else {
+      layerPage.innerHTML = "";
+    }
+  }
+
   const P = computePowers();
   const hotSet = new Set();
   for (const b of blocks) {
@@ -4069,10 +4196,11 @@ function renderCanvas() {
         + `<rect class="block-hit" x="-4" y="-16" width="${f.w}" height="22" rx="4"/>`
         + `<text class="free-label" x="0" y="0" dominant-baseline="middle">${esc(b.params.text || "Label")}</text>`;
     } else {
-      const tf = rotTransform(b);
+      const rotTf = rotTransform(b);
+      const symTf = (rotTf ? `${rotTf} ` : "") + `translate(${f.w / 2} ${f.h / 2}) scale(${DESIGN_TOKENS.symbolScale}) translate(${-f.w / 2} ${-f.h / 2})`;
       bh += `<rect class="sel-ring" x="-8" y="-8" width="${f.w + 16}" height="${f.h + 16}" rx="9"/>`
         + `<rect class="block-hit" x="0" y="0" width="${f.w}" height="${f.h}"/>`
-        + `<g${tf ? ` transform="${tf}"` : ""}>${c.sym(b.params)}</g>`;
+        + `<g${symTf ? ` transform="${symTf}"` : ""}>${c.sym(b.params)}</g>`;
       if (c.isInterconnect) {
         const rt = (b.params.tag || "?"), disp = icTagText(isSubTag(rt) ? subTagPort(rt) : rt);
         const tx = (b.rot || b.flip) ? f.w / 2 : (icSend(b.params) ? 16 : 23);
@@ -4100,16 +4228,16 @@ function renderCanvas() {
       const v = c.val ? c.val(b.params) : "";
       if (c.topLabel || c.lblPos === "top") {
         if (nm && v) {
-          bh += `<text class="lbl-name" x="${f.w / 2}" y="-22">${esc(nm)}</text>`;
-          bh += `<text class="lbl-val" x="${f.w / 2}" y="-10">${esc(v)}</text>`;
+          bh += `<text class="lbl-name" x="${f.w / 2}" y="-28">${esc(nm)}</text>`;
+          bh += `<text class="lbl-val" x="${f.w / 2}" y="-13">${esc(v)}</text>`;
         } else if (nm) {
-          bh += `<text class="lbl-name" x="${f.w / 2}" y="-10">${esc(nm)}</text>`;
+          bh += `<text class="lbl-name" x="${f.w / 2}" y="-14">${esc(nm)}</text>`;
         } else if (v) {
-          bh += `<text class="lbl-val" x="${f.w / 2}" y="-10">${esc(v)}</text>`;
+          bh += `<text class="lbl-val" x="${f.w / 2}" y="-14">${esc(v)}</text>`;
         }
       } else {
-        if (nm) bh += `<text class="lbl-name" x="${f.w / 2}" y="${f.h + 13}">${esc(nm)}</text>`;
-        if (v) bh += `<text class="lbl-val" x="${f.w / 2}" y="${f.h + (nm ? 25 : 13)}">${esc(v)}</text>`;
+        if (nm) bh += `<text class="lbl-name" x="${f.w / 2}" y="${f.h + 18}">${esc(nm)}</text>`;
+        if (v) bh += `<text class="lbl-val" x="${f.w / 2}" y="${f.h + (nm ? 33 : 18)}">${esc(v)}</text>`;
       }
       for (const p of getPorts(b)) {
         const m = markInside(p, f.w, f.h);
@@ -6171,13 +6299,13 @@ function seedDemo() {
     return b;
   };
   const ant = mk("antenna", 60, 140, { label: "ANT", role: "Rx", power: -70 });
-  const lna = mk("amp", 200, 140, { label: "LNA", gain: 18, nf: 1.2 });
-  const bpf = mk("filter", 340, 140, { label: "RF BPF", ftype: "BPF", il: 1.5, fc: "2.4 GHz" });
-  const mix = mk("mixer", 480, 140, { label: "MIX", cl: 7 });
-  const lo = mk("lo", 480, 280, { label: "LO", power: 8, freq: "2.0 GHz" });
-  const ifa = mk("amp", 620, 140, { label: "IF AMP", gain: 20, nf: 3 });
-  const ifl = mk("filter", 760, 140, { label: "IF BPF", ftype: "BPF", il: 2, fc: "400 MHz" });
-  const det = mk("detector", 900, 140, { label: "DET" });
+  const lna = mk("amp", 220, 140, { label: "LNA", gain: 18, nf: 1.2 });
+  const bpf = mk("filter", 380, 140, { label: "RF BPF", ftype: "BPF", il: 1.5, fc: "2.4 GHz" });
+  const mix = mk("mixer", 540, 140, { label: "MIX", cl: 7 });
+  const lo = mk("lo", 540, 280, { label: "LO", power: 8, freq: "2.0 GHz" });
+  const ifa = mk("amp", 700, 140, { label: "IF AMP", gain: 20, nf: 3 });
+  const ifl = mk("filter", 860, 140, { label: "IF BPF", ftype: "BPF", il: 2, fc: "400 MHz" });
+  const det = mk("detector", 1020, 140, { label: "DET" });
 
   const C = (fb, fp, tb, tp) => conns.push({ id: uid("c"), from: { block: fb.id, port: fp }, to: { block: tb.id, port: tp } });
   C(ant, "ant", lna, "in"); C(lna, "out", bpf, "in"); C(bpf, "out", mix, "rf");
@@ -6468,6 +6596,15 @@ function initEvents() {
   if ($("tglNF")) $("tglNF").addEventListener("change", e => { settings.showNF = e.target.checked; renderCanvas(); renderInspector(); });
   if ($("tglColor")) $("tglColor").addEventListener("change", e => { settings.color = e.target.checked; renderPalette(); renderCanvas(); });
   if ($("tglTheme")) $("tglTheme").addEventListener("change", e => { applyTheme(e.target.checked ? "light" : "dark"); renderPalette(); renderCanvas(); });
+  if ($("selLayout")) $("selLayout").addEventListener("change", e => {
+    pushHistory();
+    const val = e.target.value;
+    if (sheets[cur]) sheets[cur].layoutPreset = val;
+    settings.layoutPreset = val;
+    renderCanvas();
+    const lObj = LAYOUT_PRESETS[val] || LAYOUT_PRESETS.free;
+    hint(`Layout preset set to ${lObj.name}`);
+  });
 
   if ($("zIn")) $("zIn").onclick = () => zoomAt(1.15);
   if ($("zOut")) $("zOut").onclick = () => zoomAt(1 / 1.15);
@@ -6501,12 +6638,18 @@ function initEvents() {
     a.href = url; a.download = "rf-chain.svg"; a.click(); URL.revokeObjectURL(url); hint("Exported rf-chain.svg");
   };
 
-  if ($("btnPng")) $("btnPng").onclick = () => {
+  if ($("btnPng")) $("btnPng").onclick = async () => {
+    if (document.fonts && document.fonts.ready) {
+      try { await document.fonts.ready; } catch (e) {}
+    }
     const s = buildExportSVG(2); if (!s) { hint("Nothing to export yet."); return; }
     const img = new Image(), url = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(s);
     img.onload = () => {
       const cv = document.createElement("canvas"); cv.width = img.width; cv.height = img.height;
-      const g = cv.getContext("2d"); g.fillStyle = "#fff"; g.fillRect(0, 0, cv.width, cv.height); g.drawImage(img, 0, 0);
+      const g = cv.getContext("2d");
+      g.fillStyle = "#ffffff"; g.fillRect(0, 0, cv.width, cv.height);
+      g.imageSmoothingEnabled = true; g.imageSmoothingQuality = "high";
+      g.drawImage(img, 0, 0);
       cv.toBlob(b => { const u = URL.createObjectURL(b), a = document.createElement("a"); a.href = u; a.download = "rf-chain.png"; a.click(); URL.revokeObjectURL(u); hint("Exported rf-chain.png"); });
     };
     img.onerror = () => hint("PNG export failed in this browser — try SVG."); img.src = url;
@@ -6551,11 +6694,26 @@ function initEvents() {
 }
 
 function fitView() {
-  if (!blocks.length) { view = { tx: 60, ty: 56, scale: 1 }; applyView(); return; }
+  const curSheet = sheets[cur];
+  const presetKey = (curSheet && curSheet.layoutPreset) || settings.layoutPreset || "free";
+  const layoutObj = LAYOUT_PRESETS[presetKey] || LAYOUT_PRESETS.free;
+
   let minx = 1e9, miny = 1e9, maxx = -1e9, maxy = -1e9;
-  for (const b of blocks) { const bb = bboxOf(b); minx = Math.min(minx, bb.x - 8); miny = Math.min(miny, bb.y - 8); maxx = Math.max(maxx, bb.x + bb.w + 8); maxy = Math.max(maxy, bb.y + bb.h + 30); }
+  if (layoutObj && !layoutObj.isFree) {
+    minx = 40; miny = 40;
+    maxx = minx + layoutObj.w; maxy = miny + layoutObj.h;
+  }
+  if (blocks.length) {
+    for (const b of blocks) {
+      const bb = bboxOf(b);
+      minx = Math.min(minx, bb.x - 16); miny = Math.min(miny, bb.y - 16);
+      maxx = Math.max(maxx, bb.x + bb.w + 16); maxy = Math.max(maxy, bb.y + bb.h + 30);
+    }
+  } else if (layoutObj.isFree) {
+    view = { tx: 60, ty: 56, scale: 1 }; applyView(); return;
+  }
   const r = svg.getBoundingClientRect(), pad = 40;
-  const s = clamp(Math.min((r.width - pad * 2) / (maxx - minx), (r.height - pad * 2) / (maxy - miny)), 0.3, 2);
+  const s = clamp(Math.min((r.width - pad * 2) / (maxx - minx), (r.height - pad * 2) / (maxy - miny)), 0.25, 2);
   view.scale = s; view.tx = pad - minx * s + (r.width - pad * 2 - (maxx - minx) * s) / 2; view.ty = pad - miny * s + (r.height - pad * 2 - (maxy - miny) * s) / 2; applyView();
 }
 

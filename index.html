@@ -39,6 +39,13 @@
     <label class="toggle" title="Show cascade noise figure on wires"><input type="checkbox" id="tglNF"/> NF</label>
     <label class="toggle" title="Tint blocks by category"><input type="checkbox" id="tglColor" checked/> Colour</label>
     <label class="toggle" title="Toggle Light / Dark background theme"><input type="checkbox" id="tglTheme"/> Theme</label>
+    <select id="selLayout" class="tb-select" title="Canvas Page Layout Preset for Document & Print Compatibility">
+      <option value="free">Layout: Free</option>
+      <option value="a4_landscape">A4 Landscape (297×210mm)</option>
+      <option value="a4_portrait">A4 Portrait (210×297mm)</option>
+      <option value="a3_landscape">A3 Landscape (420×297mm)</option>
+      <option value="a3_portrait">A3 Portrait (297×420mm)</option>
+    </select>
     <div class="zoombox">
       <button id="zOut" title="Zoom out">−</button>
       <div class="z" id="zLabel">100%</div>
@@ -73,6 +80,7 @@
         </defs>
         <g id="world">
           <rect id="gridRect" x="-4000" y="-4000" width="9000" height="9000" fill="url(#grid)"/>
+          <g id="layerPage"></g>
           <g id="layerConn"></g>
           <g id="layerBlock"></g>
           <g id="layerPill"></g>

@@ -211,8 +211,14 @@ function route(a, z, cn) {
 function pillDims(lvl, nf) {
   const full = dbm(lvl);
   const nrow = (nf === undefined || !isFinite(nf)) ? null : ("NF " + fmt(nf) + " dB");
-  const w = Math.max(full.length * 6.4 + 14, nrow ? nrow.length * 5.4 + 14 : 0, 52);
-  return { full, nrow, w, h: nrow ? 32 : 20 };
+  const charWidthMain = 9.5;
+  const charWidthSub = 8.5;
+  const paddingH = 10;
+  const wMain = full.length * charWidthMain + paddingH;
+  const wSub = nrow ? (nrow.length * charWidthSub + paddingH) : 0;
+  const w = Math.max(wMain, wSub, 44);
+  const h = nrow ? 36 : 24;
+  return { full, nrow, w, h };
 }
 
 function segHitsRect(s, rx1, ry1, rx2, ry2) {
@@ -223,7 +229,7 @@ function segHitsRect(s, rx1, ry1, rx2, ry2) {
   }
   const x = s.p.x; if (x < rx1 || x > rx2) return false;
   const y1 = Math.min(s.p.y, s.q.y), y2 = Math.max(s.p.y, s.q.y);
-  return y2 >= ry1 && y1 <= ry2;
+  return y2 >= ry1 && y1 <= rx2;
 }
 
 function pickClear(cands, d, segs, rects) {
@@ -238,26 +244,23 @@ function pickClear(cands, d, segs, rects) {
 
 function pillCenter(R, lvl, allSegs, rects, nf) {
   const d = pillDims(lvl, nf);
-  const segs = allSegs || R.segs || [];
   let seg = R.seg, cx = R.mx, cy = R.my;
   if (seg && R.segs && R.segs.length) {
-    const need = (seg.horiz ? d.w : d.h) + 24;
+    const need = (seg.horiz ? d.w : d.h) + 20;
     if (seg.len < need) {
       const L = R.segs.reduce((a, b) => b.len > a.len ? b : a);
       if (L.len > seg.len) { seg = L; cx = (L.p.x + L.q.x) / 2; cy = (L.p.y + L.q.y) / 2; }
     }
   }
-  if (!seg) return { x: cx, y: cy - (d.h / 2 + 7) };
+  if (!seg) return { x: cx, y: cy - (d.h / 2 + 4) };
   if (seg.horiz) {
-    const lo = Math.min(seg.p.x, seg.q.x) + d.w / 2 + 12, hi = Math.max(seg.p.x, seg.q.x) - d.w / 2 - 12;
+    const lo = Math.min(seg.p.x, seg.q.x) + d.w / 2 + 8, hi = Math.max(seg.p.x, seg.q.x) - d.w / 2 - 8;
     cx = lo <= hi ? Math.min(Math.max(cx, lo), hi) : (seg.p.x + seg.q.x) / 2;
-    const off = d.h / 2 + 7, far = d.h / 2 + 35;
-    cy = pickClear([{ x: cx, y: cy - off }, { x: cx, y: cy + off }, { x: cx, y: cy - far }, { x: cx, y: cy + far }], d, segs, rects).y;
+    cy = seg.p.y - (d.h / 2 + 4); // Positioned directly ABOVE the wire line
   } else {
-    const lo = Math.min(seg.p.y, seg.q.y) + d.h / 2 + 12, hi = Math.max(seg.p.y, seg.q.y) - d.h / 2 - 12;
+    const lo = Math.min(seg.p.y, seg.q.y) + d.h / 2 + 8, hi = Math.max(seg.p.y, seg.q.y) - d.h / 2 - 8;
     cy = lo <= hi ? Math.min(Math.max(cy, lo), hi) : (seg.p.y + seg.q.y) / 2;
-    const off = d.w / 2 + 8, far = d.w / 2 + 36;
-    cx = pickClear([{ x: cx + off, y: cy }, { x: cx - off, y: cy }, { x: cx + far, y: cy }, { x: cx - far, y: cy }], d, segs, rects).x;
+    cx = seg.p.x + (d.w / 2 + 6); // Positioned directly to the RIGHT of vertical wire line
   }
   return { x: cx, y: cy };
 }
@@ -266,7 +269,7 @@ function pill(cx, cy, lvl, connId, nf) {
   const unk = (lvl === undefined || !isFinite(lvl));
   const d = pillDims(lvl, nf);
   const rows = d.nrow
-    ? `<text class="ptx" x="0" y="-6" dominant-baseline="central" text-anchor="middle">${esc(d.full)}</text><text class="pun" x="0" y="7" dominant-baseline="central" text-anchor="middle">${esc(d.nrow)}</text>`
+    ? `<text class="ptx" x="0" y="-7" dominant-baseline="central" text-anchor="middle">${esc(d.full)}</text><text class="pun" x="0" y="8" dominant-baseline="central" text-anchor="middle">${esc(d.nrow)}</text>`
     : `<text class="ptx" x="0" y="0" dominant-baseline="central" text-anchor="middle">${esc(d.full)}</text>`;
   return `<g class="pill${unk ? " unk" : ""}"${connId ? ` data-conn="${connId}"` : ""} transform="translate(${cx} ${cy})"><rect class="pbg" x="${-d.w / 2}" y="${-d.h / 2}" width="${d.w}" height="${d.h}" rx="6"/>${rows}</g>`;
 }

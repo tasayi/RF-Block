@@ -75,12 +75,12 @@ function markInside(p, w, h) {
 
 function bboxOf(b) {
   const c = COMP[b.type];
-  if (c.isLabel) { return { x: b.x - 4, y: b.y - 16, w: measureLabel(b), h: 22 }; }
+  if (c.isLabel) { return { x: b.x - 4, y: b.y - 18, w: measureLabel(b), h: 28 }; }
   const s = footprint(b);
   if (c.topLabel || c.lblPos === "top") {
-    return { x: b.x, y: b.y - 26, w: s.w, h: s.h + 26 };
+    return { x: b.x, y: b.y - 32, w: s.w, h: s.h + 32 };
   }
-  return { x: b.x, y: b.y, w: s.w, h: s.h };
+  return { x: b.x, y: b.y, w: s.w, h: s.h + 40 };
 }
 
 function screenToWorld(cx, cy) {
