@@ -23,6 +23,18 @@ function ctxItems(list) {
     }
     if (a === "sub-open") { const b = findBlock([...selected][0]); if (b) openSubsystem(b); return; }
     if (a === "sub-group") { groupIntoSubsystem(); return; }
+    if (a === "pill-reset") {
+      const cn = conns.find(c => c.id === selConn);
+      if (cn && (cn.pillPosition || cn.pillPositions || cn.labelOff)) {
+        pushHistory();
+        delete cn.pillPosition;
+        delete cn.pillPositions;
+        delete cn.labelOff;
+        renderAll();
+        hint("Annotation stack returned to its default connector position.");
+      }
+      return;
+    }
     if (a === "sh-up") { goToParent(); return; }
     if (a === "sh-rename") { const el = $("sheetBar").querySelector(`.sheet-tab[data-i="${cur}"]`); renameSheet(cur, el); return; }
     if (a === "sh-dup") { duplicateSheet(); return; }

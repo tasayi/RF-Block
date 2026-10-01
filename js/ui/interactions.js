@@ -82,7 +82,7 @@ function duplicateSelection() {
   for (const c of conns.slice()) {
     if (!(map[c.from.block] && map[c.to.block])) continue;
     const nc = { id: uid("c"), from: { block: map[c.from.block], port: c.from.port }, to: { block: map[c.to.block], port: c.to.port } };
-    if (c.jog != null) nc.jog = c.jog + 20; if (c.labelOff) nc.labelOff = { ...c.labelOff }; if (c.hidePill) nc.hidePill = true;
+    if (c.jog != null) nc.jog = c.jog + 20; if (c.labelOff) nc.labelOff = { ...c.labelOff }; if (c.pillPosition) nc.pillPosition = { ...c.pillPosition }; if (c.pillPositions) nc.pillPositions = JSON.parse(JSON.stringify(c.pillPositions)); if (c.hidePill) nc.hidePill = true;
     conns.push(nc);
   }
   selected = new Set(news); selConn = null; renderAll(); renderSheets();
@@ -176,6 +176,24 @@ function onMove(e) {
     if (tb && tb !== drag.from.block) { const np = nearestPort(tb, w, drag.need); if (np) { const el = portElem({ block: tb, port: np }); if (el) el.classList.add("tgt-ok"); } }
     return;
   }
+  if (drag.mode === "pill") {
+    const w = screenToWorld(e.clientX, e.clientY);
+    const cn = conns.find(c => c.id === drag.conn);
+    if (!cn) return;
+    const a = portPt(findBlock(cn.from.block), cn.from.port), z = portPt(findBlock(cn.to.block), cn.to.port);
+    if (!a || !z) return;
+    const R = route(a, z, cn);
+    const pillX = w.x - drag.grabx, pillY = w.y - drag.graby;
+    const x = pillX + drag.anchorDx, y = pillY + drag.anchorDy;
+    if (!drag.moved) {
+      if (Math.hypot(pillX - drag.start.x, pillY - drag.start.y) <= 3) return;
+      drag.moved = true;
+    }
+    cn.pillPosition = positionOnRoute(R.pts, x, y);
+    delete cn.pillPositions;
+    delete cn.labelOff;
+    renderCanvas(); return;
+  }
   if (drag.mode === "label") {
     const w = screenToWorld(e.clientX, e.clientY); const cn = conns.find(c => c.id === drag.conn); if (!cn) return;
     cn.labelOff = { dx: (w.x - drag.grabx) - drag.base.x, dy: (w.y - drag.graby) - drag.base.y };
@@ -244,6 +262,11 @@ function onUp(e) {
     const cn = conns.find(c => c.id === drag.conn);
     if (cn && cn.labelOff && Math.hypot(cn.labelOff.dx, cn.labelOff.dy) < 10) { delete cn.labelOff; pushHistoryState(drag.pre); renderCanvas(); hint("Label reset to default."); }
     else if (drag.moved) { pushHistoryState(drag.pre); hint("Label moved. Drop it near the wire to reset."); }
+  }
+  if (drag.mode === "pill" && drag.moved) {
+    pushHistoryState(drag.pre);
+    if (typeof markDirty === "function") markDirty();
+    hint("Annotation moved along its connector.");
   }
   if (drag.mode === "wiredrag") { if (drag.moved) { pushHistoryState(drag.pre); hint("Wire re-routed. Double-click it to straighten."); } }
   drag = null;

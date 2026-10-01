@@ -56,9 +56,24 @@ function initEvents() {
 
     if (pillEl && pillEl.getAttribute("data-conn")) {
       e.preventDefault();
-      const cid = pillEl.getAttribute("data-conn"); selConn = cid; selected = new Set(); renderAll();
-      const base = connBase(cid), tip = pillTip(cid), w0 = screenToWorld(e.clientX, e.clientY);
-      drag = { mode: "label", conn: cid, base, grabx: w0.x - tip.x, graby: w0.y - tip.y, moved: false, pre: snapState() };
+      const cid = pillEl.getAttribute("data-conn"), pillType = pillEl.getAttribute("data-pill-type");
+      const transform = pillEl.getAttribute("transform") || "";
+      const centerMatch = /translate\(\s*([-+\d.eE]+)[ ,]+([-+\d.eE]+)\s*\)/.exec(transform);
+      const w0 = screenToWorld(e.clientX, e.clientY);
+      if (pillType && centerMatch) {
+        const center = { x: Number(centerMatch[1]), y: Number(centerMatch[2]) };
+        const anchorX = Number(pillEl.getAttribute("data-pill-anchor-x"));
+        const anchorY = Number(pillEl.getAttribute("data-pill-anchor-y"));
+        selConn = cid; selected = new Set(); renderAll();
+        drag = { mode: "pill", conn: cid, type: pillType, start: center,
+          anchorDx: Number.isFinite(anchorX) ? anchorX - center.x : 0,
+          anchorDy: Number.isFinite(anchorY) ? anchorY - center.y : 0,
+          grabx: w0.x - center.x, graby: w0.y - center.y, moved: false, pre: snapState() };
+      } else {
+        selConn = cid; selected = new Set(); renderAll();
+        const base = connBase(cid), tip = pillTip(cid);
+        drag = { mode: "label", conn: cid, base, grabx: w0.x - tip.x, graby: w0.y - tip.y, moved: false, pre: snapState() };
+      }
       attachDrag(); return;
     }
     if (portEl) {
@@ -131,7 +146,18 @@ function initEvents() {
       if (b && COMP[b.type].isSubsystem) { e.preventDefault(); openSubsystem(b); return; }
     }
     const pillEl = e.target.closest(".pill"), connEl = e.target.closest(".conn");
-    if (pillEl && pillEl.getAttribute("data-conn")) { const cn = conns.find(c => c.id === pillEl.getAttribute("data-conn")); if (cn && cn.labelOff) { delete cn.labelOff; renderCanvas(); hint("Label reset to default."); } return; }
+    if (pillEl && pillEl.getAttribute("data-conn")) {
+      const cn = conns.find(c => c.id === pillEl.getAttribute("data-conn"));
+      if (cn && (cn.pillPosition || cn.pillPositions || cn.labelOff)) {
+        pushHistory();
+        delete cn.pillPosition;
+        delete cn.pillPositions;
+        delete cn.labelOff;
+        renderCanvas();
+        hint("Annotation stack returned to its default connector position.");
+      }
+      return;
+    }
     if (connEl) {
       const cid = connEl.getAttribute("data-conn");
       const cn = conns.find(c => c.id === cid);
@@ -223,10 +249,14 @@ function initEvents() {
       selConn = (connEl ? connEl.getAttribute("data-conn") : pillCtx.getAttribute("data-conn"));
       selected = new Set(); renderAll();
       const cn = conns.find(c => c.id === selConn);
+      const pillType = pillCtx && pillCtx.getAttribute("data-pill-type");
       const items = [
         ctxItem(cn && cn.hidePill ? "Show the dBm label" : "Hide the dBm label on this wire", "", "pill"),
         ctxItem("Add routing waypoint here", "", "wp-add")
       ];
+      if (pillType && cn && (cn.pillPosition || cn.pillPositions || cn.labelOff)) {
+        items.push(ctxItem("Reset annotation stack position", "double-click", "pill-reset"));
+      }
       if (cn && (cn.jog != null || (cn.waypoints && cn.waypoints.length))) {
         items.push(ctxItem("Straighten wire (clear waypoints)", "", "wp-clear"));
       }
