@@ -110,6 +110,39 @@ class TestVsdxExporter(unittest.TestCase):
             self.assertFalse(any("Generic" in name or "Placeholder" in name for name in shape_names),
                              "Unexpected generic placeholder shape was exported")
 
+    def test_multiport_connection_points_match_authored_symbol_edges(self):
+        """Dynamic multiport anchors should coincide with the authored splitter edges."""
+        with zipfile.ZipFile(self.vsdx_path, 'r') as z:
+            root = ET.fromstring(z.read("visio/pages/page1.xml"))
+            ns = {'v': 'http://schemas.microsoft.com/office/visio/2012/main'}
+            splitter = next(shape for shape in root.findall('.//v:Shape', ns)
+                            if shape.attrib.get("NameU") == "Splitter symbol")
+            cells = {cell.attrib["N"]: float(cell.attrib["V"])
+                     for cell in splitter.findall('./v:Cell', ns)}
+            rows = splitter.findall('./v:Section[@N="Connection"]/v:Row', ns)
+            self.assertEqual(len(rows), 3, "Two-way splitter should export its input and both output ports")
+            x_values = [float(row.find('./v:Cell[@N="X"]', ns).attrib["V"]) * 96 for row in rows]
+            self.assertAlmostEqual(x_values[0], 0, delta=0.02, msg="Input port should align to the authored left symbol edge")
+            self.assertAlmostEqual(x_values[1], 40, delta=0.02, msg="Output ports should align to the authored right symbol edge")
+            self.assertAlmostEqual(x_values[2], 40, delta=0.02, msg="Every output port should share the authored right symbol edge")
+            self.assertAlmostEqual(cells["Width"] * 96, 40, delta=0.02)
+
+    def test_all_component_ports_follow_the_twenty_pixel_grid(self):
+        """All authored component port anchors should remain on the 20px component grid."""
+        with zipfile.ZipFile(self.vsdx_path, 'r') as z:
+            root = ET.fromstring(z.read("visio/pages/page1.xml"))
+            ns = {'v': 'http://schemas.microsoft.com/office/visio/2012/main'}
+            symbols = [shape for shape in root.findall('.//v:Shape', ns)
+                       if shape.attrib.get("NameU", "").endswith(" symbol")]
+            self.assertTrue(symbols, "Expected component symbols with connection points")
+            for shape in symbols:
+                for row in shape.findall('./v:Section[@N="Connection"]/v:Row', ns):
+                    for axis in ("X", "Y"):
+                        value_px = float(row.find(f'./v:Cell[@N="{axis}"]', ns).attrib["V"]) * 96
+                        nearest_grid = round(value_px / 20) * 20
+                        self.assertAlmostEqual(value_px, nearest_grid, delta=0.02,
+                                               msg=f"{shape.attrib.get('NameU')} {axis} port coordinate {value_px}px is off-grid")
+
     def test_master_and_connector_references_are_valid(self):
         """Ensure vector-equivalent exports do not leave dangling master or shape references."""
         with zipfile.ZipFile(self.vsdx_path, 'r') as z:

@@ -12,7 +12,7 @@ const DESIGN_TOKENS = {
   },
   fontFamily: 'Calibri, "Calibri Light", "Segoe UI", Arial, sans-serif',
   fontFamilyMono: 'Calibri, "Calibri Light", "Segoe UI", Arial, sans-serif',
-  symbolScale: 1.2, // +20% icon/symbol scaling
+  symbolScale: 1, // Component symbols and their authored ports share the same coordinate grid.
   exportPadding: 24
 };
 

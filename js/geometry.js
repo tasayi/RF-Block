@@ -39,11 +39,17 @@ function getPorts(b) {
   const c = COMP[b.type];
   const raw = c.dynPorts ? c.dynPorts(b.params) : (c.ports || []);
   const rot = (b.rot || 0) % 360, flip = !!b.flip;
-  if (!rot && !flip) return raw.map(p => ({ id: p.id, kind: p.kind, side: p.side, dx: p.dx, dy: p.dy }));
   const D = dims(c, b.params), Wn = D.w, Hn = D.h, fw = (rot === 90 || rot === 270) ? Hn : Wn, fh = (rot === 90 || rot === 270) ? Wn : Hn;
+  const symbolScale = (typeof DESIGN_TOKENS !== "undefined" && DESIGN_TOKENS.symbolScale) || 1;
   return raw.map(p => {
-    const m = mapPt(p.dx, p.dy, rot, flip, Wn, Hn, fw, fh);
-    return { id: p.id, kind: p.kind, side: mapSide(p.side, rot, flip), dx: m.x, dy: m.y };
+    const m = (rot || flip) ? mapPt(p.dx, p.dy, rot, flip, Wn, Hn, fw, fh) : { x: p.dx, y: p.dy };
+    return {
+      id: p.id,
+      kind: p.kind,
+      side: mapSide(p.side, rot, flip),
+      dx: fw / 2 + (m.x - fw / 2) * symbolScale,
+      dy: fh / 2 + (m.y - fh / 2) * symbolScale
+    };
   });
 }
 
@@ -67,20 +73,23 @@ const findBlock = id => blocks.find(b => b.id === id);
 
 function markInside(p, w, h) {
   const o = 4;
-  if (p.side === "left") return { x: o, y: p.dy };
-  if (p.side === "right") return { x: w - o, y: p.dy };
-  if (p.side === "top") return { x: p.dx, y: o };
-  return { x: p.dx, y: h - o };
+  if (p.side === "left") return { x: p.dx + o, y: p.dy };
+  if (p.side === "right") return { x: p.dx - o, y: p.dy };
+  if (p.side === "top") return { x: p.dx, y: p.dy + o };
+  return { x: p.dx, y: p.dy - o };
 }
 
 function bboxOf(b) {
   const c = COMP[b.type];
   if (c.isLabel) { return { x: b.x - 4, y: b.y - 18, w: measureLabel(b), h: 28 }; }
   const s = footprint(b);
+  const symbolScale = (typeof DESIGN_TOKENS !== "undefined" && DESIGN_TOKENS.symbolScale) || 1;
+  const extraX = Math.max(0, s.w * (symbolScale - 1) / 2);
+  const extraY = Math.max(0, s.h * (symbolScale - 1) / 2);
   if (c.topLabel || c.lblPos === "top") {
-    return { x: b.x, y: b.y - 32, w: s.w, h: s.h + 32 };
+    return { x: b.x - extraX, y: b.y - extraY - 32, w: s.w + extraX * 2, h: s.h + extraY * 2 + 32 };
   }
-  return { x: b.x, y: b.y, w: s.w, h: s.h + 40 };
+  return { x: b.x - extraX, y: b.y - extraY, w: s.w + extraX * 2, h: s.h + extraY * 2 + 40 };
 }
 
 function screenToWorld(cx, cy) {

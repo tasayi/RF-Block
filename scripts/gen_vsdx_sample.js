@@ -51,6 +51,7 @@ global.footprint = block => {
   const dimensions = component.dynSize ? component.dynSize(block.params) : component;
   return { w: dimensions.w, h: dimensions.h };
 };
+global.DESIGN_TOKENS = { symbolScale: 1, exportPadding: 24, fontSizes: { normal: 14, large: 16 } };
 global.blockFill = () => "#e9f3ea";
 global.blockInk = () => "#0f172a";
 global.settings = { showLabels: true, showNF: false, showPwr1: true, showPwr2: true, showNoiseFloor: false, gridSize: 10 };

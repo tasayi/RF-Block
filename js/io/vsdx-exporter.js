@@ -278,7 +278,10 @@ function resolveExportPort(block, component, portId, footprintSize) {
   if (rotation === 90) { rx = -y; ry = x; }
   else if (rotation === 180) { rx = -x; ry = -y; }
   else if (rotation === 270) { rx = y; ry = -x; }
-  const dx = footprintSize.w / 2 + rx, dy = footprintSize.h / 2 + ry;
+  const unscaledX = footprintSize.w / 2 + rx, unscaledY = footprintSize.h / 2 + ry;
+  const symbolScale = (typeof DESIGN_TOKENS !== "undefined" && DESIGN_TOKENS.symbolScale) || 1;
+  const dx = footprintSize.w / 2 + (unscaledX - footprintSize.w / 2) * symbolScale;
+  const dy = footprintSize.h / 2 + (unscaledY - footprintSize.h / 2) * symbolScale;
   let side = port.side;
   if (block.flip) side = side === "left" ? "right" : side === "right" ? "left" : side;
   const sides = ["left", "top", "right", "bottom"], sideIndex = sides.indexOf(side);

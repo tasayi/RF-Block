@@ -104,7 +104,9 @@ function obstacleRects(m) {
   for (const b of blocks) {
     if (COMP[b.type].isLabel) continue;
     const f = footprint(b);
-    out.push({ x1: b.x - m, y1: b.y - m, x2: b.x + f.w + m, y2: b.y + f.h + m });
+    const scale = (typeof DESIGN_TOKENS !== "undefined" && DESIGN_TOKENS.symbolScale) || 1;
+    const extraX = Math.max(0, f.w * (scale - 1) / 2), extraY = Math.max(0, f.h * (scale - 1) / 2);
+    out.push({ x1: b.x - extraX - m, y1: b.y - extraY - m, x2: b.x + f.w + extraX + m, y2: b.y + f.h + extraY + m });
   }
   return out;
 }
