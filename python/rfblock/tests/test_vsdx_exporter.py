@@ -185,6 +185,10 @@ class TestVsdxExporter(unittest.TestCase):
                 self.assertEqual(cells.get("FillPattern"), "0", "Text shape fill must be suppressed")
                 self.assertEqual(cells.get("TxtMarginLeft"), "0")
                 self.assertEqual(cells.get("TxtMarginRight"), "0")
+                size_cell = shape.find('./v:Section[@N="Character"]/v:Row/v:Cell[@N="Size"]', ns)
+                self.assertIsNotNone(size_cell, "Text should retain its design-system font size")
+                self.assertIn(round(float(size_cell.attrib["V"]) * 96), {8, 9, 10, 11, 13, 14, 15, 16, 18},
+                              "Font cells should convert source CSS pixels to Visio inches without scaling up")
 
     def test_power_badges_are_tightly_sized(self):
         """Power pills should remain close to the canvas's 20px height and text-sized width."""
@@ -199,7 +203,7 @@ class TestVsdxExporter(unittest.TestCase):
                             if shape.attrib.get("NameU") == "Text annotation"
                             and shape.find("./v:Text", ns) is not None
                             and "".join(shape.find("./v:Text", ns).itertext()).endswith("dBm")]
-            expected_width = max(32, max(map(len, power_labels)) * 8.5 + 8)
+            expected_width = max(36, max(map(len, power_labels)) * 8.5 + 12)
             for badge in badges:
                 cells = {cell.attrib.get("N"): float(cell.attrib.get("V", "0"))
                          for cell in badge.findall('./v:Cell', ns)}
@@ -218,7 +222,7 @@ class TestVsdxExporter(unittest.TestCase):
                             matching_text.append(content)
                 self.assertTrue(matching_text, "Power badge is missing its matching text annotation")
                 self.assertAlmostEqual(cells["Width"] * 96, expected_width, delta=0.1,
-                                       msg="Uniform power stack width should match its widest text plus only 4px padding per side")
+                                       msg="Uniform power stack width should match its widest text plus the original 6px padding per side")
 
     def test_connectors_attach_to_exact_component_ports(self):
         """The connector endpoint coordinates and ToCell references must agree with port connection rows."""

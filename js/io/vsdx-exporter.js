@@ -298,7 +298,7 @@ function buildTextShapeXml(id, text, centerX, centerY, widthPx, heightPx, fontPx
     + `      <Cell N="LinePattern" V="0"/><Cell N="FillPattern" V="0"/>\n`
     + `      <Cell N="TxtPinX" V="${widthIn / 2}"/><Cell N="TxtPinY" V="${heightIn / 2}"/><Cell N="TxtWidth" V="${widthIn}"/><Cell N="TxtHeight" V="${heightIn}"/>\n`
     + `      <Cell N="TxtMarginLeft" V="0"/><Cell N="TxtMarginRight" V="0"/><Cell N="TxtMarginTop" V="0"/><Cell N="TxtMarginBottom" V="0"/>\n`
-    + `      <Section N="Character" IX="0"><Row IX="0"><Cell N="Font" V="1"/><Cell N="Size" V="${fontPx / 72}"/><Cell N="Color" V="${color}"/><Cell N="Style" V="${bold ? 1 : 0}"/></Row></Section>\n`
+    + `      <Section N="Character" IX="0"><Row IX="0"><Cell N="Font" V="1"/><Cell N="Size" V="${fontPx / 96}"/><Cell N="Color" V="${color}"/><Cell N="Style" V="${bold ? 1 : 0}"/></Row></Section>\n`
     + `      <Text><cp IX="0"/><pp IX="0"/>${vsdxEsc(text)}</Text>\n`
     + `    </Shape>\n`;
 }
@@ -775,7 +775,7 @@ function buildVsdxBlob(blocksList, connsList, Pdict, NFdict, PSecondaryDict, com
       if (settings.showNoiseFloor === true && nflVal !== undefined && isFinite(nflVal)) indicators.push({ type: "nfloor", text: dbm(nflVal) });
 
       if (indicators.length > 0) {
-        const fallbackWidth = Math.max(32, ...indicators.map(ind => String(ind.text).length * 8.5 + 8));
+        const fallbackWidth = Math.max(36, ...indicators.map(ind => String(ind.text).length * 8.5 + 12));
         const layout = typeof indicatorPillLayout === "function"
           ? indicatorPillLayout(R, Object.fromEntries(indicators.map(ind => [ind.type, ind.text])))
           : {
@@ -807,7 +807,7 @@ function buildVsdxBlob(blocksList, connsList, Pdict, NFdict, PSecondaryDict, com
           };
           shapesXml += buildShapeXml(pillShapeId, `IndicatorPill ${ind.type}`, pinX, pinY, pillWIn, pillHIn, geometry, pillStyle);
           const textShapeId = nextShapeId++;
-          const textWidth = typeof measurePillText === "function" ? measurePillText(ind.text).w - 8 : String(ind.text).length * 8.5;
+          const textWidth = typeof measurePillText === "function" ? measurePillText(ind.text).w - 12 : String(ind.text).length * 8.5;
           shapesXml += buildTextShapeXml(textShapeId, ind.text, centerX, centerY, Math.max(1, textWidth), pillHeight, 15, "#b45309", true, "middle", dpi, toInX, toInY);
         };
         const savedPosition = cn.pillPosition || Object.values(cn.pillPositions || {})[0];

@@ -207,6 +207,16 @@ function buildExportSVG(scale = 1) {
         maxx = Math.max(maxx, wp.x + pad); maxy = Math.max(maxy, wp.y + pad);
       }
     }
+    const savedPosition = cn.pillPosition || Object.values(cn.pillPositions || {})[0];
+    if (savedPosition) {
+      const a = portPt(findBlock(cn.from.block), cn.from.port), z = portPt(findBlock(cn.to.block), cn.to.port);
+      if (a && z) {
+        const R = route(a, z, cn), anchor = pointAtRouteFraction(R.pts, savedPosition.t);
+        const x = anchor.x + (Number(savedPosition.dx) || 0), y = anchor.y + (Number(savedPosition.dy) || 0);
+        minx = Math.min(minx, x - 64 - pad); miny = Math.min(miny, y - 64 - pad);
+        maxx = Math.max(maxx, x + 64 + pad); maxy = Math.max(maxy, y + 64 + pad);
+      }
+    }
   }
 
   const W = Math.max(200, maxx - minx), H = Math.max(150, maxy - miny);
@@ -270,7 +280,7 @@ function buildExportSVG(scale = 1) {
       nf: (settings.showNF === true && nfVal !== undefined && isFinite(nfVal)) ? ("NF " + fmt(nfVal) + " dB") : null
     };
 
-    pillsBody += pillStack(R, indicators, null);
+    pillsBody += pillStack(R, indicators, cn.id);
   }
   for (const b of blocks) {
     const c = COMP[b.type], f = footprint(b);

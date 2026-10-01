@@ -211,10 +211,10 @@ function route(a, z, cn) {
 }
 
 function measurePillText(text) {
-  if (!text) return { text: "", w: 32, h: 20 };
+  if (!text) return { text: "", w: 36, h: 20 };
   const charWidth = 8.5;
-  const paddingH = 4;
-  const w = Math.max(text.length * charWidth + paddingH * 2, 32);
+  const paddingH = 6; // Original design-system spacing on each side of the text.
+  const w = Math.max(text.length * charWidth + paddingH * 2, 36);
   return { text, w, h: 20 };
 }
 
@@ -222,10 +222,10 @@ function pillDims(lvl, nf) {
   const full = dbm(lvl);
   const nrow = (nf === undefined || !isFinite(nf)) ? null : ("NF " + fmt(nf) + " dB");
   const charWidthMain = 8.5;
-  const paddingH = 4;
+  const paddingH = 6;
   const wMain = full.length * charWidthMain + paddingH * 2;
   const wSub = nrow ? (nrow.length * charWidthMain + paddingH * 2) : 0;
-  const w = Math.max(wMain, wSub, 32);
+  const w = Math.max(wMain, wSub, 36);
   const h = nrow ? 36 : 20;
   return { full, nrow, w, h };
 }
@@ -335,7 +335,7 @@ function pill(cx, cy, lvl, connId, nf) {
 
 /* Shared pill dimensions and placement used by the canvas and VSDX export. */
 function indicatorPillLayout(R, indicators) {
-  if (!indicators) return { colWidth: 32, pillHeight: 20, entries: [], anchorX: R.mx ?? 0, anchorY: R.my ?? 0 };
+  if (!indicators) return { colWidth: 36, pillHeight: 20, entries: [], anchorX: R.mx ?? 0, anchorY: R.my ?? 0 };
   const aboveGroup = [];
   const belowGroup = [];
 
@@ -346,10 +346,10 @@ function indicatorPillLayout(R, indicators) {
   if (indicators.nfloor) belowGroup.push({ type: "nfloor", text: indicators.nfloor });
 
   const totalActive = aboveGroup.length + belowGroup.length;
-  if (totalActive === 0) return { colWidth: 32, pillHeight: 20, entries: [], anchorX: R.mx ?? 0, anchorY: R.my ?? 0 };
+  if (totalActive === 0) return { colWidth: 36, pillHeight: 20, entries: [], anchorX: R.mx ?? 0, anchorY: R.my ?? 0 };
 
   /* Calculate Uniform Column Width (max width across all active pills in stack) */
-  let colWidth = 32;
+  let colWidth = 36;
   for (const item of [...aboveGroup, ...belowGroup]) {
     const m = measurePillText(item.text);
     if (m.w > colWidth) colWidth = m.w;
