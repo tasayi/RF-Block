@@ -16,20 +16,26 @@ const swState = (p, n) => {
 def({
   type: "source", keys: "signal generator cw carrier input", name: "Source", group: "Sources", w: 40, h: 40,
   ports: [{ id: "out", side: "right", kind: "out", dx: 40, dy: 20 }],
-  params: { label: "SRC", power: 0, freq: "1 GHz", anaPort: "None" },
+  params: { label: "SRC", power: 0, primaryPower: 0, secondaryPower: 0, freq: "1 GHz", anaPort: "None" },
   fields: [{ key: "anaPort", label: "Analysis Port", type: "select", options: ["None", "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8"] },
-           { key: "power", label: "Output level", unit: "dBm", step: 0.5 }, { key: "freq", label: "Frequency", type: "text" }],
-  isSource: () => true, srcOut: () => "out", srcPower: p => p.power, val: p => p.freq || "",
+           { key: "primaryPower", label: "Primary input level", unit: "dBm", step: 0.5 },
+           { key: "secondaryPower", label: "Secondary input level", unit: "dBm", step: 0.5 },
+           { key: "power", label: "Legacy input level", unit: "dBm", step: 0.5 },
+           { key: "freq", label: "Frequency", type: "text" }],
+  isSource: () => true, srcOut: () => "out", srcPower: (p, mode) => getSelectedSourcePower(p, mode), val: p => p.freq || dbm(getSelectedSourcePower(p)),
   sym() { return `<circle class="blk-shape" cx="20" cy="20" r="19"/><path class="blk-glyph" d="M10 20 q5 -7 10 0 t10 0"/>`; }
 });
 
 def({
   type: "lo", keys: "oscillator local synth vco source", name: "LO / Osc", group: "Frequency", w: 40, h: 40,
   ports: [{ id: "out", side: "top", kind: "out", dx: 20, dy: 0 }],
-  params: { label: "LO", power: 10, freq: "0.9 GHz", anaPort: "None" },
+  params: { label: "LO", power: 10, primaryPower: 10, secondaryPower: 10, freq: "0.9 GHz", anaPort: "None" },
   fields: [{ key: "anaPort", label: "Analysis Port", type: "select", options: ["None", "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8"] },
-           { key: "power", label: "Drive level", unit: "dBm", step: 0.5 }, { key: "freq", label: "Frequency", type: "text" }],
-  isSource: () => true, srcOut: () => "out", srcPower: p => p.power, val: p => p.freq || "",
+           { key: "primaryPower", label: "Primary drive level", unit: "dBm", step: 0.5 },
+           { key: "secondaryPower", label: "Secondary drive level", unit: "dBm", step: 0.5 },
+           { key: "power", label: "Legacy drive level", unit: "dBm", step: 0.5 },
+           { key: "freq", label: "Frequency", type: "text" }],
+  isSource: () => true, srcOut: () => "out", srcPower: (p, mode) => getSelectedSourcePower(p, mode), val: p => p.freq || dbm(getSelectedSourcePower(p)),
   sym() { return `<circle class="blk-shape" cx="20" cy="20" r="19"/><path class="blk-glyph" d="M10 20 q5 -7 10 0 t10 0"/>`; }
 });
 
@@ -496,10 +502,13 @@ def({
 def({
   type: "rfin", keys: "connector input port sma source", name: "In connector", group: "Terminals", w: 40, h: 40,
   ports: [{ id: "out", side: "right", kind: "out", dx: 40, dy: 20 }],
-  params: { label: "RF IN", power: 0, freq: "", anaPort: "P1" },
+  params: { label: "RF IN", power: 0, primaryPower: 0, secondaryPower: 0, freq: "", anaPort: "P1" },
   fields: [{ key: "anaPort", label: "Analysis Port", type: "select", options: ["None", "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8"] },
-           { key: "power", label: "Input level", unit: "dBm", step: 0.5 }, { key: "freq", label: "Frequency", type: "text" }],
-  isSource: () => true, srcOut: () => "out", srcPower: p => p.power, val: p => p.freq || dbm(p.power),
+           { key: "primaryPower", label: "Primary input level", unit: "dBm", step: 0.5 },
+           { key: "secondaryPower", label: "Secondary input level", unit: "dBm", step: 0.5 },
+           { key: "power", label: "Legacy input level", unit: "dBm", step: 0.5 },
+           { key: "freq", label: "Frequency", type: "text" }],
+  isSource: () => true, srcOut: () => "out", srcPower: (p, mode) => getSelectedSourcePower(p, mode), val: p => p.freq || dbm(getSelectedSourcePower(p)),
   sym() { return `<path class="blk-line" d="M22 20H40"/><circle class="blk-shape" cx="13" cy="20" r="9"/><circle class="blk-fillg" cx="13" cy="20" r="3"/>`; }
 });
 
@@ -523,11 +532,14 @@ def({
 
 def({
   type: "antenna", keys: "aerial radiator tx rx", name: "Antenna", group: "Terminals", w: 40, h: 40,
-  params: { label: "ANT", role: "Tx", power: -80, anaPort: "None" },
+  params: { label: "ANT", role: "Tx", power: -80, primaryPower: -80, secondaryPower: -80, anaPort: "None" },
   fields: [{ key: "anaPort", label: "Analysis Port", type: "select", options: ["None", "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8"] },
-           { key: "role", label: "Role", type: "select", options: ["Tx", "Rx"] }, { key: "power", label: "Received level", unit: "dBm", step: 1, showIf: p => p.role === "Rx" }],
+           { key: "role", label: "Role", type: "select", options: ["Tx", "Rx"] },
+           { key: "primaryPower", label: "Primary received level", unit: "dBm", step: 1, showIf: p => p.role === "Rx" },
+           { key: "secondaryPower", label: "Secondary received level", unit: "dBm", step: 1, showIf: p => p.role === "Rx" },
+           { key: "power", label: "Legacy received level", unit: "dBm", step: 1, showIf: p => p.role === "Rx" }],
   dynPorts: p => p.role === "Rx" ? [{ id: "ant", side: "right", kind: "out", dx: 40, dy: 20 }] : [{ id: "ant", side: "left", kind: "in", dx: 0, dy: 20 }],
-  isSource: p => p.role === "Rx", srcOut: () => "ant", srcPower: p => p.power, val: p => p.role === "Rx" ? "Rx" : "Tx",
+  isSource: p => p.role === "Rx", srcOut: () => "ant", srcPower: (p, mode) => getSelectedSourcePower(p, mode), val: p => p.role === "Rx" ? "Rx" : "Tx",
   sym(p) {
     const feed = p.role === "Rx" ? L(40, 20, 20, 20) : L(0, 20, 20, 20);
     return feed + `<path class="blk-line" d="M20 20V5"/><path class="blk-line" d="M20 5L9 -3M20 5L31 -3"/><circle class="blk-fillg" cx="20" cy="20" r="2.6"/>`;
@@ -580,13 +592,15 @@ def({
     for (let i = 0; i < no; i++) pts.push({ id: "o" + (i + 1), side: "right", kind: "out", dx: 80, dy: posn(no, i) });
     return pts;
   },
-  params: { label: "CUSTOM", text: "FX", shape: "Box", ins: "1", outs: "1", gain: 0, power: 0, nf: 0, p1db: "", oip3: "", path: "" },
+  params: { label: "CUSTOM", text: "FX", shape: "Box", ins: "1", outs: "1", gain: 0, power: 0, primaryPower: 0, secondaryPower: 0, nf: 0, p1db: "", oip3: "", path: "" },
   nf: p => Math.abs(p.nf || 0), p1db: p => num(p.p1db), oip3: p => num(p.oip3),
   fields: [{ key: "text", label: "Symbol text", type: "text" },
            { key: "shape", label: "Shape", type: "select", options: ["Box", "Circle", "Diamond", "Triangle"] },
            { key: "ins", label: "Inputs (0 = source)", type: "select", options: ["0", "1", "2", "3", "4"] },
            { key: "outs", label: "Outputs (0 = load)", type: "select", options: ["0", "1", "2", "3", "4"] },
-           { key: "power", label: "Output level", unit: "dBm", step: 0.5, showIf: p => cIn(p) === 0 && cOut(p) > 0 },
+           { key: "primaryPower", label: "Primary output level", unit: "dBm", step: 0.5, showIf: p => cIn(p) === 0 && cOut(p) > 0 },
+           { key: "secondaryPower", label: "Secondary output level", unit: "dBm", step: 0.5, showIf: p => cIn(p) === 0 && cOut(p) > 0 },
+           { key: "power", label: "Legacy output level", unit: "dBm", step: 0.5, showIf: p => cIn(p) === 0 && cOut(p) > 0 },
            { key: "gain", label: "Gain / loss per output", unit: "dB", step: 0.5, showIf: p => cIn(p) > 0 && cOut(p) > 0 },
            { key: "nf", label: "Noise figure", unit: "dB", step: 0.1, min: 0, showIf: p => cIn(p) > 0 && cOut(p) > 0 },
            { key: "p1db", label: "Output P1dB (blank = ideal)", unit: "dBm", step: 0.5, showIf: p => cOut(p) > 0 },
@@ -594,7 +608,7 @@ def({
            { key: "path", label: "Custom SVG path (advanced)", type: "text" }],
   isSource: p => cIn(p) === 0 && cOut(p) > 0,
   srcOut: p => { const a = [], no = cOut(p); for (let i = 1; i <= no; i++) a.push("o" + i); return a; },
-  srcPower: p => +p.power || 0,
+  srcPower: (p, mode) => getSelectedSourcePower(p, mode),
   out: p => { const no = cOut(p), g = +p.gain || 0; const o = {}; for (let i = 1; i <= no; i++) o["o" + i] = g; return o; },
   val: p => {
     const ni = cIn(p), no = cOut(p);

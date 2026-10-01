@@ -8,7 +8,7 @@ function computePowersRaw() {
   for (const b of blocks) {
     const c = COMP[b.type];
     if (c.isSource && c.isSource(b.params)) {
-      const lv = Number(c.srcPower(b.params));
+      const lv = Number(c.srcPower(b.params, settings && settings.powerBudget));
       for (const pid of srcPorts(c, b.params)) out[key(b.id, pid)] = lv;
     }
   }
