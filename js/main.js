@@ -302,7 +302,42 @@ function initEvents() {
   if ($("tglGrid")) $("tglGrid").addEventListener("change", e => { settings.grid = e.target.checked; renderCanvas(); });
   if ($("tglLabels")) $("tglLabels").addEventListener("change", e => { settings.showLabels = e.target.checked; renderCanvas(); });
   if ($("tglJumpers")) $("tglJumpers").addEventListener("change", e => { settings.enableJumpers = e.target.checked; renderCanvas(); });
+  if ($("tglPwr1")) $("tglPwr1").addEventListener("change", e => { settings.showPwr1 = e.target.checked; renderCanvas(); });
+  if ($("tglPwr2")) $("tglPwr2").addEventListener("change", e => { settings.showPwr2 = e.target.checked; renderCanvas(); });
+  if ($("tglNFloor")) $("tglNFloor").addEventListener("change", e => { settings.showNoiseFloor = e.target.checked; renderCanvas(); });
   if ($("tglNF")) $("tglNF").addEventListener("change", e => { settings.showNF = e.target.checked; renderCanvas(); renderInspector(); });
+  
+  const updateBw = (newVal, newUnit) => {
+    const val = Math.max(0.000001, +(newVal !== undefined ? newVal : (settings.bandwidthVal || 1)) || 1);
+    const unit = newUnit || settings.bandwidthUnit || "MHz";
+    const mult = { Hz: 1, kHz: 1e3, MHz: 1e6, GHz: 1e9 }[unit] || 1e6;
+    settings.bandwidthVal = val;
+    settings.bandwidthUnit = unit;
+    settings.bandwidthHz = val * mult;
+
+    if ($("tbBw") && $("tbBw").value != val) $("tbBw").value = val;
+    if ($("tbBwUnit") && $("tbBwUnit").value !== unit) $("tbBwUnit").value = unit;
+    if ($("bgBw") && $("bgBw").value != val) $("bgBw").value = val;
+    if ($("bgBwUnit") && $("bgBwUnit").value !== unit) $("bgBwUnit").value = unit;
+
+    renderCanvas();
+    if (typeof budgetOpen === "function" && budgetOpen()) renderBudget();
+  };
+
+  if ($("tbBw")) {
+    $("tbBw").addEventListener("input", e => updateBw(e.target.value, $("tbBwUnit") ? $("tbBwUnit").value : undefined));
+    $("tbBw").addEventListener("change", e => updateBw(e.target.value, $("tbBwUnit") ? $("tbBwUnit").value : undefined));
+  }
+  if ($("tbBwUnit")) {
+    $("tbBwUnit").addEventListener("change", e => updateBw($("tbBw") ? $("tbBw").value : undefined, e.target.value));
+  }
+  if ($("bgBw")) {
+    $("bgBw").addEventListener("input", e => updateBw(e.target.value, $("bgBwUnit") ? $("bgBwUnit").value : undefined));
+    $("bgBw").addEventListener("change", e => updateBw(e.target.value, $("bgBwUnit") ? $("bgBwUnit").value : undefined));
+  }
+  if ($("bgBwUnit")) {
+    $("bgBwUnit").addEventListener("change", e => updateBw($("bgBw") ? $("bgBw").value : undefined, e.target.value));
+  }
   if ($("tglColor")) $("tglColor").addEventListener("change", e => { settings.color = e.target.checked; renderPalette(); renderCanvas(); });
   if ($("tglTheme")) $("tglTheme").addEventListener("change", e => { applyTheme(e.target.checked ? "light" : "dark"); renderPalette(); renderCanvas(); });
   if ($("selLayout")) $("selLayout").addEventListener("change", e => {

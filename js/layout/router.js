@@ -208,16 +208,23 @@ function route(a, z, cn) {
   return { d, pts, mx, my, orient, jogAxis, segs, seg: segSel };
 }
 
+function measurePillText(text) {
+  if (!text) return { text: "", w: 36, h: 20 };
+  const charWidth = 8.5;
+  const paddingH = 6; // Reduced horizontal padding
+  const w = Math.max(text.length * charWidth + paddingH * 2, 36);
+  return { text, w, h: 20 };
+}
+
 function pillDims(lvl, nf) {
   const full = dbm(lvl);
   const nrow = (nf === undefined || !isFinite(nf)) ? null : ("NF " + fmt(nf) + " dB");
-  const charWidthMain = 9.5;
-  const charWidthSub = 8.5;
-  const paddingH = 10;
-  const wMain = full.length * charWidthMain + paddingH;
-  const wSub = nrow ? (nrow.length * charWidthSub + paddingH) : 0;
-  const w = Math.max(wMain, wSub, 44);
-  const h = nrow ? 36 : 24;
+  const charWidthMain = 8.5;
+  const paddingH = 6;
+  const wMain = full.length * charWidthMain + paddingH * 2;
+  const wSub = nrow ? (nrow.length * charWidthMain + paddingH * 2) : 0;
+  const w = Math.max(wMain, wSub, 36);
+  const h = nrow ? 36 : 20;
   return { full, nrow, w, h };
 }
 
@@ -256,11 +263,11 @@ function pillCenter(R, lvl, allSegs, rects, nf) {
   if (seg.horiz) {
     const lo = Math.min(seg.p.x, seg.q.x) + d.w / 2 + 8, hi = Math.max(seg.p.x, seg.q.x) - d.w / 2 - 8;
     cx = lo <= hi ? Math.min(Math.max(cx, lo), hi) : (seg.p.x + seg.q.x) / 2;
-    cy = seg.p.y - (d.h / 2 + 4); // Positioned directly ABOVE the wire line
+    cy = seg.p.y - (d.h / 2 + 4);
   } else {
     const lo = Math.min(seg.p.y, seg.q.y) + d.h / 2 + 8, hi = Math.max(seg.p.y, seg.q.y) - d.h / 2 - 8;
     cy = lo <= hi ? Math.min(Math.max(cy, lo), hi) : (seg.p.y + seg.q.y) / 2;
-    cx = seg.p.x + (d.w / 2 + 6); // Positioned directly to the RIGHT of vertical wire line
+    cx = seg.p.x + (d.w / 2 + 6);
   }
   return { x: cx, y: cy };
 }
@@ -271,6 +278,76 @@ function pill(cx, cy, lvl, connId, nf) {
   const rows = d.nrow
     ? `<text class="ptx" x="0" y="-7" dominant-baseline="central" text-anchor="middle">${esc(d.full)}</text><text class="pun" x="0" y="8" dominant-baseline="central" text-anchor="middle">${esc(d.nrow)}</text>`
     : `<text class="ptx" x="0" y="0" dominant-baseline="central" text-anchor="middle">${esc(d.full)}</text>`;
-  return `<g class="pill${unk ? " unk" : ""}"${connId ? ` data-conn="${connId}"` : ""} transform="translate(${cx} ${cy})"><rect class="pbg" x="${-d.w / 2}" y="${-d.h / 2}" width="${d.w}" height="${d.h}" rx="6"/>${rows}</g>`;
+  return `<g class="pill${unk ? " unk" : ""}"${connId ? ` data-conn="${connId}"` : ""} transform="translate(${cx} ${cy})"><rect class="pbg" x="${-d.w / 2}" y="${-d.h / 2}" width="${d.w}" height="${d.h}" rx="5"/>${rows}</g>`;
+}
+
+/* Symmetric 4-Indicator Pill Stack Renderer */
+function pillStack(R, indicators, connId) {
+  if (!indicators) return "";
+  const aboveGroup = [];
+  const belowGroup = [];
+
+  if (indicators.nf) aboveGroup.push({ type: "nf", text: indicators.nf });
+  if (indicators.pwr1) aboveGroup.push({ type: "pwr1", text: indicators.pwr1 });
+
+  if (indicators.pwr2) belowGroup.push({ type: "pwr2", text: indicators.pwr2 });
+  if (indicators.nfloor) belowGroup.push({ type: "nfloor", text: indicators.nfloor });
+
+  const totalActive = aboveGroup.length + belowGroup.length;
+  if (totalActive === 0) return "";
+
+  /* Calculate Uniform Column Width (max width across all active pills in stack) */
+  let colWidth = 36;
+  for (const item of [...aboveGroup, ...belowGroup]) {
+    const m = measurePillText(item.text);
+    if (m.w > colWidth) colWidth = m.w;
+  }
+
+  let seg = R.seg, cx = R.mx, cy = R.my;
+  if (seg && R.segs && R.segs.length) {
+    const need = colWidth + 20;
+    if (seg.len < need) {
+      const L = R.segs.reduce((a, b) => b.len > a.len ? b : a);
+      if (L.len > seg.len) { seg = L; cx = (L.p.x + L.q.x) / 2; cy = (L.p.y + L.q.y) / 2; }
+    }
+  }
+
+  let wireX = cx, wireY = cy;
+  if (seg) {
+    if (seg.horiz) {
+      const lo = Math.min(seg.p.x, seg.q.x) + colWidth / 2 + 8, hi = Math.max(seg.p.x, seg.q.x) - colWidth / 2 - 8;
+      wireX = lo <= hi ? Math.min(Math.max(cx, lo), hi) : (seg.p.x + seg.q.x) / 2;
+      wireY = seg.p.y;
+    } else {
+      const lo = Math.min(seg.p.y, seg.q.y) + 18, hi = Math.max(seg.p.y, seg.q.y) - 18;
+      wireY = lo <= hi ? Math.min(Math.max(cy, lo), hi) : (seg.p.y + seg.q.y) / 2;
+      wireX = seg.p.x + (colWidth / 2 + 6);
+    }
+  }
+
+  let html = "";
+  const pillH = 20;
+  const gap = 4;
+
+  /* Render Above-Wire Stack (stacked upwards starting directly above wire) */
+  const nAbove = aboveGroup.length;
+  for (let i = 0; i < nAbove; i++) {
+    const distFromWire = nAbove - 1 - i; // 0 for closest to wire, 1 for top
+    const py = wireY - (pillH / 2 + gap) - distFromWire * (pillH + gap);
+    html += `<g class="pill pill-${aboveGroup[i].type}"${connId ? ` data-conn="${connId}"` : ""} transform="translate(${wireX} ${py})">`
+      + `<rect class="pbg" x="${-colWidth / 2}" y="${-pillH / 2}" width="${colWidth}" height="${pillH}" rx="5"/>`
+      + `<text class="ptx" x="0" y="0" dominant-baseline="central" text-anchor="middle">${esc(aboveGroup[i].text)}</text></g>`;
+  }
+
+  /* Render Below-Wire Stack (stacked downwards starting directly below wire) */
+  const nBelow = belowGroup.length;
+  for (let i = 0; i < nBelow; i++) {
+    const py = wireY + (pillH / 2 + gap) + i * (pillH + gap);
+    html += `<g class="pill pill-${belowGroup[i].type}"${connId ? ` data-conn="${connId}"` : ""} transform="translate(${wireX} ${py})">`
+      + `<rect class="pbg" x="${-colWidth / 2}" y="${-pillH / 2}" width="${colWidth}" height="${pillH}" rx="5"/>`
+      + `<text class="ptx" x="0" y="0" dominant-baseline="central" text-anchor="middle">${esc(belowGroup[i].text)}</text></g>`;
+  }
+
+  return html;
 }
 

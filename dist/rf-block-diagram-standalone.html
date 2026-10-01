@@ -484,6 +484,48 @@ select.tb-select:hover {
   color: #ffffff;
 }
 
+input.tb-num-input {
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent);
+  background: var(--chrome-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 3px 6px;
+  width: 52px;
+  text-align: center;
+  outline: none;
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: var(--shadow-sm);
+}
+input.tb-num-input:hover, input.tb-num-input:focus {
+  background: #273549;
+  border-color: var(--accent);
+  color: #ffffff;
+}
+
+select.tb-select-sm {
+  font-family: var(--sans);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--accent);
+  background: var(--chrome-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 2px 4px;
+  margin-left: 3px;
+  cursor: pointer;
+  outline: none;
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: var(--shadow-sm);
+}
+select.tb-select-sm:hover, select.tb-select-sm:focus {
+  background: #273549;
+  border-color: var(--accent);
+  color: #ffffff;
+}
+
 /* Page Boundary Overlay for Document Presets */
 .page-bg-frame {
   fill: var(--canvas);
@@ -550,8 +592,8 @@ select.tb-select:hover {
 /* Level Readout Pills on Wires */
 .pill { pointer-events: all; cursor: grab; }
 .pill:active { cursor: grabbing; }
-.pill .pbg { fill: var(--pill-bg); stroke: var(--pill-bd); stroke-width: 1.2; filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2)); rx: 4; }
-.pill .ptx { fill: var(--pill-ink); font-family: var(--sans); font-size: 15px; font-weight: 700; text-anchor: middle; letter-spacing: 0.01em; }
+.pill .pbg { fill: var(--pill-bg); stroke: var(--pill-bd); stroke-width: 1.2; filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2)); rx: 5; }
+.pill .ptx { fill: var(--pill-ink); font-family: var(--sans); font-size: 13px; font-weight: 600; text-anchor: middle; letter-spacing: 0.01em; }
 .pill .pun { fill: var(--pill-unk); font-family: var(--sans); font-size: 13px; font-weight: 600; text-anchor: middle; letter-spacing: 0.04em; }
 .pill.unk .pbg { stroke: #334155; fill: #0f172a; filter: none; }
 .pill.unk .ptx { fill: #64748b; font-weight: 500; }
@@ -810,7 +852,11 @@ table.bg tr:hover td { background: rgba(255, 255, 255, 0.04); cursor: pointer; }
     <label class="toggle" title="Show the grid"><input type="checkbox" id="tglGrid" checked/> Grid</label>
     <label class="toggle" title="Universally show or hide signal level labels on wires"><input type="checkbox" id="tglLabels" checked/> Labels</label>
     <label class="toggle" title="Enable IEEE 315 wire crossing jumpers (arc hops)"><input type="checkbox" id="tglJumpers" checked/> Jumpers</label>
-    <label class="toggle" title="Show cascade noise figure on wires"><input type="checkbox" id="tglNF"/> NF</label>
+    <label class="toggle" title="Show Primary Power Budget on wires"><input type="checkbox" id="tglPwr1" checked/> Pwr 1</label>
+    <label class="toggle" title="Show Secondary Power Budget on wires"><input type="checkbox" id="tglPwr2"/> Pwr 2</label>
+    <label class="toggle" title="Show Thermal Noise Floor on wires"><input type="checkbox" id="tglNFloor"/> N.Floor</label>
+    <label class="toggle" title="Noise Bandwidth for Noise Floor calculation">BW <input id="tbBw" type="number" value="1" step="any" min="0.000001" class="tb-num-input"/><select id="tbBwUnit" class="tb-select-sm" title="Bandwidth Unit"><option value="Hz">Hz</option><option value="kHz">kHz</option><option value="MHz" selected>MHz</option><option value="GHz">GHz</option></select></label>
+    <label class="toggle" title="Show Cascade Noise Figure on wires"><input type="checkbox" id="tglNF"/> NF</label>
     <label class="toggle" title="Tint blocks by category"><input type="checkbox" id="tglColor" checked/> Colour</label>
     <label class="toggle" title="Toggle Light / Dark background theme"><input type="checkbox" id="tglTheme"/> Theme</label>
     <select id="selLayout" class="tb-select" title="Canvas Page Layout Preset for Document & Print Compatibility">
@@ -896,7 +942,7 @@ table.bg tr:hover td { background: rgba(255, 255, 255, 0.04); cursor: pointer; }
     <div class="bg-hd">
       <b>Cascade budget</b>
       <select id="bgStart" title="Signal source to trace from"></select>
-      <label class="bg-bw">BW <input id="bgBw" type="number" value="1" step="0.1" min="0.001"/> MHz</label>
+      <label class="bg-bw">BW <input id="bgBw" type="number" value="1" step="any" min="0.000001"/><select id="bgBwUnit" class="tb-select-sm" title="Bandwidth Unit"><option value="Hz">Hz</option><option value="kHz">kHz</option><option value="MHz" selected>MHz</option><option value="GHz">GHz</option></select></label>
       <div class="tb-spacer"></div>
       <button class="btn" id="bgCsv">Export CSV</button>
       <button class="btn" id="bgClose">Close</button>
@@ -1039,7 +1085,13 @@ const DEFAULT_SETTINGS = {
   snap: true,
   grid: true,
   gridSize: 20,
+  showPwr1: true,
+  showPwr2: false,
+  showNoiseFloor: false,
   showNF: false,
+  bandwidthVal: 1.0,
+  bandwidthUnit: "MHz",
+  bandwidthHz: 1e6,
   showLabels: true,
   enableJumpers: true,
   color: true,
@@ -2492,6 +2544,31 @@ function computeNoiseRaw(P) {
 
 const nfDb = nn => (nn && isFinite(nn.F) && nn.F > 0) ? 10 * Math.log10(nn.F) : undefined;
 
+function computeNoiseFloor(nn, lvl, srcLvl, bwHz) {
+  if (nn === undefined || nn === null) return undefined;
+  let nfCum = 0, gCum = 0;
+  if (typeof nn === "object") {
+    if (!isFinite(nn.F) || nn.F <= 0) return undefined;
+    nfCum = 10 * Math.log10(nn.F);
+    if (isFinite(nn.G) && nn.G > 0) {
+      gCum = 10 * Math.log10(nn.G);
+    } else if (lvl !== undefined && srcLvl !== undefined && isFinite(lvl) && isFinite(srcLvl)) {
+      gCum = lvl - srcLvl;
+    }
+  } else if (typeof nn === "number") {
+    if (!isFinite(nn)) return undefined;
+    nfCum = nn;
+    if (lvl !== undefined && srcLvl !== undefined && isFinite(lvl) && isFinite(srcLvl)) {
+      gCum = lvl - srcLvl;
+    }
+  } else {
+    return undefined;
+  }
+  const bw = (bwHz && isFinite(bwHz) && bwHz > 0) ? bwHz : 1e6;
+  const thermalNoise = -173.98 + 10 * Math.log10(bw);
+  return thermalNoise + nfCum + gCum;
+}
+
 
 
 /* --- File: js/solvers/budget-solver.js --- */
@@ -3417,16 +3494,23 @@ function route(a, z, cn) {
   return { d, pts, mx, my, orient, jogAxis, segs, seg: segSel };
 }
 
+function measurePillText(text) {
+  if (!text) return { text: "", w: 36, h: 20 };
+  const charWidth = 8.5;
+  const paddingH = 6; // Reduced horizontal padding
+  const w = Math.max(text.length * charWidth + paddingH * 2, 36);
+  return { text, w, h: 20 };
+}
+
 function pillDims(lvl, nf) {
   const full = dbm(lvl);
   const nrow = (nf === undefined || !isFinite(nf)) ? null : ("NF " + fmt(nf) + " dB");
-  const charWidthMain = 9.5;
-  const charWidthSub = 8.5;
-  const paddingH = 10;
-  const wMain = full.length * charWidthMain + paddingH;
-  const wSub = nrow ? (nrow.length * charWidthSub + paddingH) : 0;
-  const w = Math.max(wMain, wSub, 44);
-  const h = nrow ? 36 : 24;
+  const charWidthMain = 8.5;
+  const paddingH = 6;
+  const wMain = full.length * charWidthMain + paddingH * 2;
+  const wSub = nrow ? (nrow.length * charWidthMain + paddingH * 2) : 0;
+  const w = Math.max(wMain, wSub, 36);
+  const h = nrow ? 36 : 20;
   return { full, nrow, w, h };
 }
 
@@ -3465,11 +3549,11 @@ function pillCenter(R, lvl, allSegs, rects, nf) {
   if (seg.horiz) {
     const lo = Math.min(seg.p.x, seg.q.x) + d.w / 2 + 8, hi = Math.max(seg.p.x, seg.q.x) - d.w / 2 - 8;
     cx = lo <= hi ? Math.min(Math.max(cx, lo), hi) : (seg.p.x + seg.q.x) / 2;
-    cy = seg.p.y - (d.h / 2 + 4); // Positioned directly ABOVE the wire line
+    cy = seg.p.y - (d.h / 2 + 4);
   } else {
     const lo = Math.min(seg.p.y, seg.q.y) + d.h / 2 + 8, hi = Math.max(seg.p.y, seg.q.y) - d.h / 2 - 8;
     cy = lo <= hi ? Math.min(Math.max(cy, lo), hi) : (seg.p.y + seg.q.y) / 2;
-    cx = seg.p.x + (d.w / 2 + 6); // Positioned directly to the RIGHT of vertical wire line
+    cx = seg.p.x + (d.w / 2 + 6);
   }
   return { x: cx, y: cy };
 }
@@ -3480,7 +3564,77 @@ function pill(cx, cy, lvl, connId, nf) {
   const rows = d.nrow
     ? `<text class="ptx" x="0" y="-7" dominant-baseline="central" text-anchor="middle">${esc(d.full)}</text><text class="pun" x="0" y="8" dominant-baseline="central" text-anchor="middle">${esc(d.nrow)}</text>`
     : `<text class="ptx" x="0" y="0" dominant-baseline="central" text-anchor="middle">${esc(d.full)}</text>`;
-  return `<g class="pill${unk ? " unk" : ""}"${connId ? ` data-conn="${connId}"` : ""} transform="translate(${cx} ${cy})"><rect class="pbg" x="${-d.w / 2}" y="${-d.h / 2}" width="${d.w}" height="${d.h}" rx="6"/>${rows}</g>`;
+  return `<g class="pill${unk ? " unk" : ""}"${connId ? ` data-conn="${connId}"` : ""} transform="translate(${cx} ${cy})"><rect class="pbg" x="${-d.w / 2}" y="${-d.h / 2}" width="${d.w}" height="${d.h}" rx="5"/>${rows}</g>`;
+}
+
+/* Symmetric 4-Indicator Pill Stack Renderer */
+function pillStack(R, indicators, connId) {
+  if (!indicators) return "";
+  const aboveGroup = [];
+  const belowGroup = [];
+
+  if (indicators.nf) aboveGroup.push({ type: "nf", text: indicators.nf });
+  if (indicators.pwr1) aboveGroup.push({ type: "pwr1", text: indicators.pwr1 });
+
+  if (indicators.pwr2) belowGroup.push({ type: "pwr2", text: indicators.pwr2 });
+  if (indicators.nfloor) belowGroup.push({ type: "nfloor", text: indicators.nfloor });
+
+  const totalActive = aboveGroup.length + belowGroup.length;
+  if (totalActive === 0) return "";
+
+  /* Calculate Uniform Column Width (max width across all active pills in stack) */
+  let colWidth = 36;
+  for (const item of [...aboveGroup, ...belowGroup]) {
+    const m = measurePillText(item.text);
+    if (m.w > colWidth) colWidth = m.w;
+  }
+
+  let seg = R.seg, cx = R.mx, cy = R.my;
+  if (seg && R.segs && R.segs.length) {
+    const need = colWidth + 20;
+    if (seg.len < need) {
+      const L = R.segs.reduce((a, b) => b.len > a.len ? b : a);
+      if (L.len > seg.len) { seg = L; cx = (L.p.x + L.q.x) / 2; cy = (L.p.y + L.q.y) / 2; }
+    }
+  }
+
+  let wireX = cx, wireY = cy;
+  if (seg) {
+    if (seg.horiz) {
+      const lo = Math.min(seg.p.x, seg.q.x) + colWidth / 2 + 8, hi = Math.max(seg.p.x, seg.q.x) - colWidth / 2 - 8;
+      wireX = lo <= hi ? Math.min(Math.max(cx, lo), hi) : (seg.p.x + seg.q.x) / 2;
+      wireY = seg.p.y;
+    } else {
+      const lo = Math.min(seg.p.y, seg.q.y) + 18, hi = Math.max(seg.p.y, seg.q.y) - 18;
+      wireY = lo <= hi ? Math.min(Math.max(cy, lo), hi) : (seg.p.y + seg.q.y) / 2;
+      wireX = seg.p.x + (colWidth / 2 + 6);
+    }
+  }
+
+  let html = "";
+  const pillH = 20;
+  const gap = 4;
+
+  /* Render Above-Wire Stack (stacked upwards starting directly above wire) */
+  const nAbove = aboveGroup.length;
+  for (let i = 0; i < nAbove; i++) {
+    const distFromWire = nAbove - 1 - i; // 0 for closest to wire, 1 for top
+    const py = wireY - (pillH / 2 + gap) - distFromWire * (pillH + gap);
+    html += `<g class="pill pill-${aboveGroup[i].type}"${connId ? ` data-conn="${connId}"` : ""} transform="translate(${wireX} ${py})">`
+      + `<rect class="pbg" x="${-colWidth / 2}" y="${-pillH / 2}" width="${colWidth}" height="${pillH}" rx="5"/>`
+      + `<text class="ptx" x="0" y="0" dominant-baseline="central" text-anchor="middle">${esc(aboveGroup[i].text)}</text></g>`;
+  }
+
+  /* Render Below-Wire Stack (stacked downwards starting directly below wire) */
+  const nBelow = belowGroup.length;
+  for (let i = 0; i < nBelow; i++) {
+    const py = wireY + (pillH / 2 + gap) + i * (pillH + gap);
+    html += `<g class="pill pill-${belowGroup[i].type}"${connId ? ` data-conn="${connId}"` : ""} transform="translate(${wireX} ${py})">`
+      + `<rect class="pbg" x="${-colWidth / 2}" y="${-pillH / 2}" width="${colWidth}" height="${pillH}" rx="5"/>`
+      + `<text class="ptx" x="0" y="0" dominant-baseline="central" text-anchor="middle">${esc(belowGroup[i].text)}</text></g>`;
+  }
+
+  return html;
 }
 
 
@@ -3932,7 +4086,12 @@ function loadDoc(text, name, handle) {
   $("tglSnap").checked = settings.snap;
   $("tglGrid").checked = settings.grid;
   if ($("tglLabels")) $("tglLabels").checked = settings.showLabels !== false;
+  if ($("tglPwr1")) $("tglPwr1").checked = settings.showPwr1 !== false;
+  if ($("tglPwr2")) $("tglPwr2").checked = !!settings.showPwr2;
+  if ($("tglNFloor")) $("tglNFloor").checked = !!settings.showNoiseFloor;
   if ($("tglNF")) $("tglNF").checked = !!settings.showNF;
+  if ($("tbBw")) $("tbBw").value = settings.bandwidthVal !== undefined ? settings.bandwidthVal : 1;
+  if ($("tbBwUnit")) $("tbBwUnit").value = settings.bandwidthUnit || "MHz";
   if ($("selLayout")) $("selLayout").value = (sheets[cur] && sheets[cur].layoutPreset) || settings.layoutPreset || "free";
   applyView();
   renderAll();
@@ -4034,15 +4193,26 @@ function buildExportSVG(scale = 1) {
   }
   const esegs = [].concat(...ERS.map(r => r.R.segs || []));
   const erects = obstacleRects(0);
-  const eNF = settings.showNF ? computeNoise(P) : null;
+  const needNoise = !!(settings.showNF || settings.showNoiseFloor);
+  const eNF = needNoise ? computeNoise(P) : null;
   for (const { cn, R } of ERS) {
     const pathD = buildPathWithJumpers(R.pts, allVertSegs, cn.id);
     body += `<path class="wire" d="${pathD}" marker-end="url(#ea)"/>`;
     if (settings.showLabels === false || cn.hidePill) continue;
     const lv = P[key(cn.from.block, cn.from.port)];
-    const nf = eNF ? nfDb(eNF[key(cn.from.block, cn.from.port)]) : undefined;
-    const bs = pillCenter(R, lv, esegs, erects, nf), of = cn.labelOff || { dx: 0, dy: 0 };
-    pillsBody += pill(bs.x + of.dx, bs.y + of.dy, lv, null, nf);
+    const nnObj = eNF ? eNF[key(cn.from.block, cn.from.port)] : undefined;
+    const nfVal = nfDb(nnObj);
+    const srcLvl = (typeof startBlocks === "function" && startBlocks().length) ? P[key(startBlocks()[0].id, srcPorts(COMP[startBlocks()[0].type], startBlocks()[0].params)[0])] : 0;
+    const nflVal = (nnObj && typeof computeNoiseFloor === "function") ? computeNoiseFloor(nnObj, lv, srcLvl, settings.bandwidthHz) : undefined;
+
+    const indicators = {
+      pwr1: (settings.showPwr1 !== false && lv !== undefined && isFinite(lv)) ? dbm(lv) : null,
+      pwr2: (settings.showPwr2 === true && lv !== undefined && isFinite(lv)) ? dbm(lv) : null,
+      nfloor: (settings.showNoiseFloor === true && nflVal !== undefined && isFinite(nflVal)) ? dbm(nflVal) : null,
+      nf: (settings.showNF === true && nfVal !== undefined && isFinite(nfVal)) ? ("NF " + fmt(nfVal) + " dB") : null
+    };
+
+    pillsBody += pillStack(R, indicators, null);
   }
   for (const b of blocks) {
     const c = COMP[b.type], f = footprint(b);
@@ -4164,7 +4334,8 @@ function renderCanvas() {
 
   const segsAll = [].concat(...RS.map(r => r.R.segs || []));
   const rectsAll = obstacleRects(0);
-  const NFm = settings.showNF ? computeNoise(P) : null;
+  const needNoise = !!(settings.showNF || settings.showNoiseFloor);
+  const NFm = needNoise ? computeNoise(P) : null;
   for (const { cn, R, lvl } of RS) {
     const selc = selConn === cn.id, mk = selc ? "arrowSel" : "arrow";
     const pathD = buildPathWithJumpers(R.pts, allVertSegs, cn.id);
@@ -4177,9 +4348,19 @@ function renderCanvas() {
     wireHtml += `</g>`;
 
     if (settings.showLabels !== false && !cn.hidePill) {
-      const nf = NFm ? nfDb(NFm[key(cn.from.block, cn.from.port)]) : undefined;
-      const base = pillCenter(R, lvl, segsAll, rectsAll, nf), off = cn.labelOff || { dx: 0, dy: 0 };
-      pillHtml += pill(base.x + off.dx, base.y + off.dy, lvl, cn.id, nf);
+      const nnObj = NFm ? NFm[key(cn.from.block, cn.from.port)] : undefined;
+      const nfVal = nfDb(nnObj);
+      const srcLvl = (typeof startBlocks === "function" && startBlocks().length) ? P[key(startBlocks()[0].id, srcPorts(COMP[startBlocks()[0].type], startBlocks()[0].params)[0])] : 0;
+      const nflVal = (nnObj && typeof computeNoiseFloor === "function") ? computeNoiseFloor(nnObj, lvl, srcLvl, settings.bandwidthHz) : undefined;
+      
+      const indicators = {
+        pwr1: (settings.showPwr1 !== false && lvl !== undefined && isFinite(lvl)) ? dbm(lvl) : null,
+        pwr2: (settings.showPwr2 === true && lvl !== undefined && isFinite(lvl)) ? dbm(lvl) : null,
+        nfloor: (settings.showNoiseFloor === true && nflVal !== undefined && isFinite(nflVal)) ? dbm(nflVal) : null,
+        nf: (settings.showNF === true && nfVal !== undefined && isFinite(nfVal)) ? ("NF " + fmt(nfVal) + " dB") : null
+      };
+
+      pillHtml += pillStack(R, indicators, cn.id);
     }
   }
   layerConn.innerHTML = wireHtml;
@@ -4853,8 +5034,7 @@ function renderBudget() {
 
   const startId = sel.value || (starts[0] ? starts[0].id : null);
   const { rows, P } = buildBudget(startId);
-  const bwMHz = Math.max(0.001, +($("bgBw") ? $("bgBw").value : 1) || 1);
-  const bwHz = bwMHz * 1e6;
+  const bwHz = (settings.bandwidthHz && settings.bandwidthHz > 0) ? settings.bandwidthHz : 1e6;
 
   if (!rows.length) {
     body.innerHTML = `<div class="bg-empty">Add a source (RF IN, Source, or an Rx antenna) and wire a chain to see the budget.</div>` + warnHtml(P);
@@ -6593,7 +6773,42 @@ function initEvents() {
   if ($("tglGrid")) $("tglGrid").addEventListener("change", e => { settings.grid = e.target.checked; renderCanvas(); });
   if ($("tglLabels")) $("tglLabels").addEventListener("change", e => { settings.showLabels = e.target.checked; renderCanvas(); });
   if ($("tglJumpers")) $("tglJumpers").addEventListener("change", e => { settings.enableJumpers = e.target.checked; renderCanvas(); });
+  if ($("tglPwr1")) $("tglPwr1").addEventListener("change", e => { settings.showPwr1 = e.target.checked; renderCanvas(); });
+  if ($("tglPwr2")) $("tglPwr2").addEventListener("change", e => { settings.showPwr2 = e.target.checked; renderCanvas(); });
+  if ($("tglNFloor")) $("tglNFloor").addEventListener("change", e => { settings.showNoiseFloor = e.target.checked; renderCanvas(); });
   if ($("tglNF")) $("tglNF").addEventListener("change", e => { settings.showNF = e.target.checked; renderCanvas(); renderInspector(); });
+  
+  const updateBw = (newVal, newUnit) => {
+    const val = Math.max(0.000001, +(newVal !== undefined ? newVal : (settings.bandwidthVal || 1)) || 1);
+    const unit = newUnit || settings.bandwidthUnit || "MHz";
+    const mult = { Hz: 1, kHz: 1e3, MHz: 1e6, GHz: 1e9 }[unit] || 1e6;
+    settings.bandwidthVal = val;
+    settings.bandwidthUnit = unit;
+    settings.bandwidthHz = val * mult;
+
+    if ($("tbBw") && $("tbBw").value != val) $("tbBw").value = val;
+    if ($("tbBwUnit") && $("tbBwUnit").value !== unit) $("tbBwUnit").value = unit;
+    if ($("bgBw") && $("bgBw").value != val) $("bgBw").value = val;
+    if ($("bgBwUnit") && $("bgBwUnit").value !== unit) $("bgBwUnit").value = unit;
+
+    renderCanvas();
+    if (typeof budgetOpen === "function" && budgetOpen()) renderBudget();
+  };
+
+  if ($("tbBw")) {
+    $("tbBw").addEventListener("input", e => updateBw(e.target.value, $("tbBwUnit") ? $("tbBwUnit").value : undefined));
+    $("tbBw").addEventListener("change", e => updateBw(e.target.value, $("tbBwUnit") ? $("tbBwUnit").value : undefined));
+  }
+  if ($("tbBwUnit")) {
+    $("tbBwUnit").addEventListener("change", e => updateBw($("tbBw") ? $("tbBw").value : undefined, e.target.value));
+  }
+  if ($("bgBw")) {
+    $("bgBw").addEventListener("input", e => updateBw(e.target.value, $("bgBwUnit") ? $("bgBwUnit").value : undefined));
+    $("bgBw").addEventListener("change", e => updateBw(e.target.value, $("bgBwUnit") ? $("bgBwUnit").value : undefined));
+  }
+  if ($("bgBwUnit")) {
+    $("bgBwUnit").addEventListener("change", e => updateBw($("bgBw") ? $("bgBw").value : undefined, e.target.value));
+  }
   if ($("tglColor")) $("tglColor").addEventListener("change", e => { settings.color = e.target.checked; renderPalette(); renderCanvas(); });
   if ($("tglTheme")) $("tglTheme").addEventListener("change", e => { applyTheme(e.target.checked ? "light" : "dark"); renderPalette(); renderCanvas(); });
   if ($("selLayout")) $("selLayout").addEventListener("change", e => {

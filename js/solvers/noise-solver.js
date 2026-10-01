@@ -99,3 +99,28 @@ function computeNoiseRaw(P) {
 
 const nfDb = nn => (nn && isFinite(nn.F) && nn.F > 0) ? 10 * Math.log10(nn.F) : undefined;
 
+function computeNoiseFloor(nn, lvl, srcLvl, bwHz) {
+  if (nn === undefined || nn === null) return undefined;
+  let nfCum = 0, gCum = 0;
+  if (typeof nn === "object") {
+    if (!isFinite(nn.F) || nn.F <= 0) return undefined;
+    nfCum = 10 * Math.log10(nn.F);
+    if (isFinite(nn.G) && nn.G > 0) {
+      gCum = 10 * Math.log10(nn.G);
+    } else if (lvl !== undefined && srcLvl !== undefined && isFinite(lvl) && isFinite(srcLvl)) {
+      gCum = lvl - srcLvl;
+    }
+  } else if (typeof nn === "number") {
+    if (!isFinite(nn)) return undefined;
+    nfCum = nn;
+    if (lvl !== undefined && srcLvl !== undefined && isFinite(lvl) && isFinite(srcLvl)) {
+      gCum = lvl - srcLvl;
+    }
+  } else {
+    return undefined;
+  }
+  const bw = (bwHz && isFinite(bwHz) && bwHz > 0) ? bwHz : 1e6;
+  const thermalNoise = -173.98 + 10 * Math.log10(bw);
+  return thermalNoise + nfCum + gCum;
+}
+

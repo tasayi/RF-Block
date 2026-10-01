@@ -69,7 +69,8 @@ function renderCanvas() {
 
   const segsAll = [].concat(...RS.map(r => r.R.segs || []));
   const rectsAll = obstacleRects(0);
-  const NFm = settings.showNF ? computeNoise(P) : null;
+  const needNoise = !!(settings.showNF || settings.showNoiseFloor);
+  const NFm = needNoise ? computeNoise(P) : null;
   for (const { cn, R, lvl } of RS) {
     const selc = selConn === cn.id, mk = selc ? "arrowSel" : "arrow";
     const pathD = buildPathWithJumpers(R.pts, allVertSegs, cn.id);
@@ -82,9 +83,19 @@ function renderCanvas() {
     wireHtml += `</g>`;
 
     if (settings.showLabels !== false && !cn.hidePill) {
-      const nf = NFm ? nfDb(NFm[key(cn.from.block, cn.from.port)]) : undefined;
-      const base = pillCenter(R, lvl, segsAll, rectsAll, nf), off = cn.labelOff || { dx: 0, dy: 0 };
-      pillHtml += pill(base.x + off.dx, base.y + off.dy, lvl, cn.id, nf);
+      const nnObj = NFm ? NFm[key(cn.from.block, cn.from.port)] : undefined;
+      const nfVal = nfDb(nnObj);
+      const srcLvl = (typeof startBlocks === "function" && startBlocks().length) ? P[key(startBlocks()[0].id, srcPorts(COMP[startBlocks()[0].type], startBlocks()[0].params)[0])] : 0;
+      const nflVal = (nnObj && typeof computeNoiseFloor === "function") ? computeNoiseFloor(nnObj, lvl, srcLvl, settings.bandwidthHz) : undefined;
+      
+      const indicators = {
+        pwr1: (settings.showPwr1 !== false && lvl !== undefined && isFinite(lvl)) ? dbm(lvl) : null,
+        pwr2: (settings.showPwr2 === true && lvl !== undefined && isFinite(lvl)) ? dbm(lvl) : null,
+        nfloor: (settings.showNoiseFloor === true && nflVal !== undefined && isFinite(nflVal)) ? dbm(nflVal) : null,
+        nf: (settings.showNF === true && nfVal !== undefined && isFinite(nfVal)) ? ("NF " + fmt(nfVal) + " dB") : null
+      };
+
+      pillHtml += pillStack(R, indicators, cn.id);
     }
   }
   layerConn.innerHTML = wireHtml;

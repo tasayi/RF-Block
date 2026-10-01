@@ -140,7 +140,12 @@ function loadDoc(text, name, handle) {
   $("tglSnap").checked = settings.snap;
   $("tglGrid").checked = settings.grid;
   if ($("tglLabels")) $("tglLabels").checked = settings.showLabels !== false;
+  if ($("tglPwr1")) $("tglPwr1").checked = settings.showPwr1 !== false;
+  if ($("tglPwr2")) $("tglPwr2").checked = !!settings.showPwr2;
+  if ($("tglNFloor")) $("tglNFloor").checked = !!settings.showNoiseFloor;
   if ($("tglNF")) $("tglNF").checked = !!settings.showNF;
+  if ($("tbBw")) $("tbBw").value = settings.bandwidthVal !== undefined ? settings.bandwidthVal : 1;
+  if ($("tbBwUnit")) $("tbBwUnit").value = settings.bandwidthUnit || "MHz";
   if ($("selLayout")) $("selLayout").value = (sheets[cur] && sheets[cur].layoutPreset) || settings.layoutPreset || "free";
   applyView();
   renderAll();
@@ -242,15 +247,26 @@ function buildExportSVG(scale = 1) {
   }
   const esegs = [].concat(...ERS.map(r => r.R.segs || []));
   const erects = obstacleRects(0);
-  const eNF = settings.showNF ? computeNoise(P) : null;
+  const needNoise = !!(settings.showNF || settings.showNoiseFloor);
+  const eNF = needNoise ? computeNoise(P) : null;
   for (const { cn, R } of ERS) {
     const pathD = buildPathWithJumpers(R.pts, allVertSegs, cn.id);
     body += `<path class="wire" d="${pathD}" marker-end="url(#ea)"/>`;
     if (settings.showLabels === false || cn.hidePill) continue;
     const lv = P[key(cn.from.block, cn.from.port)];
-    const nf = eNF ? nfDb(eNF[key(cn.from.block, cn.from.port)]) : undefined;
-    const bs = pillCenter(R, lv, esegs, erects, nf), of = cn.labelOff || { dx: 0, dy: 0 };
-    pillsBody += pill(bs.x + of.dx, bs.y + of.dy, lv, null, nf);
+    const nnObj = eNF ? eNF[key(cn.from.block, cn.from.port)] : undefined;
+    const nfVal = nfDb(nnObj);
+    const srcLvl = (typeof startBlocks === "function" && startBlocks().length) ? P[key(startBlocks()[0].id, srcPorts(COMP[startBlocks()[0].type], startBlocks()[0].params)[0])] : 0;
+    const nflVal = (nnObj && typeof computeNoiseFloor === "function") ? computeNoiseFloor(nnObj, lv, srcLvl, settings.bandwidthHz) : undefined;
+
+    const indicators = {
+      pwr1: (settings.showPwr1 !== false && lv !== undefined && isFinite(lv)) ? dbm(lv) : null,
+      pwr2: (settings.showPwr2 === true && lv !== undefined && isFinite(lv)) ? dbm(lv) : null,
+      nfloor: (settings.showNoiseFloor === true && nflVal !== undefined && isFinite(nflVal)) ? dbm(nflVal) : null,
+      nf: (settings.showNF === true && nfVal !== undefined && isFinite(nfVal)) ? ("NF " + fmt(nfVal) + " dB") : null
+    };
+
+    pillsBody += pillStack(R, indicators, null);
   }
   for (const b of blocks) {
     const c = COMP[b.type], f = footprint(b);
