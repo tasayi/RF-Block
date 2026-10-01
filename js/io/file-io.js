@@ -314,3 +314,30 @@ function buildExportSVG(scale = 1) {
     + `<rect x="${minx}" y="${miny}" width="${W}" height="${H}" fill="#ffffff"/>${body}</svg>`;
 }
 
+function exportVsdx() {
+  commitSheet();
+  if (!blocks.length) {
+    hint("Can't export Visio VSDX — the diagram is empty.");
+    return;
+  }
+  if (typeof buildVsdxBlob !== "function") {
+    alert("VSDX Exporter module is not loaded.");
+    return;
+  }
+  try {
+    const P = computePowers();
+    const needNoise = !!(settings.showNF || settings.showNoiseFloor);
+    const NFm = needNoise ? computeNoise(P) : null;
+    const blob = buildVsdxBlob(blocks, conns, P, NFm);
+    const base = (fileName || "rf-chain").replace(/\.(rfbd|json|vsdx|png|svg)$/i, "");
+    const name = `${base}.vsdx`;
+    const url = URL.createObjectURL(blob), a = document.createElement("a");
+    a.href = url; a.download = name; a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+    hint(`Exported ${name}`);
+  } catch (err) {
+    console.error(err);
+    alert("Error generating Visio VSDX file: " + (err.message || err));
+  }
+}
+

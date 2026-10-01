@@ -399,6 +399,8 @@ function initEvents() {
     img.onerror = () => hint("PNG export failed in this browser — try SVG."); img.src = url;
   };
 
+  if ($("btnVsdx")) $("btnVsdx").onclick = exportVsdx;
+
   if ($("btnBom")) $("btnBom").onclick = () => {
     const rows = [["Ref", "Type", "MPN", "Sheet", "Parameters"]];
     const widths = [12, 18, 24, 14, 40];
