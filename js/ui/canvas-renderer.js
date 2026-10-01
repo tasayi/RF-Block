@@ -37,7 +37,8 @@ function renderCanvas() {
     }
   }
 
-  const P = computePowers();
+  const P = computePowers("primary");
+  const PSecondary = computePowers("secondary");
   const hotSet = new Set();
   for (const b of blocks) {
     const c = COMP[b.type];
@@ -88,9 +89,11 @@ function renderCanvas() {
       const srcLvl = (typeof startBlocks === "function" && startBlocks().length) ? P[key(startBlocks()[0].id, srcPorts(COMP[startBlocks()[0].type], startBlocks()[0].params)[0])] : 0;
       const nflVal = (nnObj && typeof computeNoiseFloor === "function") ? computeNoiseFloor(nnObj, lvl, srcLvl, settings.bandwidthHz) : undefined;
       
+      const lvlPrimary = P[key(cn.from.block, cn.from.port)];
+      const lvlSecondary = PSecondary[key(cn.from.block, cn.from.port)];
       const indicators = {
-        pwr1: (settings.showPwr1 !== false && lvl !== undefined && isFinite(lvl)) ? dbm(lvl) : null,
-        pwr2: (settings.showPwr2 === true && lvl !== undefined && isFinite(lvl)) ? dbm(lvl) : null,
+        pwr1: (settings.showPwr1 !== false && lvlPrimary !== undefined && isFinite(lvlPrimary)) ? dbm(lvlPrimary) : null,
+        pwr2: (settings.showPwr2 === true && lvlSecondary !== undefined && isFinite(lvlSecondary)) ? dbm(lvlSecondary) : null,
         nfloor: (settings.showNoiseFloor === true && nflVal !== undefined && isFinite(nflVal)) ? dbm(nflVal) : null,
         nf: (settings.showNF === true && nfVal !== undefined && isFinite(nfVal)) ? ("NF " + fmt(nfVal) + " dB") : null
       };

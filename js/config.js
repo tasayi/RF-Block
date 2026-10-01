@@ -101,6 +101,7 @@ const DEFAULT_SETTINGS = {
   gridSize: 20,
   showPwr1: true,
   showPwr2: false,
+  powerBudget: "primary",
   showNoiseFloor: false,
   showNF: false,
   bandwidthVal: 1.0,

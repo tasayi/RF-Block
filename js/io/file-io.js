@@ -142,6 +142,7 @@ function loadDoc(text, name, handle) {
   if ($("tglLabels")) $("tglLabels").checked = settings.showLabels !== false;
   if ($("tglPwr1")) $("tglPwr1").checked = settings.showPwr1 !== false;
   if ($("tglPwr2")) $("tglPwr2").checked = !!settings.showPwr2;
+  if ($("selPowerBudget")) $("selPowerBudget").value = normalizePowerBudgetMode(settings.powerBudget);
   if ($("tglNFloor")) $("tglNFloor").checked = !!settings.showNoiseFloor;
   if ($("tglNF")) $("tglNF").checked = !!settings.showNF;
   if ($("tbBw")) $("tbBw").value = settings.bandwidthVal !== undefined ? settings.bandwidthVal : 1;
@@ -229,7 +230,8 @@ function buildExportSVG(scale = 1) {
     .pun{fill:#b45309;opacity:.9;font-family:${fontSans};font-size:${DESIGN_TOKENS.fontSizes.small}px;font-weight:600;text-anchor:middle}
     .unk .pbg{fill:#f4f6f8;stroke:#d7dde3}.unk .ptx{fill:#64748b}.unk .pun{fill:#64748b}`;
 
-  const P = computePowers();
+  const P = computePowers("primary");
+  const PSecondary = computePowers("secondary");
   let body = "", pillsBody = "";
   const ERS = [];
   for (const cn of conns) {
@@ -259,9 +261,11 @@ function buildExportSVG(scale = 1) {
     const srcLvl = (typeof startBlocks === "function" && startBlocks().length) ? P[key(startBlocks()[0].id, srcPorts(COMP[startBlocks()[0].type], startBlocks()[0].params)[0])] : 0;
     const nflVal = (nnObj && typeof computeNoiseFloor === "function") ? computeNoiseFloor(nnObj, lv, srcLvl, settings.bandwidthHz) : undefined;
 
+    const lvlPrimary = P[key(cn.from.block, cn.from.port)];
+    const lvlSecondary = PSecondary[key(cn.from.block, cn.from.port)];
     const indicators = {
-      pwr1: (settings.showPwr1 !== false && lv !== undefined && isFinite(lv)) ? dbm(lv) : null,
-      pwr2: (settings.showPwr2 === true && lv !== undefined && isFinite(lv)) ? dbm(lv) : null,
+      pwr1: (settings.showPwr1 !== false && lvlPrimary !== undefined && isFinite(lvlPrimary)) ? dbm(lvlPrimary) : null,
+      pwr2: (settings.showPwr2 === true && lvlSecondary !== undefined && isFinite(lvlSecondary)) ? dbm(lvlSecondary) : null,
       nfloor: (settings.showNoiseFloor === true && nflVal !== undefined && isFinite(nflVal)) ? dbm(nflVal) : null,
       nf: (settings.showNF === true && nfVal !== undefined && isFinite(nfVal)) ? ("NF " + fmt(nfVal) + " dB") : null
     };
@@ -325,10 +329,11 @@ function exportVsdx() {
     return;
   }
   try {
-    const P = computePowers();
+    const P = computePowers("primary");
+    const PSecondary = computePowers("secondary");
     const needNoise = !!(settings.showNF || settings.showNoiseFloor);
     const NFm = needNoise ? computeNoise(P) : null;
-    const blob = buildVsdxBlob(blocks, conns, P, NFm);
+    const blob = buildVsdxBlob(blocks, conns, P, NFm, PSecondary);
     const base = (fileName || "rf-chain").replace(/\.(rfbd|json|vsdx|png|svg)$/i, "");
     const name = `${base}.vsdx`;
     const url = URL.createObjectURL(blob), a = document.createElement("a");

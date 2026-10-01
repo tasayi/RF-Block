@@ -304,6 +304,12 @@ function initEvents() {
   if ($("tglJumpers")) $("tglJumpers").addEventListener("change", e => { settings.enableJumpers = e.target.checked; renderCanvas(); });
   if ($("tglPwr1")) $("tglPwr1").addEventListener("change", e => { settings.showPwr1 = e.target.checked; renderCanvas(); });
   if ($("tglPwr2")) $("tglPwr2").addEventListener("change", e => { settings.showPwr2 = e.target.checked; renderCanvas(); });
+  if ($("selPowerBudget")) $("selPowerBudget").addEventListener("change", e => {
+    settings.powerBudget = normalizePowerBudgetMode(e.target.value);
+    if ($("selPowerBudget")) $("selPowerBudget").value = settings.powerBudget;
+    renderCanvas();
+    if (typeof renderBudget === "function") renderBudget();
+  });
   if ($("tglNFloor")) $("tglNFloor").addEventListener("change", e => { settings.showNoiseFloor = e.target.checked; renderCanvas(); });
   if ($("tglNF")) $("tglNF").addEventListener("change", e => { settings.showNF = e.target.checked; renderCanvas(); renderInspector(); });
   

@@ -20,10 +20,11 @@ function vsdxColor(hex) {
   return "#ffffff";
 }
 
-function buildVsdxBlob(blocksList, connsList, Pdict, NFdict) {
+function buildVsdxBlob(blocksList, connsList, Pdict, NFdict, PSecondaryDict) {
   const blks = blocksList || [];
   const cns = connsList || [];
-  const P = Pdict || (typeof computePowers === "function" ? computePowers() : {});
+  const P = Pdict || (typeof computePowers === "function" ? computePowers("primary") : {});
+  const PSecondary = PSecondaryDict || (typeof computePowers === "function" ? computePowers("secondary") : {});
   const needNoise = (typeof settings !== "undefined" && (settings.showNF || settings.showNoiseFloor));
   const NFm = NFdict || (needNoise && typeof computeNoise === "function" ? computeNoise(P) : null);
 
@@ -288,9 +289,11 @@ function buildVsdxBlob(blocksList, connsList, Pdict, NFdict) {
       const nflVal = (nnObj && typeof computeNoiseFloor === "function") ? computeNoiseFloor(nnObj, lv, srcLvl, bwHz) : undefined;
 
       const indicators = [];
+      const lvPrimary = (P && P[key(cn.from.block, cn.from.port)] !== undefined) ? P[key(cn.from.block, cn.from.port)] : lv;
+      const lvSecondary = (PSecondary && PSecondary[key(cn.from.block, cn.from.port)] !== undefined) ? PSecondary[key(cn.from.block, cn.from.port)] : lv;
       if (settings.showNF === true && nfVal !== undefined && isFinite(nfVal)) indicators.push({ text: `NF ${fmt(nfVal)} dB`, pos: "above" });
-      if (settings.showPwr1 !== false && lv !== undefined && isFinite(lv)) indicators.push({ text: dbm(lv), pos: "above" });
-      if (settings.showPwr2 === true && lv !== undefined && isFinite(lv)) indicators.push({ text: dbm(lv), pos: "below" });
+      if (settings.showPwr1 !== false && lvPrimary !== undefined && isFinite(lvPrimary)) indicators.push({ text: dbm(lvPrimary), pos: "above" });
+      if (settings.showPwr2 === true && lvSecondary !== undefined && isFinite(lvSecondary)) indicators.push({ text: dbm(lvSecondary), pos: "below" });
       if (settings.showNoiseFloor === true && nflVal !== undefined && isFinite(nflVal)) indicators.push({ text: dbm(nflVal), pos: "below" });
 
       if (indicators.length > 0) {
