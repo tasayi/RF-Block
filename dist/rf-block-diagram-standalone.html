@@ -152,6 +152,85 @@ body {
 }
 .tb-spacer { flex: 1; min-width: 6px; }
 
+/* --- View Dropdown --- */
+.view-drop-wrap {
+  position: relative;
+  flex: none;
+}
+.view-drop-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.view-drop-btn .view-drop-caret {
+  margin-left: 1px;
+  opacity: 0.55;
+  transition: transform 0.18s ease;
+}
+.view-drop-btn.open .view-drop-caret {
+  transform: rotate(180deg);
+  opacity: 0.9;
+}
+.view-drop-panel {
+  display: none;
+  position: fixed;
+  background: var(--chrome);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  padding: 12px 14px 14px;
+  min-width: 280px;
+  z-index: 9999;
+  animation: vdp-in 0.14s ease;
+}
+.view-drop-panel.open { display: block; }
+@keyframes vdp-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.vdp-section {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-dim2);
+  margin-bottom: 7px;
+  margin-top: 2px;
+}
+.vdp-divider {
+  height: 1px;
+  background: var(--line);
+  margin: 10px 0;
+  opacity: 0.6;
+}
+.vdp-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px 8px;
+  margin-bottom: 2px;
+}
+.vdp-grid .toggle {
+  padding: 3px 5px;
+  font-size: 11.5px;
+}
+.vdp-inline-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.vdp-bw {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11.5px;
+  color: var(--ink-dim);
+  padding: 3px 0;
+}
+.vdp-full-select {
+  width: 100%;
+}
+
+
 /* Buttons */
 button.btn {
   font-family: var(--sans);
@@ -833,49 +912,110 @@ table.bg tr:hover td { background: rgba(255, 255, 255, 0.04); cursor: pointer; }
       <div><div class="t1">RF&nbsp;Chain</div><div class="t2">Block&nbsp;Diagram&nbsp;Editor</div></div>
     </div>
     <div class="tb-sep"></div>
+
+    <!-- File group -->
     <div class="tb-group">
       <button class="btn" id="btnNew">New</button>
       <button class="btn" id="btnOpen">Open</button>
-      <button class="btn primary" id="btnSave" title="Save (Ctrl/Cmd+S) - overwrites the current file">Save</button>
-      <button class="btn" id="btnSaveAs" title="Save as a new file (Ctrl/Cmd+Shift+S)">Save as</button>
+      <button class="btn primary" id="btnSave" title="Save (Ctrl/Cmd+S)">Save</button>
+      <button class="btn" id="btnSaveAs" title="Save As (Ctrl/Cmd+Shift+S)">Save As</button>
     </div>
     <div class="tb-sep"></div>
+
+    <!-- Edit group -->
     <div class="tb-group">
       <button class="btn" id="btnMirror" title="Mirror selected (M)">⇋ Mirror</button>
       <button class="btn" id="btnRotate" title="Rotate selected 90° (R)">⟳ Rotate</button>
-      <button class="btn" id="btnPng">PNG</button>
-      <button class="btn" id="btnSvg">SVG</button>
-      <button class="btn primary" id="btnVsdx" title="Export native editable Microsoft Visio (.vsdx) diagram">VSDX</button>
-      <button class="btn" id="btnBom" title="Bill of materials as an Excel workbook">BOM</button>
     </div>
+    <div class="tb-sep"></div>
+
+    <!-- Export group -->
+    <div class="tb-group">
+      <button class="btn" id="btnPng" title="Export PNG image">PNG</button>
+      <button class="btn" id="btnSvg" title="Export SVG vector">SVG</button>
+      <button class="btn primary" id="btnVsdx" title="Export native editable Microsoft Visio (.vsdx) diagram">VSDX</button>
+      <button class="btn" id="btnBom" title="Bill of Materials as Excel workbook">BOM</button>
+    </div>
+
     <div class="tb-spacer"></div>
-    <label class="toggle" title="Snap to the grid"><input type="checkbox" id="tglSnap" checked/> Snap</label>
-    <label class="toggle" title="Show the grid"><input type="checkbox" id="tglGrid" checked/> Grid</label>
-    <label class="toggle" title="Universally show or hide signal level labels on wires"><input type="checkbox" id="tglLabels" checked/> Labels</label>
-    <label class="toggle" title="Enable IEEE 315 wire crossing jumpers (arc hops)"><input type="checkbox" id="tglJumpers" checked/> Jumpers</label>
-    <label class="toggle" title="Show Primary Power Budget on wires"><input type="checkbox" id="tglPwr1" checked/> Pwr 1</label>
-    <label class="toggle" title="Show Secondary Power Budget on wires"><input type="checkbox" id="tglPwr2"/> Pwr 2</label>
-    <label class="toggle" title="Show Thermal Noise Floor on wires"><input type="checkbox" id="tglNFloor"/> N.Floor</label>
-    <label class="toggle" title="Noise Bandwidth for Noise Floor calculation">BW <input id="tbBw" type="number" value="1" step="any" min="0.000001" class="tb-num-input"/><select id="tbBwUnit" class="tb-select-sm" title="Bandwidth Unit"><option value="Hz">Hz</option><option value="kHz">kHz</option><option value="MHz" selected>MHz</option><option value="GHz">GHz</option></select></label>
-    <label class="toggle" title="Show Cascade Noise Figure on wires"><input type="checkbox" id="tglNF"/> NF</label>
-    <label class="toggle" title="Tint blocks by category"><input type="checkbox" id="tglColor" checked/> Colour</label>
-    <label class="toggle" title="Toggle Light / Dark background theme"><input type="checkbox" id="tglTheme"/> Theme</label>
-    <select id="selLayout" class="tb-select" title="Canvas Page Layout Preset for Document & Print Compatibility">
+
+    <!-- View dropdown -->
+    <div class="view-drop-wrap" id="viewDropWrap">
+      <button class="btn view-drop-btn" id="btnViewDrop" title="View &amp; display settings">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="8" cy="8" r="2.8"/>
+          <path d="M1.5 8s2.5-5 6.5-5 6.5 5 6.5 5-2.5 5-6.5 5-6.5-5-6.5-5z"/>
+        </svg>
+        View
+        <svg class="view-drop-caret" width="9" height="9" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3.5l3 3 3-3"/></svg>
+      </button>
+      <div class="view-drop-panel" id="viewDropPanel">
+
+        <div class="vdp-section">Canvas</div>
+        <div class="vdp-grid">
+          <label class="toggle" title="Snap to the grid"><input type="checkbox" id="tglSnap" checked/> Snap</label>
+          <label class="toggle" title="Show the grid"><input type="checkbox" id="tglGrid" checked/> Grid</label>
+          <label class="toggle" title="Tint blocks by category"><input type="checkbox" id="tglColor" checked/> Colour</label>
+          <label class="toggle" title="Toggle Light / Dark background theme"><input type="checkbox" id="tglTheme"/> Theme</label>
+        </div>
+
+        <div class="vdp-divider"></div>
+        <div class="vdp-section">Signals &amp; Labels</div>
+        <div class="vdp-grid">
+          <label class="toggle" title="Show signal level labels on wires"><input type="checkbox" id="tglLabels" checked/> Labels</label>
+          <label class="toggle" title="IEEE 315 wire crossing jumpers"><input type="checkbox" id="tglJumpers" checked/> Jumpers</label>
+          <label class="toggle" title="Show Primary Power level on wires"><input type="checkbox" id="tglPwr1" checked/> Pwr 1</label>
+          <label class="toggle" title="Show Secondary Power level on wires"><input type="checkbox" id="tglPwr2"/> Pwr 2</label>
+          <label class="toggle" title="Show Cascade Noise Figure"><input type="checkbox" id="tglNF"/> NF</label>
+          <label class="toggle" title="Show Thermal Noise Floor"><input type="checkbox" id="tglNFloor"/> N. Floor</label>
+        </div>
+
+        <div class="vdp-divider"></div>
+        <div class="vdp-section">Noise Floor Bandwidth</div>
+        <div class="vdp-inline-row">
+          <label class="toggle vdp-bw" title="Noise bandwidth for Noise Floor calculation">
+            BW&nbsp;<input id="tbBw" type="number" value="1" step="any" min="0.000001" class="tb-num-input"/>
+            <select id="tbBwUnit" class="tb-select-sm"><option value="Hz">Hz</option><option value="kHz">kHz</option><option value="MHz" selected>MHz</option><option value="GHz">GHz</option></select>
+          </label>
+        </div>
+
+        <div class="vdp-divider"></div>
+        <div class="vdp-section">Power Budget Mode</div>
+        <div class="vdp-inline-row">
+          <select id="selPowerBudget" class="tb-select vdp-full-select" title="Active power budget mode">
+            <option value="primary">Primary</option>
+            <option value="secondary">Secondary</option>
+          </select>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Layout preset -->
+    <select id="selLayout" class="tb-select" title="Canvas page layout preset">
       <option value="free">Layout: Free</option>
-      <option value="a4_landscape">A4 Landscape (297×210mm)</option>
-      <option value="a4_portrait">A4 Portrait (210×297mm)</option>
-      <option value="a3_landscape">A3 Landscape (420×297mm)</option>
-      <option value="a3_portrait">A3 Portrait (297×420mm)</option>
+      <option value="a4_landscape">A4 Landscape</option>
+      <option value="a4_portrait">A4 Portrait</option>
+      <option value="a3_landscape">A3 Landscape</option>
+      <option value="a3_portrait">A3 Portrait</option>
     </select>
+
+    <!-- Zoom -->
     <div class="zoombox">
       <button id="zOut" title="Zoom out">−</button>
       <div class="z" id="zLabel">100%</div>
       <button id="zIn" title="Zoom in">+</button>
     </div>
-    <button class="btn" id="btnBudget" title="Cascade budget & design checks (B)">Budget</button>
-    <button class="btn" id="btnAnalyser" title="Global RF Analyser & Frequency Sweep Settings">Analyser</button>
-    <button class="btn" id="btnSParams" title="Linear S-Parameter Analysis & Frequency Sweeper">S-Params</button>
+    <div class="tb-sep"></div>
+
+    <!-- Analysis panels -->
+    <div class="tb-group">
+      <button class="btn" id="btnBudget" title="Cascade budget &amp; design checks (B)">Budget</button>
+      <button class="btn" id="btnAnalyser" title="Global RF Analyser &amp; Frequency Sweep Settings">Analyser</button>
+      <button class="btn" id="btnSParams" title="Linear S-Parameter Analysis &amp; Frequency Sweeper">S-Params</button>
+    </div>
     <button class="btn" id="btnFit" title="Fit diagram to view">Fit</button>
+
     <input type="file" id="fileInput" accept=".rfbd,.json,application/json" style="display:none"/>
   </div>
 
@@ -999,7 +1139,7 @@ const DESIGN_TOKENS = {
   },
   fontFamily: 'Calibri, "Calibri Light", "Segoe UI", Arial, sans-serif',
   fontFamilyMono: 'Calibri, "Calibri Light", "Segoe UI", Arial, sans-serif',
-  symbolScale: 1.2, // +20% icon/symbol scaling
+  symbolScale: 1, // Component symbols and their authored ports share the same coordinate grid.
   exportPadding: 24
 };
 
@@ -1088,6 +1228,7 @@ const DEFAULT_SETTINGS = {
   gridSize: 20,
   showPwr1: true,
   showPwr2: false,
+  powerBudget: "primary",
   showNoiseFloor: false,
   showNF: false,
   bandwidthVal: 1.0,
@@ -1139,6 +1280,35 @@ const num = v => {
   if (v === "" || v === null || v === undefined) return undefined;
   const n = +v;
   return isFinite(n) ? n : undefined;
+};
+
+const readPowerValue = (p, keys) => {
+  if (!p || typeof p !== "object") return undefined;
+  for (const key of keys) {
+    const v = p[key];
+    if (v !== undefined && v !== null && v !== "") return v;
+  }
+  return undefined;
+};
+
+const normalizePowerBudgetMode = mode => {
+  const m = String(mode || "primary").toLowerCase();
+  return m === "secondary" ? "secondary" : "primary";
+};
+
+const getPrimarySourcePower = p => {
+  const v = readPowerValue(p, ["primaryPower", "primaryInputPower", "power"]);
+  return num(v) ?? 0;
+};
+
+const getSecondarySourcePower = p => {
+  const v = readPowerValue(p, ["secondaryPower", "secondaryInputPower", "power"]);
+  return num(v) ?? 0;
+};
+
+const getSelectedSourcePower = (p, mode) => {
+  const budgetMode = normalizePowerBudgetMode(mode ?? (typeof settings !== "undefined" ? settings.powerBudget : "primary"));
+  return budgetMode === "secondary" ? getSecondarySourcePower(p) : getPrimarySourcePower(p);
 };
 
 /* srcOut may name one port or several (a custom block with no inputs feeds them all) */
@@ -1247,20 +1417,26 @@ const swState = (p, n) => {
 def({
   type: "source", keys: "signal generator cw carrier input", name: "Source", group: "Sources", w: 40, h: 40,
   ports: [{ id: "out", side: "right", kind: "out", dx: 40, dy: 20 }],
-  params: { label: "SRC", power: 0, freq: "1 GHz", anaPort: "None" },
+  params: { label: "SRC", power: 0, primaryPower: 0, secondaryPower: 0, freq: "1 GHz", anaPort: "None" },
   fields: [{ key: "anaPort", label: "Analysis Port", type: "select", options: ["None", "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8"] },
-           { key: "power", label: "Output level", unit: "dBm", step: 0.5 }, { key: "freq", label: "Frequency", type: "text" }],
-  isSource: () => true, srcOut: () => "out", srcPower: p => p.power, val: p => p.freq || "",
+           { key: "primaryPower", label: "Primary input level", unit: "dBm", step: 0.5 },
+           { key: "secondaryPower", label: "Secondary input level", unit: "dBm", step: 0.5 },
+           { key: "power", label: "Legacy input level", unit: "dBm", step: 0.5 },
+           { key: "freq", label: "Frequency", type: "text" }],
+  isSource: () => true, srcOut: () => "out", srcPower: (p, mode) => getSelectedSourcePower(p, mode), val: p => p.freq || dbm(getSelectedSourcePower(p)),
   sym() { return `<circle class="blk-shape" cx="20" cy="20" r="19"/><path class="blk-glyph" d="M10 20 q5 -7 10 0 t10 0"/>`; }
 });
 
 def({
   type: "lo", keys: "oscillator local synth vco source", name: "LO / Osc", group: "Frequency", w: 40, h: 40,
   ports: [{ id: "out", side: "top", kind: "out", dx: 20, dy: 0 }],
-  params: { label: "LO", power: 10, freq: "0.9 GHz", anaPort: "None" },
+  params: { label: "LO", power: 10, primaryPower: 10, secondaryPower: 10, freq: "0.9 GHz", anaPort: "None" },
   fields: [{ key: "anaPort", label: "Analysis Port", type: "select", options: ["None", "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8"] },
-           { key: "power", label: "Drive level", unit: "dBm", step: 0.5 }, { key: "freq", label: "Frequency", type: "text" }],
-  isSource: () => true, srcOut: () => "out", srcPower: p => p.power, val: p => p.freq || "",
+           { key: "primaryPower", label: "Primary drive level", unit: "dBm", step: 0.5 },
+           { key: "secondaryPower", label: "Secondary drive level", unit: "dBm", step: 0.5 },
+           { key: "power", label: "Legacy drive level", unit: "dBm", step: 0.5 },
+           { key: "freq", label: "Frequency", type: "text" }],
+  isSource: () => true, srcOut: () => "out", srcPower: (p, mode) => getSelectedSourcePower(p, mode), val: p => p.freq || dbm(getSelectedSourcePower(p)),
   sym() { return `<circle class="blk-shape" cx="20" cy="20" r="19"/><path class="blk-glyph" d="M10 20 q5 -7 10 0 t10 0"/>`; }
 });
 
@@ -1792,10 +1968,13 @@ def({
 def({
   type: "rfin", keys: "connector input port sma source", name: "In connector", group: "Terminals", w: 40, h: 40,
   ports: [{ id: "out", side: "right", kind: "out", dx: 40, dy: 20 }],
-  params: { label: "RF IN", power: 0, freq: "", anaPort: "P1" },
+  params: { label: "RF IN", power: 0, primaryPower: 0, secondaryPower: 0, freq: "", anaPort: "P1" },
   fields: [{ key: "anaPort", label: "Analysis Port", type: "select", options: ["None", "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8"] },
-           { key: "power", label: "Input level", unit: "dBm", step: 0.5 }, { key: "freq", label: "Frequency", type: "text" }],
-  isSource: () => true, srcOut: () => "out", srcPower: p => p.power, val: p => p.freq || dbm(p.power),
+           { key: "primaryPower", label: "Primary input level", unit: "dBm", step: 0.5 },
+           { key: "secondaryPower", label: "Secondary input level", unit: "dBm", step: 0.5 },
+           { key: "power", label: "Legacy input level", unit: "dBm", step: 0.5 },
+           { key: "freq", label: "Frequency", type: "text" }],
+  isSource: () => true, srcOut: () => "out", srcPower: (p, mode) => getSelectedSourcePower(p, mode), val: p => p.freq || dbm(getSelectedSourcePower(p)),
   sym() { return `<path class="blk-line" d="M22 20H40"/><circle class="blk-shape" cx="13" cy="20" r="9"/><circle class="blk-fillg" cx="13" cy="20" r="3"/>`; }
 });
 
@@ -1819,11 +1998,14 @@ def({
 
 def({
   type: "antenna", keys: "aerial radiator tx rx", name: "Antenna", group: "Terminals", w: 40, h: 40,
-  params: { label: "ANT", role: "Tx", power: -80, anaPort: "None" },
+  params: { label: "ANT", role: "Tx", power: -80, primaryPower: -80, secondaryPower: -80, anaPort: "None" },
   fields: [{ key: "anaPort", label: "Analysis Port", type: "select", options: ["None", "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8"] },
-           { key: "role", label: "Role", type: "select", options: ["Tx", "Rx"] }, { key: "power", label: "Received level", unit: "dBm", step: 1, showIf: p => p.role === "Rx" }],
+           { key: "role", label: "Role", type: "select", options: ["Tx", "Rx"] },
+           { key: "primaryPower", label: "Primary received level", unit: "dBm", step: 1, showIf: p => p.role === "Rx" },
+           { key: "secondaryPower", label: "Secondary received level", unit: "dBm", step: 1, showIf: p => p.role === "Rx" },
+           { key: "power", label: "Legacy received level", unit: "dBm", step: 1, showIf: p => p.role === "Rx" }],
   dynPorts: p => p.role === "Rx" ? [{ id: "ant", side: "right", kind: "out", dx: 40, dy: 20 }] : [{ id: "ant", side: "left", kind: "in", dx: 0, dy: 20 }],
-  isSource: p => p.role === "Rx", srcOut: () => "ant", srcPower: p => p.power, val: p => p.role === "Rx" ? "Rx" : "Tx",
+  isSource: p => p.role === "Rx", srcOut: () => "ant", srcPower: (p, mode) => getSelectedSourcePower(p, mode), val: p => p.role === "Rx" ? "Rx" : "Tx",
   sym(p) {
     const feed = p.role === "Rx" ? L(40, 20, 20, 20) : L(0, 20, 20, 20);
     return feed + `<path class="blk-line" d="M20 20V5"/><path class="blk-line" d="M20 5L9 -3M20 5L31 -3"/><circle class="blk-fillg" cx="20" cy="20" r="2.6"/>`;
@@ -1876,13 +2058,15 @@ def({
     for (let i = 0; i < no; i++) pts.push({ id: "o" + (i + 1), side: "right", kind: "out", dx: 80, dy: posn(no, i) });
     return pts;
   },
-  params: { label: "CUSTOM", text: "FX", shape: "Box", ins: "1", outs: "1", gain: 0, power: 0, nf: 0, p1db: "", oip3: "", path: "" },
+  params: { label: "CUSTOM", text: "FX", shape: "Box", ins: "1", outs: "1", gain: 0, power: 0, primaryPower: 0, secondaryPower: 0, nf: 0, p1db: "", oip3: "", path: "" },
   nf: p => Math.abs(p.nf || 0), p1db: p => num(p.p1db), oip3: p => num(p.oip3),
   fields: [{ key: "text", label: "Symbol text", type: "text" },
            { key: "shape", label: "Shape", type: "select", options: ["Box", "Circle", "Diamond", "Triangle"] },
            { key: "ins", label: "Inputs (0 = source)", type: "select", options: ["0", "1", "2", "3", "4"] },
            { key: "outs", label: "Outputs (0 = load)", type: "select", options: ["0", "1", "2", "3", "4"] },
-           { key: "power", label: "Output level", unit: "dBm", step: 0.5, showIf: p => cIn(p) === 0 && cOut(p) > 0 },
+           { key: "primaryPower", label: "Primary output level", unit: "dBm", step: 0.5, showIf: p => cIn(p) === 0 && cOut(p) > 0 },
+           { key: "secondaryPower", label: "Secondary output level", unit: "dBm", step: 0.5, showIf: p => cIn(p) === 0 && cOut(p) > 0 },
+           { key: "power", label: "Legacy output level", unit: "dBm", step: 0.5, showIf: p => cIn(p) === 0 && cOut(p) > 0 },
            { key: "gain", label: "Gain / loss per output", unit: "dB", step: 0.5, showIf: p => cIn(p) > 0 && cOut(p) > 0 },
            { key: "nf", label: "Noise figure", unit: "dB", step: 0.1, min: 0, showIf: p => cIn(p) > 0 && cOut(p) > 0 },
            { key: "p1db", label: "Output P1dB (blank = ideal)", unit: "dBm", step: 0.5, showIf: p => cOut(p) > 0 },
@@ -1890,7 +2074,7 @@ def({
            { key: "path", label: "Custom SVG path (advanced)", type: "text" }],
   isSource: p => cIn(p) === 0 && cOut(p) > 0,
   srcOut: p => { const a = [], no = cOut(p); for (let i = 1; i <= no; i++) a.push("o" + i); return a; },
-  srcPower: p => +p.power || 0,
+  srcPower: (p, mode) => getSelectedSourcePower(p, mode),
   out: p => { const no = cOut(p), g = +p.gain || 0; const o = {}; for (let i = 1; i <= no; i++) o["o" + i] = g; return o; },
   val: p => {
     const ni = cIn(p), no = cOut(p);
@@ -2258,11 +2442,17 @@ function getPorts(b) {
   const c = COMP[b.type];
   const raw = c.dynPorts ? c.dynPorts(b.params) : (c.ports || []);
   const rot = (b.rot || 0) % 360, flip = !!b.flip;
-  if (!rot && !flip) return raw.map(p => ({ id: p.id, kind: p.kind, side: p.side, dx: p.dx, dy: p.dy }));
   const D = dims(c, b.params), Wn = D.w, Hn = D.h, fw = (rot === 90 || rot === 270) ? Hn : Wn, fh = (rot === 90 || rot === 270) ? Wn : Hn;
+  const symbolScale = (typeof DESIGN_TOKENS !== "undefined" && DESIGN_TOKENS.symbolScale) || 1;
   return raw.map(p => {
-    const m = mapPt(p.dx, p.dy, rot, flip, Wn, Hn, fw, fh);
-    return { id: p.id, kind: p.kind, side: mapSide(p.side, rot, flip), dx: m.x, dy: m.y };
+    const m = (rot || flip) ? mapPt(p.dx, p.dy, rot, flip, Wn, Hn, fw, fh) : { x: p.dx, y: p.dy };
+    return {
+      id: p.id,
+      kind: p.kind,
+      side: mapSide(p.side, rot, flip),
+      dx: fw / 2 + (m.x - fw / 2) * symbolScale,
+      dy: fh / 2 + (m.y - fh / 2) * symbolScale
+    };
   });
 }
 
@@ -2286,20 +2476,23 @@ const findBlock = id => blocks.find(b => b.id === id);
 
 function markInside(p, w, h) {
   const o = 4;
-  if (p.side === "left") return { x: o, y: p.dy };
-  if (p.side === "right") return { x: w - o, y: p.dy };
-  if (p.side === "top") return { x: p.dx, y: o };
-  return { x: p.dx, y: h - o };
+  if (p.side === "left") return { x: p.dx + o, y: p.dy };
+  if (p.side === "right") return { x: p.dx - o, y: p.dy };
+  if (p.side === "top") return { x: p.dx, y: p.dy + o };
+  return { x: p.dx, y: p.dy - o };
 }
 
 function bboxOf(b) {
   const c = COMP[b.type];
   if (c.isLabel) { return { x: b.x - 4, y: b.y - 18, w: measureLabel(b), h: 28 }; }
   const s = footprint(b);
+  const symbolScale = (typeof DESIGN_TOKENS !== "undefined" && DESIGN_TOKENS.symbolScale) || 1;
+  const extraX = Math.max(0, s.w * (symbolScale - 1) / 2);
+  const extraY = Math.max(0, s.h * (symbolScale - 1) / 2);
   if (c.topLabel || c.lblPos === "top") {
-    return { x: b.x, y: b.y - 32, w: s.w, h: s.h + 32 };
+    return { x: b.x - extraX, y: b.y - extraY - 32, w: s.w + extraX * 2, h: s.h + extraY * 2 + 32 };
   }
-  return { x: b.x, y: b.y, w: s.w, h: s.h + 40 };
+  return { x: b.x - extraX, y: b.y - extraY, w: s.w + extraX * 2, h: s.h + extraY * 2 + 40 };
 }
 
 function screenToWorld(cx, cy) {
@@ -2315,14 +2508,18 @@ const snap = v => settings.snap ? Math.round(v / settings.gridSize) * settings.g
 "use strict";
 
 /* Power Level Solver Engine */
-function computePowers() { return withAllSheets(computePowersRaw); }
+function computePowers(mode) {
+  const budgetMode = normalizePowerBudgetMode(mode ?? (typeof settings !== "undefined" ? settings.powerBudget : "primary"));
+  return withAllSheets(() => computePowersRaw(budgetMode));
+}
 
-function computePowersRaw() {
+function computePowersRaw(mode) {
+  const budgetMode = normalizePowerBudgetMode(mode ?? (typeof settings !== "undefined" ? settings.powerBudget : "primary"));
   const out = {};
   for (const b of blocks) {
     const c = COMP[b.type];
     if (c.isSource && c.isSource(b.params)) {
-      const lv = Number(c.srcPower(b.params));
+      const lv = Number(c.srcPower(b.params, budgetMode));
       for (const pid of srcPorts(c, b.params)) out[key(b.id, pid)] = lv;
     }
   }
@@ -3391,7 +3588,9 @@ function obstacleRects(m) {
   for (const b of blocks) {
     if (COMP[b.type].isLabel) continue;
     const f = footprint(b);
-    out.push({ x1: b.x - m, y1: b.y - m, x2: b.x + f.w + m, y2: b.y + f.h + m });
+    const scale = (typeof DESIGN_TOKENS !== "undefined" && DESIGN_TOKENS.symbolScale) || 1;
+    const extraX = Math.max(0, f.w * (scale - 1) / 2), extraY = Math.max(0, f.h * (scale - 1) / 2);
+    out.push({ x1: b.x - extraX - m, y1: b.y - extraY - m, x2: b.x + f.w + extraX + m, y2: b.y + f.h + extraY + m });
   }
   return out;
 }
@@ -3498,7 +3697,7 @@ function route(a, z, cn) {
 function measurePillText(text) {
   if (!text) return { text: "", w: 36, h: 20 };
   const charWidth = 8.5;
-  const paddingH = 6; // Reduced horizontal padding
+  const paddingH = 6; // Original design-system spacing on each side of the text.
   const w = Math.max(text.length * charWidth + paddingH * 2, 36);
   return { text, w, h: 20 };
 }
@@ -3513,6 +3712,56 @@ function pillDims(lvl, nf) {
   const w = Math.max(wMain, wSub, 36);
   const h = nrow ? 36 : 20;
   return { full, nrow, w, h };
+}
+
+function pointAtRouteFraction(points, fraction) {
+  if (!points || !points.length) return { x: 0, y: 0 };
+  if (points.length === 1) return { x: points[0].x, y: points[0].y };
+  const lengths = [];
+  let total = 0;
+  for (let i = 0; i < points.length - 1; i++) {
+    const length = Math.hypot(points[i + 1].x - points[i].x, points[i + 1].y - points[i].y);
+    lengths.push(length);
+    total += length;
+  }
+  if (!total) return { x: points[0].x, y: points[0].y };
+  let remaining = Math.max(0, Math.min(1, Number(fraction) || 0)) * total;
+  for (let i = 0; i < lengths.length; i++) {
+    const length = lengths[i];
+    if (remaining <= length || i === lengths.length - 1) {
+      const t = length ? Math.max(0, Math.min(1, remaining / length)) : 0;
+      return {
+        x: points[i].x + (points[i + 1].x - points[i].x) * t,
+        y: points[i].y + (points[i + 1].y - points[i].y) * t
+      };
+    }
+    remaining -= length;
+  }
+  return { x: points[points.length - 1].x, y: points[points.length - 1].y };
+}
+
+function positionOnRoute(points, x, y) {
+  if (!points || points.length < 2) return { t: 0, dx: x - (points && points[0] ? points[0].x : 0), dy: y - (points && points[0] ? points[0].y : 0) };
+  let total = 0;
+  const lengths = [];
+  for (let i = 0; i < points.length - 1; i++) {
+    const length = Math.hypot(points[i + 1].x - points[i].x, points[i + 1].y - points[i].y);
+    lengths.push(length);
+    total += length;
+  }
+  if (!total) return { t: 0, dx: x - points[0].x, dy: y - points[0].y };
+  let best = { distance: Infinity, along: 0, x: points[0].x, y: points[0].y };
+  let traversed = 0;
+  for (let i = 0; i < lengths.length; i++) {
+    const a = points[i], b = points[i + 1], length = lengths[i];
+    const vx = b.x - a.x, vy = b.y - a.y;
+    const t = length ? Math.max(0, Math.min(1, ((x - a.x) * vx + (y - a.y) * vy) / (length * length))) : 0;
+    const px = a.x + vx * t, py = a.y + vy * t;
+    const distance = Math.hypot(x - px, y - py);
+    if (distance < best.distance) best = { distance, along: traversed + length * t, x: px, y: py };
+    traversed += length;
+  }
+  return { t: best.along / total, dx: x - best.x, dy: y - best.y };
 }
 
 function segHitsRect(s, rx1, ry1, rx2, ry2) {
@@ -3568,9 +3817,9 @@ function pill(cx, cy, lvl, connId, nf) {
   return `<g class="pill${unk ? " unk" : ""}"${connId ? ` data-conn="${connId}"` : ""} transform="translate(${cx} ${cy})"><rect class="pbg" x="${-d.w / 2}" y="${-d.h / 2}" width="${d.w}" height="${d.h}" rx="5"/>${rows}</g>`;
 }
 
-/* Symmetric 4-Indicator Pill Stack Renderer */
-function pillStack(R, indicators, connId) {
-  if (!indicators) return "";
+/* Shared pill dimensions and placement used by the canvas and VSDX export. */
+function indicatorPillLayout(R, indicators) {
+  if (!indicators) return { colWidth: 36, pillHeight: 20, entries: [], anchorX: R.mx ?? 0, anchorY: R.my ?? 0 };
   const aboveGroup = [];
   const belowGroup = [];
 
@@ -3581,7 +3830,7 @@ function pillStack(R, indicators, connId) {
   if (indicators.nfloor) belowGroup.push({ type: "nfloor", text: indicators.nfloor });
 
   const totalActive = aboveGroup.length + belowGroup.length;
-  if (totalActive === 0) return "";
+  if (totalActive === 0) return { colWidth: 36, pillHeight: 20, entries: [], anchorX: R.mx ?? 0, anchorY: R.my ?? 0 };
 
   /* Calculate Uniform Column Width (max width across all active pills in stack) */
   let colWidth = 36;
@@ -3612,29 +3861,48 @@ function pillStack(R, indicators, connId) {
     }
   }
 
-  let html = "";
   const pillH = 20;
   const gap = 4;
+  const entries = [];
 
   /* Render Above-Wire Stack (stacked upwards starting directly above wire) */
   const nAbove = aboveGroup.length;
   for (let i = 0; i < nAbove; i++) {
     const distFromWire = nAbove - 1 - i; // 0 for closest to wire, 1 for top
     const py = wireY - (pillH / 2 + gap) - distFromWire * (pillH + gap);
-    html += `<g class="pill pill-${aboveGroup[i].type}"${connId ? ` data-conn="${connId}"` : ""} transform="translate(${wireX} ${py})">`
-      + `<rect class="pbg" x="${-colWidth / 2}" y="${-pillH / 2}" width="${colWidth}" height="${pillH}" rx="5"/>`
-      + `<text class="ptx" x="0" y="0" dominant-baseline="central" text-anchor="middle">${esc(aboveGroup[i].text)}</text></g>`;
+    entries.push({ ...aboveGroup[i], x: wireX, y: py });
   }
 
   /* Render Below-Wire Stack (stacked downwards starting directly below wire) */
   const nBelow = belowGroup.length;
   for (let i = 0; i < nBelow; i++) {
     const py = wireY + (pillH / 2 + gap) + i * (pillH + gap);
-    html += `<g class="pill pill-${belowGroup[i].type}"${connId ? ` data-conn="${connId}"` : ""} transform="translate(${wireX} ${py})">`
-      + `<rect class="pbg" x="${-colWidth / 2}" y="${-pillH / 2}" width="${colWidth}" height="${pillH}" rx="5"/>`
-      + `<text class="ptx" x="0" y="0" dominant-baseline="central" text-anchor="middle">${esc(belowGroup[i].text)}</text></g>`;
+    entries.push({ ...belowGroup[i], x: wireX, y: py });
   }
 
+  return { colWidth, pillHeight: pillH, entries, anchorX: wireX, anchorY: wireY };
+}
+
+/* Symmetric 4-Indicator Pill Stack Renderer */
+function pillStack(R, indicators, connId) {
+  const layout = indicatorPillLayout(R, indicators);
+  const { colWidth, pillHeight } = layout;
+  const connection = connId ? conns.find(c => c.id === connId) : null;
+  const legacyOffset = connection && connection.labelOff ? connection.labelOff : null;
+  const legacyPillPosition = connection && connection.pillPositions
+    ? Object.values(connection.pillPositions)[0]
+    : null;
+  const savedPosition = connection && (connection.pillPosition || legacyPillPosition);
+  const savedAnchor = savedPosition ? pointAtRouteFraction(R.pts, savedPosition.t) : null;
+  const shiftX = savedAnchor ? savedAnchor.x + (Number(savedPosition.dx) || 0) - layout.anchorX : (legacyOffset ? legacyOffset.dx : 0);
+  const shiftY = savedAnchor ? savedAnchor.y + (Number(savedPosition.dy) || 0) - layout.anchorY : (legacyOffset ? legacyOffset.dy : 0);
+  let html = "";
+  for (const item of layout.entries) {
+    const x = item.x + shiftX, y = item.y + shiftY;
+    html += `<g class="pill pill-${item.type}"${connId ? ` data-conn="${connId}" data-pill-type="${item.type}" data-pill-anchor-x="${layout.anchorX + shiftX}" data-pill-anchor-y="${layout.anchorY + shiftY}"` : ""} transform="translate(${x} ${y})">`
+      + `<rect class="pbg" x="${-colWidth / 2}" y="${-pillHeight / 2}" width="${colWidth}" height="${pillHeight}" rx="5"/>`
+      + `<text class="ptx" x="0" y="0" dominant-baseline="central" text-anchor="middle">${esc(item.text)}</text></g>`;
+  }
   return html;
 }
 
@@ -3967,10 +4235,396 @@ function vsdxColor(hex) {
   return "#ffffff";
 }
 
-function buildVsdxBlob(blocksList, connsList, Pdict, NFdict) {
+function svgNumber(value, fallback = 0) {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : fallback;
+}
+
+function svgAttributes(source) {
+  const attrs = {};
+  const re = /([\w:-]+)\s*=\s*(["'])(.*?)\2/g;
+  let match;
+  while ((match = re.exec(source))) attrs[match[1]] = match[3];
+  return attrs;
+}
+
+function sampleSvgPath(data) {
+  const tokens = String(data || "").match(/[a-zA-Z]|[-+]?(?:\d*\.\d+|\d+\.?\d*)(?:[eE][-+]?\d+)?/g) || [];
+  const paths = [];
+  let points = [];
+  let x = 0, y = 0, sx = 0, sy = 0, lastC = null, lastQ = null, command = "";
+  let i = 0;
+  const isCommand = t => /^[a-z]$/i.test(t);
+  const has = n => i + n <= tokens.length && !tokens.slice(i, i + n).some(isCommand);
+  const value = () => Number(tokens[i++]);
+  const point = (px, py) => { x = px; y = py; points.push({ x, y }); };
+  const start = (px, py) => { if (points.length > 1) paths.push(points); points = []; sx = px; sy = py; point(px, py); };
+  const endSubpath = () => { if (points.length > 1) paths.push(points); points = []; };
+
+  while (i < tokens.length) {
+    if (isCommand(tokens[i])) command = tokens[i++];
+    if (!command) break;
+    const upper = command.toUpperCase(), relative = command !== upper;
+    if (upper === "Z") { point(sx, sy); endSubpath(); x = sx; y = sy; lastC = lastQ = null; command = ""; continue; }
+    let consumed = false;
+    while (i < tokens.length && !isCommand(tokens[i])) {
+      if (upper === "M" || upper === "L" || upper === "T") {
+        if (!has(2)) break;
+        let nx = value(), ny = value();
+        if (relative) { nx += x; ny += y; }
+        if (upper === "M" && !consumed) start(nx, ny);
+        else if (upper === "T") {
+          const q = lastQ ? { x: 2 * x - lastQ.x, y: 2 * y - lastQ.y } : { x, y };
+          const ox = x, oy = y;
+          for (let s = 1; s <= 8; s++) { const t = s / 8, u = 1 - t; point(u * u * ox + 2 * u * t * q.x + t * t * nx, u * u * oy + 2 * u * t * q.y + t * t * ny); }
+          lastQ = q;
+        } else point(nx, ny);
+        if (upper !== "T") lastQ = null;
+        lastC = null;
+        consumed = true;
+        if (upper === "M") command = relative ? "l" : "L";
+      } else if (upper === "H" || upper === "V") {
+        if (!has(1)) break;
+        const n = value();
+        point(upper === "H" ? (relative ? x + n : n) : x, upper === "V" ? (relative ? y + n : n) : y);
+        lastC = lastQ = null; consumed = true;
+      } else if (upper === "C") {
+        if (!has(6)) break;
+        let x1 = value(), y1 = value(), x2 = value(), y2 = value(), ex = value(), ey = value();
+        if (relative) { x1 += x; y1 += y; x2 += x; y2 += y; ex += x; ey += y; }
+        const ox = x, oy = y;
+        for (let s = 1; s <= 10; s++) { const t = s / 10, u = 1 - t; point(u ** 3 * ox + 3 * u * u * t * x1 + 3 * u * t * t * x2 + t ** 3 * ex, u ** 3 * oy + 3 * u * u * t * y1 + 3 * u * t * t * y2 + t ** 3 * ey); }
+        lastC = { x: x2, y: y2 }; lastQ = null; consumed = true;
+      } else if (upper === "S") {
+        if (!has(4)) break;
+        let x2 = value(), y2 = value(), ex = value(), ey = value();
+        if (relative) { x2 += x; y2 += y; ex += x; ey += y; }
+        const x1 = lastC ? 2 * x - lastC.x : x, y1 = lastC ? 2 * y - lastC.y : y;
+        const ox = x, oy = y;
+        for (let s = 1; s <= 10; s++) { const t = s / 10, u = 1 - t; point(u ** 3 * ox + 3 * u * u * t * x1 + 3 * u * t * t * x2 + t ** 3 * ex, u ** 3 * oy + 3 * u * u * t * y1 + 3 * u * t * t * y2 + t ** 3 * ey); }
+        lastC = { x: x2, y: y2 }; lastQ = null; consumed = true;
+      } else if (upper === "Q") {
+        if (!has(4)) break;
+        let cx = value(), cy = value(), ex = value(), ey = value();
+        if (relative) { cx += x; cy += y; ex += x; ey += y; }
+        const ox = x, oy = y;
+        for (let s = 1; s <= 8; s++) { const t = s / 8, u = 1 - t; point(u * u * ox + 2 * u * t * cx + t * t * ex, u * u * oy + 2 * u * t * cy + t * t * ey); }
+        lastQ = { x: cx, y: cy }; lastC = null; consumed = true;
+      } else if (upper === "A") {
+        if (!has(7)) break;
+        const rx0 = Math.abs(value()), ry0 = Math.abs(value()), rotation = value() * Math.PI / 180;
+        const large = value() ? 1 : 0, sweep = value() ? 1 : 0;
+        let ex = value(), ey = value();
+        if (relative) { ex += x; ey += y; }
+        const ox = x, oy = y;
+        if (!rx0 || !ry0) { point(ex, ey); lastC = lastQ = null; consumed = true; continue; }
+        const cos = Math.cos(rotation), sin = Math.sin(rotation);
+        const dx = (ox - ex) / 2, dy = (oy - ey) / 2;
+        let rx = rx0, ry = ry0;
+        const xp = cos * dx + sin * dy, yp = -sin * dx + cos * dy;
+        const scale = xp * xp / (rx * rx || 1) + yp * yp / (ry * ry || 1);
+        if (scale > 1) { rx *= Math.sqrt(scale); ry *= Math.sqrt(scale); }
+        const sign = large === sweep ? -1 : 1;
+        const denom = (rx * rx * yp * yp + ry * ry * xp * xp) || 1;
+        const factor = sign * Math.sqrt(Math.max(0, (rx * rx * ry * ry - denom) / denom));
+        const cxp = factor * rx * yp / ry, cyp = -factor * ry * xp / rx;
+        const cx = cos * cxp - sin * cyp + (ox + ex) / 2, cy = sin * cxp + cos * cyp + (oy + ey) / 2;
+        const angle = (ux, uy, vx, vy) => Math.atan2(ux * vy - uy * vx, ux * vx + uy * vy);
+        const ux = (xp - cxp) / rx, uy = (yp - cyp) / ry, vx = (-xp - cxp) / rx, vy = (-yp - cyp) / ry;
+        let startA = Math.atan2(uy, ux), delta = angle(ux, uy, vx, vy);
+        if (!sweep && delta > 0) delta -= 2 * Math.PI;
+        if (sweep && delta < 0) delta += 2 * Math.PI;
+        const steps = Math.max(6, Math.ceil(Math.abs(delta) / (Math.PI / 12)));
+        for (let s = 1; s <= steps; s++) { const a = startA + delta * s / steps; point(cx + rx * cos * Math.cos(a) - ry * sin * Math.sin(a), cy + rx * sin * Math.cos(a) + ry * cos * Math.sin(a)); }
+        lastC = lastQ = null; consumed = true;
+      } else {
+        // Unknown SVG commands are rejected rather than replaced by a generic rectangle.
+        return [];
+      }
+    }
+    if (!consumed) break;
+  }
+  if (points.length > 1) paths.push(points);
+  return paths;
+}
+
+function sampleEllipse(cx, cy, rx, ry, startAngle = 0, endAngle = Math.PI * 2) {
+  const count = Math.max(16, Math.ceil(Math.abs(endAngle - startAngle) * 8));
+  const pts = [];
+  for (let i = 0; i <= count; i++) {
+    const a = startAngle + (endAngle - startAngle) * i / count;
+    pts.push({ x: cx + rx * Math.cos(a), y: cy + ry * Math.sin(a) });
+  }
+  return [pts];
+}
+
+function roundedRectPath(x, y, width, height, rx, ry) {
+  const rX = Math.min(Math.abs(rx), Math.abs(width) / 2), rY = Math.min(Math.abs(ry || rx), Math.abs(height) / 2);
+  if (!rX || !rY) return [[{ x, y }, { x: x + width, y }, { x: x + width, y: y + height }, { x, y: y + height }, { x, y }]];
+  const pts = [];
+  const corners = [
+    [x + width - rX, y + rY, -Math.PI / 2, 0],
+    [x + width - rX, y + height - rY, 0, Math.PI / 2],
+    [x + rX, y + height - rY, Math.PI / 2, Math.PI],
+    [x + rX, y + rY, Math.PI, Math.PI * 1.5]
+  ];
+  for (const [cx, cy, a0, a1] of corners) {
+    const arc = sampleEllipse(cx, cy, rX, rY, a0, a1)[0];
+    pts.push(...arc);
+  }
+  pts.push(pts[0]);
+  return [pts];
+}
+
+function svgSymbolPrimitives(markup, naturalW, naturalH) {
+  const result = [];
+  const elementRe = /<(rect|circle|ellipse|line|polygon|polyline|path|text)\b([^>]*?)(?:\/>|>([\s\S]*?)<\/\1\s*>)/gi;
+  let match;
+  while ((match = elementRe.exec(String(markup || "")))) {
+    const tag = match[1].toLowerCase(), attrs = svgAttributes(match[2]);
+    const classes = String(attrs.class || "").split(/\s+/);
+    const style = {
+      fill: classes.includes("blk-shape") || classes.includes("blk-fillg"),
+      stroke: !classes.includes("blk-fillg"),
+      fillColor: classes.includes("blk-shape") ? "block" : classes.includes("blk-fillg") ? "ink" : "none",
+      strokeColor: "ink",
+      linePattern: attrs["stroke-dasharray"] ? 2 : 1,
+      lineWidth: classes.includes("blk-shape") || classes.includes("blk-line") ? 2 : 1.6
+    };
+    if (tag === "text") {
+      result.push({ type: "text", text: match[3] || "", x: svgNumber(attrs.x), y: svgNumber(attrs.y), anchor: attrs["text-anchor"] || "start", fontSize: svgNumber(attrs["font-size"], 16), style });
+      continue;
+    }
+    let paths = [];
+    if (tag === "path") paths = sampleSvgPath(attrs.d || "");
+    else if (tag === "line") paths = [[{ x: svgNumber(attrs.x1), y: svgNumber(attrs.y1) }, { x: svgNumber(attrs.x2), y: svgNumber(attrs.y2) }]];
+    else if (tag === "polygon" || tag === "polyline") {
+      const coords = String(attrs.points || "").match(/[-+]?(?:\d*\.\d+|\d+\.?\d*)(?:[eE][-+]?\d+)?/g) || [];
+      const pts = [];
+      for (let i = 0; i + 1 < coords.length; i += 2) pts.push({ x: Number(coords[i]), y: Number(coords[i + 1]) });
+      if (tag === "polygon" && pts.length > 2) pts.push({ ...pts[0] });
+      if (pts.length > 1) paths = [pts];
+    }
+    else if (tag === "rect") paths = roundedRectPath(svgNumber(attrs.x), svgNumber(attrs.y), svgNumber(attrs.width, 40), svgNumber(attrs.height, 40), svgNumber(attrs.rx), svgNumber(attrs.ry, svgNumber(attrs.rx)));
+    else if (tag === "circle") paths = sampleEllipse(svgNumber(attrs.cx), svgNumber(attrs.cy), svgNumber(attrs.r), svgNumber(attrs.r));
+    else if (tag === "ellipse") paths = sampleEllipse(svgNumber(attrs.cx), svgNumber(attrs.cy), svgNumber(attrs.rx), svgNumber(attrs.ry));
+    if (!paths.length) throw new Error(`Unsupported or invalid SVG symbol element <${tag}>.`);
+    result.push({ type: "geometry", paths, style });
+  }
+  return result;
+}
+
+function makeGeometrySection(points, sectionIndex, noFill, closed) {
+  if (!points || points.length < 2) return "";
+  let rows = `<Row T="MoveTo" IX="1"><Cell N="X" V="${points[0].x}"/><Cell N="Y" V="${points[0].y}"/></Row>`;
+  for (let i = 1; i < points.length; i++) rows += `<Row T="LineTo" IX="${i + 1}"><Cell N="X" V="${points[i].x}"/><Cell N="Y" V="${points[i].y}"/></Row>`;
+  if (closed && (points[0].x !== points[points.length - 1].x || points[0].y !== points[points.length - 1].y)) {
+    rows += `<Row T="LineTo" IX="${points.length + 1}"><Cell N="X" V="${points[0].x}"/><Cell N="Y" V="${points[0].y}"/></Row>`;
+  }
+  return `<Section N="Geometry" IX="${sectionIndex}"><Cell N="NoFill" V="${noFill ? 1 : 0}"/><Cell N="NoLine" V="0"/>${rows}</Section>`;
+}
+
+function pointAlongPolyline(points, fraction) {
+  if (!points || !points.length) return { x: 0, y: 0 };
+  let total = 0;
+  const lengths = [];
+  for (let i = 0; i < points.length - 1; i++) {
+    const length = Math.hypot(points[i + 1].x - points[i].x, points[i + 1].y - points[i].y);
+    lengths.push(length);
+    total += length;
+  }
+  if (!total) return { x: points[0].x, y: points[0].y };
+  let remaining = Math.max(0, Math.min(1, Number(fraction) || 0)) * total;
+  for (let i = 0; i < lengths.length; i++) {
+    if (remaining <= lengths[i] || i === lengths.length - 1) {
+      const t = lengths[i] ? Math.max(0, Math.min(1, remaining / lengths[i])) : 0;
+      return { x: points[i].x + (points[i + 1].x - points[i].x) * t, y: points[i].y + (points[i + 1].y - points[i].y) * t };
+    }
+    remaining -= lengths[i];
+  }
+  return { x: points[points.length - 1].x, y: points[points.length - 1].y };
+}
+
+function transformSymbolPoint(point, naturalW, naturalH, footprintW, footprintH, rotation, flip, symbolScale) {
+  let x = (point.x / naturalW - 0.5) * naturalW * symbolScale;
+  let y = (point.y / naturalH - 0.5) * naturalH * symbolScale;
+  if (flip) x = -x;
+  const r = ((rotation % 360) + 360) % 360;
+  let rx = x, ry = y;
+  if (r === 90) { rx = -y; ry = x; }
+  else if (r === 180) { rx = -x; ry = -y; }
+  else if (r === 270) { rx = y; ry = -x; }
+  return { x: footprintW / 2 + rx, y: footprintH / 2 + ry };
+}
+
+function buildShapeXml(id, name, pinX, pinY, widthIn, heightIn, geometry, style, text = "", connectionPoints = []) {
+  const resolveColor = color => color === "block" ? style.blockFill : color === "ink" ? style.ink : (color || "#ffffff");
+  const fill = style.fill ? resolveColor(style.fillColor) : "#ffffff";
+  const stroke = style.stroke ? resolveColor(style.strokeColor) : "#ffffff";
+  let xml = `    <Shape ID="${id}" NameU="${vsdxEsc(name)}" Type="Shape" LineStyle="0" FillStyle="0" TextStyle="0">\n`
+    + `      <Cell N="Width" V="${widthIn}"/><Cell N="Height" V="${heightIn}"/>\n`
+    + `      <Cell N="PinX" V="${pinX}"/><Cell N="PinY" V="${pinY}"/>\n`
+    + `      <Cell N="LocPinX" V="${widthIn / 2}"/><Cell N="LocPinY" V="${heightIn / 2}"/>\n`
+    + `      <Cell N="FillForegnd" V="${fill}"/><Cell N="LineColor" V="${stroke}"/>\n`
+    + `      <Cell N="LineWeight" V="${style.stroke ? style.lineWidth / 96 : 0}"/><Cell N="LinePattern" V="${style.linePattern || 1}"/>\n`
+    + geometry
+    + (connectionPoints.length ? `<Section N="Connection" IX="0">${connectionPoints.map((point, index) => `<Row IX="${index}"><Cell N="X" V="${point.x}"/><Cell N="Y" V="${point.y}"/><Cell N="DirX" V="${point.dirX}"/><Cell N="DirY" V="${point.dirY}"/><Cell N="Type" V="0"/></Row>`).join("")}</Section>\n` : "")
+    + (text ? `<Text><cp IX="0"/><pp IX="0"/>${vsdxEsc(text)}</Text>\n` : "")
+    + `    </Shape>\n`;
+  return xml;
+}
+
+function resolveExportPort(block, component, portId, footprintSize) {
+  if (typeof portPt === "function") {
+    const point = portPt(block, portId);
+    if (point) return { ...point, dx: point.x - block.x, dy: point.y - block.y };
+  }
+  const params = block.params || component.params || {};
+  const rawPorts = component.dynPorts ? component.dynPorts(params) : (component.ports || []);
+  const port = rawPorts.find(item => item.id === portId);
+  if (!port) return null;
+  const dimensions = typeof dims === "function" ? dims(component, params) : (component.dynSize ? component.dynSize(params) : component);
+  const naturalW = dimensions.w || component.w || footprintSize.w;
+  const naturalH = dimensions.h || component.h || footprintSize.h;
+  const rotation = ((block.rot || 0) % 360 + 360) % 360;
+  let x = port.dx - naturalW / 2, y = port.dy - naturalH / 2;
+  if (block.flip) x = -x;
+  let rx = x, ry = y;
+  if (rotation === 90) { rx = -y; ry = x; }
+  else if (rotation === 180) { rx = -x; ry = -y; }
+  else if (rotation === 270) { rx = y; ry = -x; }
+  const unscaledX = footprintSize.w / 2 + rx, unscaledY = footprintSize.h / 2 + ry;
+  const symbolScale = (typeof DESIGN_TOKENS !== "undefined" && DESIGN_TOKENS.symbolScale) || 1;
+  const dx = footprintSize.w / 2 + (unscaledX - footprintSize.w / 2) * symbolScale;
+  const dy = footprintSize.h / 2 + (unscaledY - footprintSize.h / 2) * symbolScale;
+  let side = port.side;
+  if (block.flip) side = side === "left" ? "right" : side === "right" ? "left" : side;
+  const sides = ["left", "top", "right", "bottom"], sideIndex = sides.indexOf(side);
+  if (sideIndex >= 0) side = sides[(sideIndex + rotation / 90) % 4];
+  return { x: block.x + dx, y: block.y + dy, dx, dy, side, kind: port.kind };
+}
+
+function buildTextShapeXml(id, text, centerX, centerY, widthPx, heightPx, fontPx, color, bold, align, dpi, toInX, toInY, angleRadians = 0) {
+  const widthIn = Math.max(0.01, widthPx / dpi), heightIn = Math.max(0.01, heightPx / dpi);
+  const x = toInX(centerX), y = toInY(centerY);
+  return `    <Shape ID="${id}" NameU="Text annotation" Type="Shape" LineStyle="0" FillStyle="0" TextStyle="0">\n`
+    + `      <Cell N="Width" V="${widthIn}"/><Cell N="Height" V="${heightIn}"/><Cell N="PinX" V="${x}"/><Cell N="PinY" V="${y}"/><Cell N="LocPinX" V="${widthIn / 2}"/><Cell N="LocPinY" V="${heightIn / 2}"/>\n`
+    + `      <Cell N="Angle" V="${angleRadians}"/>\n`
+    + `      <Cell N="LinePattern" V="0"/><Cell N="FillPattern" V="0"/>\n`
+    + `      <Cell N="TxtPinX" V="${widthIn / 2}"/><Cell N="TxtPinY" V="${heightIn / 2}"/><Cell N="TxtWidth" V="${widthIn}"/><Cell N="TxtHeight" V="${heightIn}"/>\n`
+    + `      <Cell N="TxtMarginLeft" V="0"/><Cell N="TxtMarginRight" V="0"/><Cell N="TxtMarginTop" V="0"/><Cell N="TxtMarginBottom" V="0"/>\n`
+    + `      <Section N="Character" IX="0"><Row IX="0"><Cell N="Font" V="1"/><Cell N="Size" V="${fontPx / 96}"/><Cell N="Color" V="${color}"/><Cell N="Style" V="${bold ? 1 : 0}"/></Row></Section>\n`
+    + `      <Text><cp IX="0"/><pp IX="0"/>${vsdxEsc(text)}</Text>\n`
+    + `    </Shape>\n`;
+}
+
+function validateVsdxPackage(entries) {
+  const parts = (entries || []).map(e => e && e.name ? e.name : "").filter(Boolean);
+  const required = [
+    "[Content_Types].xml",
+    "_rels/.rels",
+    "docProps/app.xml",
+    "docProps/core.xml",
+    "visio/document.xml",
+    "visio/_rels/document.xml.rels",
+    "visio/pages/pages.xml",
+    "visio/pages/_rels/pages.xml.rels",
+    "visio/pages/page1.xml",
+    "visio/masters/masters.xml",
+    "visio/windows.xml"
+  ];
+  const missing = required.filter(name => !parts.includes(name));
+  if (missing.length) throw new Error(`Invalid VSDX package: missing required part(s): ${missing.join(", ")}`);
+
+  const partMap = new Map((entries || []).filter(Boolean).map(e => [e.name, String(e.data || "")]));
+  const xmlTypes = partMap.get("[Content_Types].xml") || "";
+  const docRels = partMap.get("visio/_rels/document.xml.rels") || "";
+  const pageRels = partMap.get("visio/pages/_rels/pages.xml.rels") || "";
+  const pageXml = partMap.get("visio/pages/page1.xml") || "";
+
+  const need = [
+    '/visio/document.xml',
+    '/visio/pages/pages.xml',
+    '/visio/pages/page1.xml',
+    '/visio/windows.xml',
+    '/docProps/core.xml',
+    '/docProps/app.xml'
+  ];
+  for (const token of need) {
+    if (!xmlTypes.includes(`PartName="${token}"`)) throw new Error(`Invalid VSDX package: missing Content_Types entry for ${token}`);
+  }
+
+  if (!/Relationship Id="rId1"[^>]*Target="visio\/document\.xml"/.test((partMap.get("_rels/.rels") || ""))) {
+    throw new Error("Invalid VSDX package: package root relationship is missing or malformed.");
+  }
+  if (!/Relationship Id="rId1"[^>]*Target="pages\/pages\.xml"/.test(docRels)) {
+    throw new Error("Invalid VSDX package: document relationships are missing the pages target.");
+  }
+  if (!/Relationship Id="rId1"[^>]*Target="page1\.xml"/.test(pageRels)) {
+    throw new Error("Invalid VSDX package: page relationships are missing the page target.");
+  }
+  if (!/<Page\b[^>]*xmlns=/.test(pageXml)) {
+    throw new Error("Invalid VSDX package: page XML must use a Visio Page root element.");
+  }
+
+  const xmlFiles = ["[Content_Types].xml", "_rels/.rels", "visio/document.xml", "visio/_rels/document.xml.rels", "visio/pages/pages.xml", "visio/pages/_rels/pages.xml.rels", "visio/pages/page1.xml", "visio/masters/masters.xml", "visio/windows.xml", "docProps/core.xml", "docProps/app.xml"];
+  for (const name of xmlFiles) {
+    const xml = partMap.get(name) || "";
+    if (!xml.startsWith("<?xml")) throw new Error(`Invalid VSDX package: ${name} is not valid XML.`);
+  }
+
+  const shapeTags = [...pageXml.matchAll(/<Shape\b([^>]*)>/g)];
+  const shapeIds = new Set();
+  for (const match of shapeTags) {
+    const id = (match[1].match(/\bID="(\d+)"/) || [])[1];
+    if (!id) throw new Error("Invalid VSDX page: a Shape is missing its numeric ID.");
+    if (shapeIds.has(id)) throw new Error(`Invalid VSDX page: duplicate Shape ID ${id}.`);
+    shapeIds.add(id);
+  }
+  if (!shapeTags.length) throw new Error("Invalid VSDX page: no shapes were generated.");
+
+  const masterXml = partMap.get("visio/masters/masters.xml") || "";
+  const masterIds = new Set([...masterXml.matchAll(/<Master\b[^>]*\bID="(\d+)"/g)].map(match => match[1]));
+  for (const match of pageXml.matchAll(/<Shape\b([^>]*)>/g)) {
+    const masterId = (match[1].match(/\bMaster="(\d+)"/) || [])[1];
+    if (masterId && !masterIds.has(masterId)) throw new Error(`Invalid VSDX page: Shape references missing Master ID ${masterId}.`);
+  }
+  for (const connect of pageXml.matchAll(/<Connect\b([^>]*)\/>/g)) {
+    for (const attr of ["FromSheet", "ToSheet"]) {
+      const id = (connect[1].match(new RegExp(`\\b${attr}="(\\d+)"`)) || [])[1];
+      if (id && !shapeIds.has(id)) throw new Error(`Invalid VSDX page: connector references missing Shape ID ${id}.`);
+    }
+    const targetId = (connect[1].match(/\bToSheet="(\d+)"/) || [])[1];
+    const targetCell = (connect[1].match(/\bToCell="([^"]+)"/) || [])[1];
+    if (targetId && targetCell && targetCell.startsWith("Connections.X")) {
+      const pointNo = Number(targetCell.slice("Connections.X".length));
+      const targetShape = [...pageXml.matchAll(/<Shape\b([^>]*)>([\s\S]*?)<\/Shape>/g)]
+        .find(shape => (shape[1].match(/\bID="(\d+)"/) || [])[1] === targetId);
+      if (!targetShape || !new RegExp(`<Section N="Connection"[^>]*>[\\s\\S]*?<Row IX="${pointNo - 1}"`).test(targetShape[2])) {
+        throw new Error(`Invalid VSDX page: connector target ${targetId}/${targetCell} does not resolve to a port connection point.`);
+      }
+    }
+  }
+  for (const match of pageXml.matchAll(/<Shape\b([^>]*)NameU="Dynamic connector"([^>]*)>([\s\S]*?)<\/Shape>/g)) {
+    const attrs = `${match[1]} ${match[2]}`;
+    if (!/\bOneD="1"/.test(attrs) || !/<Cell N="BeginX"/.test(match[3]) || !/<Cell N="EndX"/.test(match[3])) {
+      throw new Error("Invalid VSDX page: a connector is missing 1D endpoint coordinates.");
+    }
+  }
+  if (shapeTags.some(match => /\bNameU="[^"]+ symbol"/.test(match[1]))
+      && !/<Shape\b[^>]*NameU="[^"]+ symbol"[^>]*>[\s\S]*?<Section N="Geometry"/.test(pageXml)) {
+    throw new Error("Invalid VSDX page: component symbols are missing vector geometry.");
+  }
+
+  return true;
+}
+
+function buildVsdxBlob(blocksList, connsList, Pdict, NFdict, PSecondaryDict, componentRegistryOverride) {
   const blks = blocksList || [];
   const cns = connsList || [];
-  const P = Pdict || (typeof computePowers === "function" ? computePowers() : {});
+  const componentRegistry = componentRegistryOverride || ((typeof COMP !== "undefined") ? COMP : {});
+  const P = Pdict || (typeof computePowers === "function" ? computePowers("primary") : {});
+  const PSecondary = PSecondaryDict || (typeof computePowers === "function" ? computePowers("secondary") : {});
   const needNoise = (typeof settings !== "undefined" && (settings.showNF || settings.showNoiseFloor));
   const NFm = NFdict || (needNoise && typeof computeNoise === "function" ? computeNoise(P) : null);
 
@@ -3982,10 +4636,11 @@ function buildVsdxBlob(blocksList, connsList, Pdict, NFdict) {
   } else {
     for (const b of blks) {
       const f = (typeof footprint === "function") ? footprint(b) : { w: 100, h: 60 };
-      minx = Math.min(minx, b.x - pad);
-      miny = Math.min(miny, b.y - pad - 20);
-      maxx = Math.max(maxx, b.x + f.w + pad);
-      maxy = Math.max(maxy, b.y + f.h + pad + 35);
+      const bounds = typeof bboxOf === "function" ? bboxOf(b) : { x: b.x, y: b.y - 32, w: f.w, h: f.h + 40 };
+      minx = Math.min(minx, bounds.x - pad);
+      miny = Math.min(miny, bounds.y - pad);
+      maxx = Math.max(maxx, bounds.x + bounds.w + pad);
+      maxy = Math.max(maxy, bounds.y + bounds.h + pad);
     }
     for (const cn of cns) {
       if (cn.waypoints && cn.waypoints.length) {
@@ -3994,6 +4649,28 @@ function buildVsdxBlob(blocksList, connsList, Pdict, NFdict) {
           miny = Math.min(miny, wp.y - pad);
           maxx = Math.max(maxx, wp.x + pad);
           maxy = Math.max(maxy, wp.y + pad);
+        }
+      }
+      const savedPillPosition = cn.pillPosition || Object.values(cn.pillPositions || {})[0];
+      if (savedPillPosition) {
+        const fromBlock = blks.find(block => block.id === cn.from.block);
+        const toBlock = blks.find(block => block.id === cn.to.block);
+        const fromComp = fromBlock && componentRegistry[fromBlock.type];
+        const toComp = toBlock && componentRegistry[toBlock.type];
+        if (fromBlock && toBlock && fromComp && toComp) {
+          const fromFoot = typeof footprint === "function" ? footprint(fromBlock) : { w: fromComp.w || 100, h: fromComp.h || 60 };
+          const toFoot = typeof footprint === "function" ? footprint(toBlock) : { w: toComp.w || 100, h: toComp.h || 60 };
+          const a = resolveExportPort(fromBlock, fromComp, cn.from.port, fromFoot);
+          const z = resolveExportPort(toBlock, toComp, cn.to.port, toFoot);
+          const R = a && z && typeof route === "function" ? route(a, z, cn) : (a && z ? { pts: [a, z] } : null);
+          if (R && R.pts) {
+            const anchor = pointAlongPolyline(R.pts, savedPillPosition.t);
+            const x = anchor.x + (Number(savedPillPosition.dx) || 0), y = anchor.y + (Number(savedPillPosition.dy) || 0);
+            minx = Math.min(minx, x - 64 - pad);
+            miny = Math.min(miny, y - 64 - pad);
+            maxx = Math.max(maxx, x + 64 + pad);
+            maxy = Math.max(maxy, y + 64 + pad);
+          }
         }
       }
     }
@@ -4018,6 +4695,8 @@ function buildVsdxBlob(blocksList, connsList, Pdict, NFdict) {
     + `<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">\n`
     + `  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>\n`
     + `  <Default Extension="xml" ContentType="application/xml"/>\n`
+    + `  <Override PartName="/docProps/app.xml" ContentType="application/vnd.openxmlformats-officedocument.extended-properties+xml"/>\n`
+    + `  <Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/>\n`
     + `  <Override PartName="/visio/document.xml" ContentType="application/vnd.ms-visio.drawing.main+xml"/>\n`
     + `  <Override PartName="/visio/pages/pages.xml" ContentType="application/vnd.ms-visio.pages+xml"/>\n`
     + `  <Override PartName="/visio/pages/page1.xml" ContentType="application/vnd.ms-visio.page+xml"/>\n`
@@ -4025,10 +4704,15 @@ function buildVsdxBlob(blocksList, connsList, Pdict, NFdict) {
     + `  <Override PartName="/visio/windows.xml" ContentType="application/vnd.ms-visio.windows+xml"/>\n`
     + `</Types>`;
 
+  const appXml = XML_HDR + `<Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties" xmlns:vt="http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes"><Application>RF Chain</Application></Properties>`;
+  const coreXml = XML_HDR + `<cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:dcmitype="http://purl.org/dc/dcmitype/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><dc:title>RF Chain Block Diagram</dc:title><dc:creator>RF Chain Editor</dc:creator><cp:lastModifiedBy>RF Chain Editor</cp:lastModifiedBy></cp:coreProperties>`;
+
   /* Root Relationships */
   const rootRelsXml = XML_HDR
     + `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">\n`
     + `  <Relationship Id="rId1" Type="http://schemas.microsoft.com/office/visio/2012/relationships/document" Target="visio/document.xml"/>\n`
+    + `  <Relationship Id="rId2" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/>\n`
+    + `  <Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties" Target="docProps/app.xml"/>\n`
     + `</Relationships>`;
 
   /* Visio Document */
@@ -4059,7 +4743,7 @@ function buildVsdxBlob(blocksList, connsList, Pdict, NFdict) {
   /* Pages Manifest */
   const pagesXml = XML_HDR
     + `<Pages xmlns="http://schemas.microsoft.com/office/visio/2012/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">\n`
-    + `  <Page ID="1" Name="Page-1" NameU="Page-1">\n`
+    + `  <Page ID="0" Name="Page-1" NameU="Page-1">\n`
     + `    <Rel r:id="rId1"/>\n`
     + `  </Page>\n`
     + `</Pages>`;
@@ -4071,8 +4755,8 @@ function buildVsdxBlob(blocksList, connsList, Pdict, NFdict) {
     + `</Relationships>`;
 
   /* Masters Manifest */
-  const mastersXml = XML_HDR
-    + `<Masters xmlns="http://schemas.microsoft.com/office/visio/2012/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"/>\n`;
+  let mastersXml = XML_HDR
+    + `<Masters xmlns="http://schemas.microsoft.com/office/visio/2012/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">`;
 
   /* Windows View */
   const windowsXml = XML_HDR
@@ -4085,79 +4769,118 @@ function buildVsdxBlob(blocksList, connsList, Pdict, NFdict) {
   let connectsXml = "";
   let nextShapeId = 1;
   const blockShapeMap = new Map();
+  const blockPortCellMap = new Map();
 
   /* 1. Map Blocks to Native Visio Shapes */
   for (const b of blks) {
-    const c = (typeof COMP !== "undefined" && COMP[b.type]) ? COMP[b.type] : {};
+    const c = componentRegistry[b.type];
+    if (!c) throw new Error(`VSDX export has no component mapping for type "${b.type}".`);
     const f = (typeof footprint === "function") ? footprint(b) : { w: 100, h: 60 };
-    const shapeId = nextShapeId++;
-    blockShapeMap.set(b.id, shapeId);
-
     const wIn = toInLen(f.w);
     const hIn = toInLen(f.h);
     const pinX = toInX(b.x + f.w / 2);
     const pinY = toInY(b.y + f.h / 2);
     const fillHex = vsdxColor(typeof blockFill === "function" ? blockFill(b) : "#ffffff");
+    const inkHex = vsdxColor(typeof blockInk === "function" ? blockInk(fillHex, b.type) : "#0f172a");
+    let blockAnchorId = 0;
+    const rawPorts = c.dynPorts ? c.dynPorts(b.params || c.params || {}) : (c.ports || []);
+    const portCellMap = new Map();
+    const connectionPoints = rawPorts.map((port, index) => {
+      const resolved = resolveExportPort(b, c, port.id, f);
+      if (!resolved) return null;
+      const dir = { left: [-1, 0], right: [1, 0], top: [0, 1], bottom: [0, -1] }[resolved.side] || [0, 0];
+      const cellName = `Connections.X${index + 1}`;
+      portCellMap.set(port.id, cellName);
+      return { x: toInLen(resolved.dx), y: toInLen(f.h - resolved.dy), dirX: dir[0], dirY: dir[1] };
+    }).filter(Boolean);
+    blockPortCellMap.set(b.id, portCellMap);
 
-    let textContent = "";
     if (c.isLabel) {
-      textContent = vsdxEsc(b.params.text || "Label");
+      const text = String((b.params && b.params.text) || "Label");
+      const textId = nextShapeId++;
+      blockAnchorId = textId;
+      const textWidth = Math.max(f.w, text.length * 8 + 16);
+      shapesXml += buildTextShapeXml(textId, text, b.x + textWidth / 2, b.y, textWidth, 22, 18, "#000000", true, "start", dpi, toInX, toInY);
     } else {
-      const lblName = b.params.label || c.name || b.type.toUpperCase();
-      let paramStr = "";
-      if (c.p1db && b.params.p1db != null) paramStr += `\nP1dB: ${b.params.p1db} dBm`;
-      else if (c.gain && b.params.gain != null) paramStr += `\nGain: ${b.params.gain} dB`;
-      else if (c.cl && b.params.cl != null) paramStr += `\nLoss: ${b.params.cl} dB`;
-      else if (c.il && b.params.il != null) paramStr += `\nIL: ${b.params.il} dB`;
-      else if (c.power && b.params.power != null) paramStr += `\nPwr: ${b.params.power} dBm`;
-      textContent = `${vsdxEsc(lblName)}${vsdxEsc(paramStr)}`;
+      if (typeof c.sym !== "function") throw new Error(`Component "${b.type}" has no symbol mapping; refusing to export a generic placeholder.`);
+      const natural = (typeof dims === "function") ? dims(c, b.params) : (c.dynSize ? c.dynSize(b.params || c.params) : { w: c.w || f.w, h: c.h || f.h });
+      const naturalW = natural.w || f.w, naturalH = natural.h || f.h;
+      const markup = c.sym(b.params || {});
+      const primitives = svgSymbolPrimitives(markup, naturalW, naturalH);
+      if (!primitives.length) throw new Error(`Component "${b.type}" produced no supported vector symbols.`);
+      const rotation = ((b.rot || 0) % 360 + 360) % 360;
+      const flip = !!b.flip;
+      const symbolScale = (typeof DESIGN_TOKENS !== "undefined" && DESIGN_TOKENS.symbolScale) || 1;
+
+      for (const primitive of primitives) {
+        if (primitive.type === "text") {
+          const pt = transformSymbolPoint({ x: primitive.x, y: primitive.y }, naturalW, naturalH, f.w, f.h, rotation, flip, symbolScale);
+          const symbolFontSize = primitive.fontSize * symbolScale;
+          const estimateW = Math.max(symbolFontSize, String(primitive.text).length * symbolFontSize * 0.65);
+          const centerX = b.x + pt.x + (primitive.anchor === "middle" ? 0 : primitive.anchor === "end" ? -estimateW / 2 : estimateW / 2);
+          const textId = nextShapeId++;
+          if (!blockAnchorId) blockAnchorId = textId;
+          shapesXml += buildTextShapeXml(textId, primitive.text, centerX, b.y + pt.y - symbolFontSize * 0.35, estimateW, symbolFontSize * 1.4, symbolFontSize, "#000000", true, primitive.anchor, dpi, toInX, toInY, -rotation * Math.PI / 180);
+          continue;
+        }
+
+        const geometry = primitive.paths.map((path, index) => {
+          const mapped = path.map(p => {
+            const transformed = transformSymbolPoint(p, naturalW, naturalH, f.w, f.h, rotation, flip, symbolScale);
+            return { x: toInLen(transformed.x), y: toInLen(f.h - transformed.y) };
+          });
+          const closed = mapped.length > 2 && Math.hypot(mapped[0].x - mapped[mapped.length - 1].x, mapped[0].y - mapped[mapped.length - 1].y) < 0.00001;
+          return makeGeometrySection(mapped, index, !primitive.style.fill, closed || primitive.style.fill);
+        }).join("");
+        if (!geometry) continue;
+        const style = { ...primitive.style, lineWidth: primitive.style.lineWidth * symbolScale, blockFill: fillHex, ink: inkHex };
+        const shapeId = nextShapeId++;
+        const isAnchor = !blockAnchorId;
+        if (isAnchor) blockAnchorId = shapeId;
+        shapesXml += buildShapeXml(shapeId, `${c.name || b.type} symbol`, pinX, pinY, wIn, hIn, geometry, style, "", isAnchor ? connectionPoints : []);
+      }
+
+      const addText = (text, centerX, centerY, width, height, font, color, bold, align) => {
+        if (!text) return;
+        const textId = nextShapeId++;
+        if (!blockAnchorId) blockAnchorId = textId;
+        shapesXml += buildTextShapeXml(textId, text, centerX, centerY, width, height, font, color, bold, align, dpi, toInX, toInY);
+      };
+      if (c.isInterconnect) {
+        const tag = String((b.params && b.params.tag) || "?");
+        const shown = typeof icTagText === "function" ? icTagText(typeof isSubTag === "function" && isSubTag(tag) ? subTagPort(tag) : tag) : tag.slice(0, 6);
+        const font = typeof icTagFont === "function" ? icTagFont(shown) : 13;
+        const tx = (b.rot || b.flip) ? f.w / 2 : (typeof icSend === "function" && icSend(b.params) ? 16 : 23);
+        addText(shown, b.x + tx, b.y + f.h / 2, Math.max(18, shown.length * font * 0.7), font * 1.4, font, "#000000", true, "middle");
+      }
+      if (c.upText) addText(c.upText(b.params), b.x + f.w / 2, b.y + f.h / 2, f.w, 20, 16, "#000000", true, "middle");
+      if (c.portLabels && typeof getPorts === "function") {
+        for (const pt of getPorts(b)) {
+          const dx = pt.side === "left" ? 14 : pt.side === "right" ? -14 : 0;
+          const dy = pt.side === "top" ? 14 : pt.side === "bottom" ? -14 : 0;
+          addText(pt.id, b.x + pt.dx + dx, b.y + pt.dy + dy, 24, 16, 13, "#000000", true, "middle");
+        }
+      }
+
+      let name = c.isInterconnect ? "" : ((b.params && b.params.label) || c.name || "");
+      if (c.isInterconnect && typeof isSubTag === "function" && isSubTag((b.params && b.params.tag) || "")) {
+        const owner = typeof allBlocks === "function" ? allBlocks().find(x => componentRegistry[x.type] && componentRegistry[x.type].isSubsystem && String(b.params.tag).indexOf("§" + x.id + ".") === 0) : null;
+        name = `${owner ? (owner.params.label || "Section") : "Section"} · ${subTagPort(b.params.tag)}`;
+      }
+      const value = typeof c.val === "function" ? c.val(b.params || {}) : "";
+      const fontSizes = (typeof DESIGN_TOKENS !== "undefined" && DESIGN_TOKENS.fontSizes) || { normal: 14, large: 16 };
+      const top = c.topLabel || c.lblPos === "top";
+      if (name && value) {
+        addText(name, b.x + f.w / 2, b.y + (top ? -23 : f.h + 12), Math.max(f.w + 24, name.length * 10), 20, fontSizes.large || 16, "#000000", true, "middle");
+        addText(value, b.x + f.w / 2, b.y + (top ? -8 : f.h + 27), Math.max(f.w + 24, value.length * 9), 18, fontSizes.normal || 14, "#1e293b", true, "middle");
+      } else if (name) {
+        addText(name, b.x + f.w / 2, b.y + (top ? -9 : f.h + 12), Math.max(f.w + 24, name.length * 10), 20, fontSizes.large || 16, "#000000", true, "middle");
+      } else if (value) {
+        addText(value, b.x + f.w / 2, b.y + (top ? -9 : f.h + 12), Math.max(f.w + 24, value.length * 9), 18, fontSizes.normal || 14, "#1e293b", true, "middle");
+      }
     }
-
-    /* Primary Shape Cells (Visio 2013 OpenXML Cell Names: Width, Height, PinX, PinY, LocPinX, LocPinY, LineWeight, FillForegnd) */
-    let shapeXml = `    <Shape ID="${shapeId}" NameU="${vsdxEsc(c.name || b.type)}" Type="Shape" LineStyle="0" FillStyle="0" TextStyle="0">\n`
-      + `      <Cell N="Width" V="${wIn}"/>\n`
-      + `      <Cell N="Height" V="${hIn}"/>\n`
-      + `      <Cell N="PinX" V="${pinX}"/>\n`
-      + `      <Cell N="PinY" V="${pinY}"/>\n`
-      + `      <Cell N="LocPinX" V="${wIn / 2}"/>\n`
-      + `      <Cell N="LocPinY" V="${hIn / 2}"/>\n`
-      + `      <Cell N="FillForegnd" V="${fillHex}"/>\n`
-      + `      <Cell N="LineColor" V="#0f172a"/>\n`
-      + `      <Cell N="LineWeight" V="0.02"/>\n`
-      + `      <Cell N="Rounding" V="${c.isLabel ? 0 : 0.06}"/>\n`
-      + `      <Section N="Geometry" IX="0">\n`
-      + `        <Row T="MoveTo" IX="1"><Cell N="X" V="0"/><Cell N="Y" V="0"/></Row>\n`
-      + `        <Row T="LineTo" IX="2"><Cell N="X" V="${wIn}"/><Cell N="Y" V="0"/></Row>\n`
-      + `        <Row T="LineTo" IX="3"><Cell N="X" V="${wIn}"/><Cell N="Y" V="${hIn}"/></Row>\n`
-      + `        <Row T="LineTo" IX="4"><Cell N="X" V="0"/><Cell N="Y" V="${hIn}"/></Row>\n`
-      + `        <Row T="LineTo" IX="5"><Cell N="X" V="0"/><Cell N="Y" V="0"/></Row>\n`
-      + `      </Section>\n`;
-
-    /* Component Glyphs (Internal Symbol Geometry) */
-    if (b.type === "amp" || b.type === "bamp") {
-      const x1 = wIn * 0.2, y1 = hIn * 0.2, x2 = wIn * 0.8, y2 = hIn * 0.5, x3 = wIn * 0.2, y3 = hIn * 0.8;
-      shapeXml += `      <Section N="Geometry" IX="1">\n`
-        + `        <Cell N="NoFill" V="1"/>\n`
-        + `        <Row T="MoveTo" IX="1"><Cell N="X" V="${x1}"/><Cell N="Y" V="${y1}"/></Row>\n`
-        + `        <Row T="LineTo" IX="2"><Cell N="X" V="${x2}"/><Cell N="Y" V="${y2}"/></Row>\n`
-        + `        <Row T="LineTo" IX="3"><Cell N="X" V="${x3}"/><Cell N="Y" V="${y3}"/></Row>\n`
-        + `        <Row T="LineTo" IX="4"><Cell N="X" V="${x1}"/><Cell N="Y" V="${y1}"/></Row>\n`
-        + `      </Section>\n`;
-    } else if (b.type === "mixer") {
-      const cx = wIn * 0.5, cy = hIn * 0.5, r = Math.min(wIn, hIn) * 0.3;
-      shapeXml += `      <Section N="Geometry" IX="1">\n`
-        + `        <Cell N="NoFill" V="1"/>\n`
-        + `        <Row T="MoveTo" IX="1"><Cell N="X" V="${cx - r * 0.7}"/><Cell N="Y" V="${cy - r * 0.7}"/></Row>\n`
-        + `        <Row T="LineTo" IX="2"><Cell N="X" V="${cx + r * 0.7}"/><Cell N="Y" V="${cy + r * 0.7}"/></Row>\n`
-        + `        <Row T="MoveTo" IX="3"><Cell N="X" V="${cx - r * 0.7}"/><Cell N="Y" V="${cy + r * 0.7}"/></Row>\n`
-        + `        <Row T="LineTo" IX="4"><Cell N="X" V="${cx + r * 0.7}"/><Cell N="Y" V="${cy - r * 0.7}"/></Row>\n`
-        + `      </Section>\n`;
-    }
-
-    shapeXml += `      <Text><cp IX="0"/><pp IX="0"/>${textContent}</Text>\n`
-      + `    </Shape>\n`;
-
-    shapesXml += shapeXml;
+    if (!blockAnchorId) throw new Error(`Component "${b.type}" did not produce an exportable shape.`);
+    blockShapeMap.set(b.id, blockAnchorId);
   }
 
   /* 2. Map Connections to Native Visio Connectors & Indicator Pills */
@@ -4166,16 +4889,31 @@ function buildVsdxBlob(blocksList, connsList, Pdict, NFdict) {
     const fb = (typeof findBlock === "function") ? findBlock(cn.from.block) : blks.find(b => b.id === cn.from.block);
     const tb = (typeof findBlock === "function") ? findBlock(cn.to.block) : blks.find(b => b.id === cn.to.block);
     if (!fb || !tb) continue;
-    const a = (typeof portPt === "function") ? portPt(fb, cn.from.port) : { x: fb.x, y: fb.y };
-    const z = (typeof portPt === "function") ? portPt(tb, cn.to.port) : { x: tb.x, y: tb.y };
+    const fromComponent = componentRegistry[fb.type], toComponent = componentRegistry[tb.type];
+    const fromFootprint = typeof footprint === "function" ? footprint(fb) : { w: fromComponent.w || 100, h: fromComponent.h || 60 };
+    const toFootprint = typeof footprint === "function" ? footprint(tb) : { w: toComponent.w || 100, h: toComponent.h || 60 };
+    const a = resolveExportPort(fb, fromComponent, cn.from.port, fromFootprint);
+    const z = resolveExportPort(tb, toComponent, cn.to.port, toFootprint);
     if (!a || !z) continue;
     const R = (typeof route === "function") ? route(a, z, cn) : { pts: [a, z], mx: (a.x + z.x) / 2, my: (a.y + z.y) / 2 };
     ERS.push({ cn, R, fb, tb, a, z });
   }
 
+  const allVerticalSegs = [];
+  for (const { cn, R } of ERS) {
+    for (const segment of R.segs || []) {
+      if (!segment.horiz) allVerticalSegs.push({ ...segment, connId: cn.id });
+    }
+  }
+
   for (const { cn, R, fb, tb, a, z } of ERS) {
     const connShapeId = nextShapeId++;
-    const pts = R.pts || [];
+    let pts = R.pts || [];
+    if (pts.length > 1 && typeof buildPathWithJumpers === "function") {
+      const jumperPath = buildPathWithJumpers(pts, allVerticalSegs, cn.id);
+      const jumperPoints = sampleSvgPath(jumperPath)[0];
+      if (jumperPoints && jumperPoints.length > 1) pts = jumperPoints;
+    }
     if (!pts.length) continue;
 
     const minPxX = Math.min(...pts.map(p => p.x));
@@ -4183,26 +4921,30 @@ function buildVsdxBlob(blocksList, connsList, Pdict, NFdict) {
     const minPxY = Math.min(...pts.map(p => p.y));
     const maxPxY = Math.max(...pts.map(p => p.y));
 
-    const connW = Math.max(0.1, toInLen(maxPxX - minPxX));
-    const connH = Math.max(0.1, toInLen(maxPxY - minPxY));
+    const rawWidthIn = toInLen(maxPxX - minPxX);
+    const rawHeightIn = toInLen(maxPxY - minPxY);
+    const connW = Math.max(0.001, rawWidthIn);
+    const connH = Math.max(0.001, rawHeightIn);
     const connPinX = toInX((minPxX + maxPxX) / 2);
     const connPinY = toInY((minPxY + maxPxY) / 2);
 
-    let connXml = `    <Shape ID="${connShapeId}" NameU="Dynamic connector" Type="Shape" LineStyle="0" FillStyle="0">\n`
+    let connXml = `    <Shape ID="${connShapeId}" NameU="Dynamic connector" Type="Shape" OneD="1" LineStyle="0" FillStyle="0">\n`
       + `      <Cell N="Width" V="${connW}"/>\n`
       + `      <Cell N="Height" V="${connH}"/>\n`
       + `      <Cell N="PinX" V="${connPinX}"/>\n`
       + `      <Cell N="PinY" V="${connPinY}"/>\n`
       + `      <Cell N="LocPinX" V="${connW / 2}"/>\n`
       + `      <Cell N="LocPinY" V="${connH / 2}"/>\n`
+      + `      <Cell N="BeginX" V="${toInX(pts[0].x)}"/><Cell N="BeginY" V="${toInY(pts[0].y)}"/>\n`
+      + `      <Cell N="EndX" V="${toInX(pts[pts.length - 1].x)}"/><Cell N="EndY" V="${toInY(pts[pts.length - 1].y)}"/>\n`
       + `      <Cell N="LineColor" V="#0f172a"/>\n`
       + `      <Cell N="LineWeight" V="0.023"/>\n`
       + `      <Cell N="EndArrow" V="4"/>\n`
       + `      <Section N="Geometry" IX="0">\n`;
 
     pts.forEach((p, idx) => {
-      const relX = toInLen(p.x - minPxX);
-      const relY = toInLen(maxPxY - p.y);
+      const relX = rawWidthIn < 0.001 ? connW / 2 : toInLen(p.x - minPxX);
+      const relY = rawHeightIn < 0.001 ? connH / 2 : toInLen(maxPxY - p.y);
       if (idx === 0) {
         connXml += `        <Row T="MoveTo" IX="1"><Cell N="X" V="${relX}"/><Cell N="Y" V="${relY}"/></Row>\n`;
       } else {
@@ -4218,11 +4960,16 @@ function buildVsdxBlob(blocksList, connsList, Pdict, NFdict) {
     /* Anchor Connects in Visio */
     const fromShapeId = blockShapeMap.get(fb.id);
     const toShapeId = blockShapeMap.get(tb.id);
+    const fromPortCell = blockPortCellMap.get(fb.id) && blockPortCellMap.get(fb.id).get(cn.from.port);
+    const toPortCell = blockPortCellMap.get(tb.id) && blockPortCellMap.get(tb.id).get(cn.to.port);
+    if (!fromShapeId || !toShapeId || !fromPortCell || !toPortCell) {
+      throw new Error(`VSDX export cannot resolve connector ports ${fb.type}.${cn.from.port} → ${tb.type}.${cn.to.port}.`);
+    }
     if (fromShapeId) {
-      connectsXml += `    <Connect FromSheet="${connShapeId}" FromCell="BeginX" ToSheet="${fromShapeId}" ToCell="PinX"/>\n`;
+      connectsXml += `    <Connect FromSheet="${connShapeId}" FromCell="BeginX" ToSheet="${fromShapeId}" ToCell="${fromPortCell}"/>\n`;
     }
     if (toShapeId) {
-      connectsXml += `    <Connect FromSheet="${connShapeId}" FromCell="EndX" ToSheet="${toShapeId}" ToCell="PinX"/>\n`;
+      connectsXml += `    <Connect FromSheet="${connShapeId}" FromCell="EndX" ToSheet="${toShapeId}" ToCell="${toPortCell}"/>\n`;
     }
 
     /* Export Active Signal Wire Indicator Pills as Native Visio Shapes */
@@ -4235,50 +4982,72 @@ function buildVsdxBlob(blocksList, connsList, Pdict, NFdict) {
       const nflVal = (nnObj && typeof computeNoiseFloor === "function") ? computeNoiseFloor(nnObj, lv, srcLvl, bwHz) : undefined;
 
       const indicators = [];
-      if (settings.showNF === true && nfVal !== undefined && isFinite(nfVal)) indicators.push({ text: `NF ${fmt(nfVal)} dB`, pos: "above" });
-      if (settings.showPwr1 !== false && lv !== undefined && isFinite(lv)) indicators.push({ text: dbm(lv), pos: "above" });
-      if (settings.showPwr2 === true && lv !== undefined && isFinite(lv)) indicators.push({ text: dbm(lv), pos: "below" });
-      if (settings.showNoiseFloor === true && nflVal !== undefined && isFinite(nflVal)) indicators.push({ text: dbm(nflVal), pos: "below" });
+      const lvPrimary = (P && P[key(cn.from.block, cn.from.port)] !== undefined) ? P[key(cn.from.block, cn.from.port)] : lv;
+      const lvSecondary = (PSecondary && PSecondary[key(cn.from.block, cn.from.port)] !== undefined) ? PSecondary[key(cn.from.block, cn.from.port)] : lv;
+      if (settings.showNF === true && nfVal !== undefined && isFinite(nfVal)) indicators.push({ type: "nf", text: `NF ${fmt(nfVal)} dB` });
+      if (settings.showPwr1 !== false && lvPrimary !== undefined && isFinite(lvPrimary)) indicators.push({ type: "pwr1", text: dbm(lvPrimary) });
+      if (settings.showPwr2 === true && lvSecondary !== undefined && isFinite(lvSecondary)) indicators.push({ type: "pwr2", text: dbm(lvSecondary) });
+      if (settings.showNoiseFloor === true && nflVal !== undefined && isFinite(nflVal)) indicators.push({ type: "nfloor", text: dbm(nflVal) });
 
       if (indicators.length > 0) {
-        const pX = R.mx || (a.x + z.x) / 2;
-        const pY = R.my || (a.y + z.y) / 2;
-        indicators.forEach((ind, i) => {
+        const fallbackWidth = Math.max(36, ...indicators.map(ind => String(ind.text).length * 8.5 + 12));
+        const layout = typeof indicatorPillLayout === "function"
+          ? indicatorPillLayout(R, Object.fromEntries(indicators.map(ind => [ind.type, ind.text])))
+          : {
+            colWidth: fallbackWidth,
+            pillHeight: 20,
+            entries: indicators.map((ind, index) => ({
+              ...ind,
+              x: R.mx ?? (a.x + z.x) / 2,
+              y: (R.my ?? (a.y + z.y) / 2) + (index < 2 ? -1 : 1) * (14 + (index % 2) * 24)
+            }))
+          };
+        const { colWidth, pillHeight } = layout;
+        const addPill = (ind, centerX, centerY) => {
           const pillShapeId = nextShapeId++;
-          const pillW = 0.85;
-          const pillH = 0.22;
-          const yOffPx = (ind.pos === "above" ? -1 : 1) * (14 + i * 22);
-          const pillPinX = toInX(pX);
-          const pillPinY = toInY(pY + yOffPx);
-
-          shapesXml += `    <Shape ID="${pillShapeId}" NameU="IndicatorPill" Type="Shape" LineStyle="0" FillStyle="0" TextStyle="0">\n`
-            + `      <Cell N="Width" V="${pillW}"/>\n`
-            + `      <Cell N="Height" V="${pillH}"/>\n`
-            + `      <Cell N="PinX" V="${pillPinX}"/>\n`
-            + `      <Cell N="PinY" V="${pillPinY}"/>\n`
-            + `      <Cell N="LocPinX" V="${pillW / 2}"/>\n`
-            + `      <Cell N="LocPinY" V="${pillH / 2}"/>\n`
-            + `      <Cell N="FillForegnd" V="#ffffff"/>\n`
-            + `      <Cell N="LineColor" V="#efd3a0"/>\n`
-            + `      <Cell N="LineWeight" V="0.012"/>\n`
-            + `      <Cell N="Rounding" V="0.05"/>\n`
-            + `      <Section N="Geometry" IX="0">\n`
-            + `        <Row T="MoveTo" IX="1"><Cell N="X" V="0"/><Cell N="Y" V="0"/></Row>\n`
-            + `        <Row T="LineTo" IX="2"><Cell N="X" V="${pillW}"/><Cell N="Y" V="0"/></Row>\n`
-            + `        <Row T="LineTo" IX="3"><Cell N="X" V="${pillW}"/><Cell N="Y" V="${pillH}"/></Row>\n`
-            + `        <Row T="LineTo" IX="4"><Cell N="X" V="0"/><Cell N="Y" V="${pillH}"/></Row>\n`
-            + `        <Row T="LineTo" IX="5"><Cell N="X" V="0"/><Cell N="Y" V="0"/></Row>\n`
-            + `      </Section>\n`
-            + `      <Text><cp IX="0"/><pp IX="0"/>${vsdxEsc(ind.text)}</Text>\n`
-            + `    </Shape>\n`;
+          const pillWIn = toInLen(colWidth), pillHIn = toInLen(pillHeight);
+          const pinX = toInX(centerX), pinY = toInY(centerY);
+          const points = roundedRectPath(0, 0, colWidth, pillHeight, 5, 5)[0]
+            .map(point => ({ x: toInLen(point.x), y: toInLen(pillHeight - point.y) }));
+          const geometry = makeGeometrySection(points, 0, false, true);
+          const pillStyle = {
+            fill: true,
+            fillColor: "#ffffff",
+            stroke: true,
+            strokeColor: "#efd3a0",
+            linePattern: 1,
+            lineWidth: 1.2,
+            blockFill: "#ffffff",
+            ink: "#b45309"
+          };
+          shapesXml += buildShapeXml(pillShapeId, `IndicatorPill ${ind.type}`, pinX, pinY, pillWIn, pillHIn, geometry, pillStyle);
+          const textShapeId = nextShapeId++;
+          const textWidth = typeof measurePillText === "function" ? measurePillText(ind.text).w - 12 : String(ind.text).length * 8.5;
+          shapesXml += buildTextShapeXml(textShapeId, ind.text, centerX, centerY, Math.max(1, textWidth), pillHeight, 15, "#b45309", true, "middle", dpi, toInX, toInY);
+        };
+        const savedPosition = cn.pillPosition || Object.values(cn.pillPositions || {})[0];
+        let stackShiftX = 0, stackShiftY = 0;
+        if (savedPosition) {
+          const anchor = typeof pointAtRouteFraction === "function"
+            ? pointAtRouteFraction(R.pts, savedPosition.t)
+            : pointAlongPolyline(R.pts, savedPosition.t);
+          stackShiftX = anchor.x + (Number(savedPosition.dx) || 0) - layout.anchorX;
+          stackShiftY = anchor.y + (Number(savedPosition.dy) || 0) - layout.anchorY;
+        } else if (cn.labelOff) {
+          stackShiftX = cn.labelOff.dx || 0;
+          stackShiftY = cn.labelOff.dy || 0;
+        }
+        layout.entries.forEach(ind => {
+          addPill(ind, ind.x + stackShiftX, ind.y + stackShiftY);
         });
       }
     }
   }
 
   /* Assemble Page 1 XML */
+  mastersXml += "</Masters>";
   const page1Xml = XML_HDR
-    + `<PageContents xmlns="http://schemas.microsoft.com/office/visio/2012/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">\n`
+    + `<Page xmlns="http://schemas.microsoft.com/office/visio/2012/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">\n`
     + `  <PageSheet LineStyle="0" FillStyle="0" TextStyle="0">\n`
     + `    <Cell N="PageWidth" V="${pageWin}"/>\n`
     + `    <Cell N="PageHeight" V="${pageHin}"/>\n`
@@ -4289,7 +5058,7 @@ function buildVsdxBlob(blocksList, connsList, Pdict, NFdict) {
     + `  <Connects>\n`
     + connectsXml
     + `  </Connects>\n`
-    + `</PageContents>`;
+    + `</Page>`;
 
   /* Pack OPC Zip Archive */
   if (typeof zipStore !== "function") {
@@ -4299,6 +5068,8 @@ function buildVsdxBlob(blocksList, connsList, Pdict, NFdict) {
   const entries = [
     { name: "[Content_Types].xml", data: contentTypesXml },
     { name: "_rels/.rels", data: rootRelsXml },
+    { name: "docProps/app.xml", data: appXml },
+    { name: "docProps/core.xml", data: coreXml },
     { name: "visio/document.xml", data: docXml },
     { name: "visio/_rels/document.xml.rels", data: docRelsXml },
     { name: "visio/pages/pages.xml", data: pagesXml },
@@ -4307,6 +5078,8 @@ function buildVsdxBlob(blocksList, connsList, Pdict, NFdict) {
     { name: "visio/masters/masters.xml", data: mastersXml },
     { name: "visio/windows.xml", data: windowsXml }
   ];
+
+  validateVsdxPackage(entries);
 
   const res = zipStore(entries);
   if (typeof Blob !== "undefined" && res instanceof Blob) return res;
@@ -4464,6 +5237,7 @@ function loadDoc(text, name, handle) {
   if ($("tglLabels")) $("tglLabels").checked = settings.showLabels !== false;
   if ($("tglPwr1")) $("tglPwr1").checked = settings.showPwr1 !== false;
   if ($("tglPwr2")) $("tglPwr2").checked = !!settings.showPwr2;
+  if ($("selPowerBudget")) $("selPowerBudget").value = normalizePowerBudgetMode(settings.powerBudget);
   if ($("tglNFloor")) $("tglNFloor").checked = !!settings.showNoiseFloor;
   if ($("tglNF")) $("tglNF").checked = !!settings.showNF;
   if ($("tbBw")) $("tbBw").value = settings.bandwidthVal !== undefined ? settings.bandwidthVal : 1;
@@ -4528,6 +5302,16 @@ function buildExportSVG(scale = 1) {
         maxx = Math.max(maxx, wp.x + pad); maxy = Math.max(maxy, wp.y + pad);
       }
     }
+    const savedPosition = cn.pillPosition || Object.values(cn.pillPositions || {})[0];
+    if (savedPosition) {
+      const a = portPt(findBlock(cn.from.block), cn.from.port), z = portPt(findBlock(cn.to.block), cn.to.port);
+      if (a && z) {
+        const R = route(a, z, cn), anchor = pointAtRouteFraction(R.pts, savedPosition.t);
+        const x = anchor.x + (Number(savedPosition.dx) || 0), y = anchor.y + (Number(savedPosition.dy) || 0);
+        minx = Math.min(minx, x - 64 - pad); miny = Math.min(miny, y - 64 - pad);
+        maxx = Math.max(maxx, x + 64 + pad); maxy = Math.max(maxy, y + 64 + pad);
+      }
+    }
   }
 
   const W = Math.max(200, maxx - minx), H = Math.max(150, maxy - miny);
@@ -4551,7 +5335,8 @@ function buildExportSVG(scale = 1) {
     .pun{fill:#b45309;opacity:.9;font-family:${fontSans};font-size:${DESIGN_TOKENS.fontSizes.small}px;font-weight:600;text-anchor:middle}
     .unk .pbg{fill:#f4f6f8;stroke:#d7dde3}.unk .ptx{fill:#64748b}.unk .pun{fill:#64748b}`;
 
-  const P = computePowers();
+  const P = computePowers("primary");
+  const PSecondary = computePowers("secondary");
   let body = "", pillsBody = "";
   const ERS = [];
   for (const cn of conns) {
@@ -4581,14 +5366,16 @@ function buildExportSVG(scale = 1) {
     const srcLvl = (typeof startBlocks === "function" && startBlocks().length) ? P[key(startBlocks()[0].id, srcPorts(COMP[startBlocks()[0].type], startBlocks()[0].params)[0])] : 0;
     const nflVal = (nnObj && typeof computeNoiseFloor === "function") ? computeNoiseFloor(nnObj, lv, srcLvl, settings.bandwidthHz) : undefined;
 
+    const lvlPrimary = P[key(cn.from.block, cn.from.port)];
+    const lvlSecondary = PSecondary[key(cn.from.block, cn.from.port)];
     const indicators = {
-      pwr1: (settings.showPwr1 !== false && lv !== undefined && isFinite(lv)) ? dbm(lv) : null,
-      pwr2: (settings.showPwr2 === true && lv !== undefined && isFinite(lv)) ? dbm(lv) : null,
+      pwr1: (settings.showPwr1 !== false && lvlPrimary !== undefined && isFinite(lvlPrimary)) ? dbm(lvlPrimary) : null,
+      pwr2: (settings.showPwr2 === true && lvlSecondary !== undefined && isFinite(lvlSecondary)) ? dbm(lvlSecondary) : null,
       nfloor: (settings.showNoiseFloor === true && nflVal !== undefined && isFinite(nflVal)) ? dbm(nflVal) : null,
       nf: (settings.showNF === true && nfVal !== undefined && isFinite(nfVal)) ? ("NF " + fmt(nfVal) + " dB") : null
     };
 
-    pillsBody += pillStack(R, indicators, null);
+    pillsBody += pillStack(R, indicators, cn.id);
   }
   for (const b of blocks) {
     const c = COMP[b.type], f = footprint(b);
@@ -4647,10 +5434,11 @@ function exportVsdx() {
     return;
   }
   try {
-    const P = computePowers();
+    const P = computePowers("primary");
+    const PSecondary = computePowers("secondary");
     const needNoise = !!(settings.showNF || settings.showNoiseFloor);
     const NFm = needNoise ? computeNoise(P) : null;
-    const blob = buildVsdxBlob(blocks, conns, P, NFm);
+    const blob = buildVsdxBlob(blocks, conns, P, NFm, PSecondary);
     const base = (fileName || "rf-chain").replace(/\.(rfbd|json|vsdx|png|svg)$/i, "");
     const name = `${base}.vsdx`;
     const url = URL.createObjectURL(blob), a = document.createElement("a");
@@ -4705,7 +5493,8 @@ function renderCanvas() {
     }
   }
 
-  const P = computePowers();
+  const P = computePowers("primary");
+  const PSecondary = computePowers("secondary");
   const hotSet = new Set();
   for (const b of blocks) {
     const c = COMP[b.type];
@@ -4756,9 +5545,11 @@ function renderCanvas() {
       const srcLvl = (typeof startBlocks === "function" && startBlocks().length) ? P[key(startBlocks()[0].id, srcPorts(COMP[startBlocks()[0].type], startBlocks()[0].params)[0])] : 0;
       const nflVal = (nnObj && typeof computeNoiseFloor === "function") ? computeNoiseFloor(nnObj, lvl, srcLvl, settings.bandwidthHz) : undefined;
       
+      const lvlPrimary = P[key(cn.from.block, cn.from.port)];
+      const lvlSecondary = PSecondary[key(cn.from.block, cn.from.port)];
       const indicators = {
-        pwr1: (settings.showPwr1 !== false && lvl !== undefined && isFinite(lvl)) ? dbm(lvl) : null,
-        pwr2: (settings.showPwr2 === true && lvl !== undefined && isFinite(lvl)) ? dbm(lvl) : null,
+        pwr1: (settings.showPwr1 !== false && lvlPrimary !== undefined && isFinite(lvlPrimary)) ? dbm(lvlPrimary) : null,
+        pwr2: (settings.showPwr2 === true && lvlSecondary !== undefined && isFinite(lvlSecondary)) ? dbm(lvlSecondary) : null,
         nfloor: (settings.showNoiseFloor === true && nflVal !== undefined && isFinite(nflVal)) ? dbm(nflVal) : null,
         nf: (settings.showNF === true && nfVal !== undefined && isFinite(nfVal)) ? ("NF " + fmt(nfVal) + " dB") : null
       };
@@ -6506,6 +7297,18 @@ function ctxItems(list) {
     }
     if (a === "sub-open") { const b = findBlock([...selected][0]); if (b) openSubsystem(b); return; }
     if (a === "sub-group") { groupIntoSubsystem(); return; }
+    if (a === "pill-reset") {
+      const cn = conns.find(c => c.id === selConn);
+      if (cn && (cn.pillPosition || cn.pillPositions || cn.labelOff)) {
+        pushHistory();
+        delete cn.pillPosition;
+        delete cn.pillPositions;
+        delete cn.labelOff;
+        renderAll();
+        hint("Annotation stack returned to its default connector position.");
+      }
+      return;
+    }
     if (a === "sh-up") { goToParent(); return; }
     if (a === "sh-rename") { const el = $("sheetBar").querySelector(`.sheet-tab[data-i="${cur}"]`); renameSheet(cur, el); return; }
     if (a === "sh-dup") { duplicateSheet(); return; }
@@ -6651,7 +7454,7 @@ function duplicateSelection() {
   for (const c of conns.slice()) {
     if (!(map[c.from.block] && map[c.to.block])) continue;
     const nc = { id: uid("c"), from: { block: map[c.from.block], port: c.from.port }, to: { block: map[c.to.block], port: c.to.port } };
-    if (c.jog != null) nc.jog = c.jog + 20; if (c.labelOff) nc.labelOff = { ...c.labelOff }; if (c.hidePill) nc.hidePill = true;
+    if (c.jog != null) nc.jog = c.jog + 20; if (c.labelOff) nc.labelOff = { ...c.labelOff }; if (c.pillPosition) nc.pillPosition = { ...c.pillPosition }; if (c.pillPositions) nc.pillPositions = JSON.parse(JSON.stringify(c.pillPositions)); if (c.hidePill) nc.hidePill = true;
     conns.push(nc);
   }
   selected = new Set(news); selConn = null; renderAll(); renderSheets();
@@ -6745,6 +7548,24 @@ function onMove(e) {
     if (tb && tb !== drag.from.block) { const np = nearestPort(tb, w, drag.need); if (np) { const el = portElem({ block: tb, port: np }); if (el) el.classList.add("tgt-ok"); } }
     return;
   }
+  if (drag.mode === "pill") {
+    const w = screenToWorld(e.clientX, e.clientY);
+    const cn = conns.find(c => c.id === drag.conn);
+    if (!cn) return;
+    const a = portPt(findBlock(cn.from.block), cn.from.port), z = portPt(findBlock(cn.to.block), cn.to.port);
+    if (!a || !z) return;
+    const R = route(a, z, cn);
+    const pillX = w.x - drag.grabx, pillY = w.y - drag.graby;
+    const x = pillX + drag.anchorDx, y = pillY + drag.anchorDy;
+    if (!drag.moved) {
+      if (Math.hypot(pillX - drag.start.x, pillY - drag.start.y) <= 3) return;
+      drag.moved = true;
+    }
+    cn.pillPosition = positionOnRoute(R.pts, x, y);
+    delete cn.pillPositions;
+    delete cn.labelOff;
+    renderCanvas(); return;
+  }
   if (drag.mode === "label") {
     const w = screenToWorld(e.clientX, e.clientY); const cn = conns.find(c => c.id === drag.conn); if (!cn) return;
     cn.labelOff = { dx: (w.x - drag.grabx) - drag.base.x, dy: (w.y - drag.graby) - drag.base.y };
@@ -6813,6 +7634,11 @@ function onUp(e) {
     const cn = conns.find(c => c.id === drag.conn);
     if (cn && cn.labelOff && Math.hypot(cn.labelOff.dx, cn.labelOff.dy) < 10) { delete cn.labelOff; pushHistoryState(drag.pre); renderCanvas(); hint("Label reset to default."); }
     else if (drag.moved) { pushHistoryState(drag.pre); hint("Label moved. Drop it near the wire to reset."); }
+  }
+  if (drag.mode === "pill" && drag.moved) {
+    pushHistoryState(drag.pre);
+    if (typeof markDirty === "function") markDirty();
+    hint("Annotation moved along its connector.");
   }
   if (drag.mode === "wiredrag") { if (drag.moved) { pushHistoryState(drag.pre); hint("Wire re-routed. Double-click it to straighten."); } }
   drag = null;
@@ -6930,9 +7756,24 @@ function initEvents() {
 
     if (pillEl && pillEl.getAttribute("data-conn")) {
       e.preventDefault();
-      const cid = pillEl.getAttribute("data-conn"); selConn = cid; selected = new Set(); renderAll();
-      const base = connBase(cid), tip = pillTip(cid), w0 = screenToWorld(e.clientX, e.clientY);
-      drag = { mode: "label", conn: cid, base, grabx: w0.x - tip.x, graby: w0.y - tip.y, moved: false, pre: snapState() };
+      const cid = pillEl.getAttribute("data-conn"), pillType = pillEl.getAttribute("data-pill-type");
+      const transform = pillEl.getAttribute("transform") || "";
+      const centerMatch = /translate\(\s*([-+\d.eE]+)[ ,]+([-+\d.eE]+)\s*\)/.exec(transform);
+      const w0 = screenToWorld(e.clientX, e.clientY);
+      if (pillType && centerMatch) {
+        const center = { x: Number(centerMatch[1]), y: Number(centerMatch[2]) };
+        const anchorX = Number(pillEl.getAttribute("data-pill-anchor-x"));
+        const anchorY = Number(pillEl.getAttribute("data-pill-anchor-y"));
+        selConn = cid; selected = new Set(); renderAll();
+        drag = { mode: "pill", conn: cid, type: pillType, start: center,
+          anchorDx: Number.isFinite(anchorX) ? anchorX - center.x : 0,
+          anchorDy: Number.isFinite(anchorY) ? anchorY - center.y : 0,
+          grabx: w0.x - center.x, graby: w0.y - center.y, moved: false, pre: snapState() };
+      } else {
+        selConn = cid; selected = new Set(); renderAll();
+        const base = connBase(cid), tip = pillTip(cid);
+        drag = { mode: "label", conn: cid, base, grabx: w0.x - tip.x, graby: w0.y - tip.y, moved: false, pre: snapState() };
+      }
       attachDrag(); return;
     }
     if (portEl) {
@@ -7005,7 +7846,18 @@ function initEvents() {
       if (b && COMP[b.type].isSubsystem) { e.preventDefault(); openSubsystem(b); return; }
     }
     const pillEl = e.target.closest(".pill"), connEl = e.target.closest(".conn");
-    if (pillEl && pillEl.getAttribute("data-conn")) { const cn = conns.find(c => c.id === pillEl.getAttribute("data-conn")); if (cn && cn.labelOff) { delete cn.labelOff; renderCanvas(); hint("Label reset to default."); } return; }
+    if (pillEl && pillEl.getAttribute("data-conn")) {
+      const cn = conns.find(c => c.id === pillEl.getAttribute("data-conn"));
+      if (cn && (cn.pillPosition || cn.pillPositions || cn.labelOff)) {
+        pushHistory();
+        delete cn.pillPosition;
+        delete cn.pillPositions;
+        delete cn.labelOff;
+        renderCanvas();
+        hint("Annotation stack returned to its default connector position.");
+      }
+      return;
+    }
     if (connEl) {
       const cid = connEl.getAttribute("data-conn");
       const cn = conns.find(c => c.id === cid);
@@ -7097,10 +7949,14 @@ function initEvents() {
       selConn = (connEl ? connEl.getAttribute("data-conn") : pillCtx.getAttribute("data-conn"));
       selected = new Set(); renderAll();
       const cn = conns.find(c => c.id === selConn);
+      const pillType = pillCtx && pillCtx.getAttribute("data-pill-type");
       const items = [
         ctxItem(cn && cn.hidePill ? "Show the dBm label" : "Hide the dBm label on this wire", "", "pill"),
         ctxItem("Add routing waypoint here", "", "wp-add")
       ];
+      if (pillType && cn && (cn.pillPosition || cn.pillPositions || cn.labelOff)) {
+        items.push(ctxItem("Reset annotation stack position", "double-click", "pill-reset"));
+      }
       if (cn && (cn.jog != null || (cn.waypoints && cn.waypoints.length))) {
         items.push(ctxItem("Straighten wire (clear waypoints)", "", "wp-clear"));
       }
@@ -7178,6 +8034,12 @@ function initEvents() {
   if ($("tglJumpers")) $("tglJumpers").addEventListener("change", e => { settings.enableJumpers = e.target.checked; renderCanvas(); });
   if ($("tglPwr1")) $("tglPwr1").addEventListener("change", e => { settings.showPwr1 = e.target.checked; renderCanvas(); });
   if ($("tglPwr2")) $("tglPwr2").addEventListener("change", e => { settings.showPwr2 = e.target.checked; renderCanvas(); });
+  if ($("selPowerBudget")) $("selPowerBudget").addEventListener("change", e => {
+    settings.powerBudget = normalizePowerBudgetMode(e.target.value);
+    if ($("selPowerBudget")) $("selPowerBudget").value = settings.powerBudget;
+    renderCanvas();
+    if (typeof renderBudget === "function") renderBudget();
+  });
   if ($("tglNFloor")) $("tglNFloor").addEventListener("change", e => { settings.showNoiseFloor = e.target.checked; renderCanvas(); });
   if ($("tglNF")) $("tglNF").addEventListener("change", e => { settings.showNF = e.target.checked; renderCanvas(); renderInspector(); });
   
@@ -7311,6 +8173,38 @@ function initEvents() {
   if ($("cpApply")) $("cpApply").onclick = cpApply;
   if ($("cpCancel")) $("cpCancel").onclick = cpCancel;
   if ($("cpReset")) $("cpReset").onclick = cpDefault;
+
+  /* View dropdown toggle — uses fixed position to escape toolbar overflow clipping */
+  const viewBtn = $("btnViewDrop");
+  const viewPanel = $("viewDropPanel");
+  const viewWrap = $("viewDropWrap");
+  function positionViewPanel() {
+    const r = viewBtn.getBoundingClientRect();
+    viewPanel.style.top = (r.bottom + 6) + "px";
+    // Align right edge of panel to right edge of button, clamp to viewport
+    const panelW = viewPanel.offsetWidth || 280;
+    let left = r.right - panelW;
+    if (left < 8) left = 8;
+    viewPanel.style.left = left + "px";
+    viewPanel.style.right = "";
+  }
+  if (viewBtn && viewPanel && viewWrap) {
+    viewBtn.onclick = e => {
+      e.stopPropagation();
+      const open = viewPanel.classList.toggle("open");
+      viewBtn.classList.toggle("open", open);
+      if (open) positionViewPanel();
+    };
+    document.addEventListener("click", e => {
+      if (!viewWrap.contains(e.target) && !viewPanel.contains(e.target)) {
+        viewPanel.classList.remove("open");
+        viewBtn.classList.remove("open");
+      }
+    });
+    window.addEventListener("resize", () => {
+      if (viewPanel.classList.contains("open")) positionViewPanel();
+    });
+  }
 }
 
 function fitView() {

@@ -473,6 +473,38 @@ function initEvents() {
   if ($("cpApply")) $("cpApply").onclick = cpApply;
   if ($("cpCancel")) $("cpCancel").onclick = cpCancel;
   if ($("cpReset")) $("cpReset").onclick = cpDefault;
+
+  /* View dropdown toggle — uses fixed position to escape toolbar overflow clipping */
+  const viewBtn = $("btnViewDrop");
+  const viewPanel = $("viewDropPanel");
+  const viewWrap = $("viewDropWrap");
+  function positionViewPanel() {
+    const r = viewBtn.getBoundingClientRect();
+    viewPanel.style.top = (r.bottom + 6) + "px";
+    // Align right edge of panel to right edge of button, clamp to viewport
+    const panelW = viewPanel.offsetWidth || 280;
+    let left = r.right - panelW;
+    if (left < 8) left = 8;
+    viewPanel.style.left = left + "px";
+    viewPanel.style.right = "";
+  }
+  if (viewBtn && viewPanel && viewWrap) {
+    viewBtn.onclick = e => {
+      e.stopPropagation();
+      const open = viewPanel.classList.toggle("open");
+      viewBtn.classList.toggle("open", open);
+      if (open) positionViewPanel();
+    };
+    document.addEventListener("click", e => {
+      if (!viewWrap.contains(e.target) && !viewPanel.contains(e.target)) {
+        viewPanel.classList.remove("open");
+        viewBtn.classList.remove("open");
+      }
+    });
+    window.addEventListener("resize", () => {
+      if (viewPanel.classList.contains("open")) positionViewPanel();
+    });
+  }
 }
 
 function fitView() {
