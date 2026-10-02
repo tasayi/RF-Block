@@ -1427,13 +1427,109 @@ const normHex = v => {
 
 
 
-/* --- File: js/components.js --- */
+/* --- File: js/api/engine-client.js --- */
 "use strict";
 
-/* Component Registry */
-const COMP = {};
-const ORDER = [];
-function def(o) { COMP[o.type] = o; ORDER.push(o.type); }
+/* =====================================================================
+ * RF Block Diagram Editor - Python Backend (scikit-rf) Engine Client
+ * ===================================================================== */
+
+const EngineClient = {
+  baseUrl: (typeof window !== "undefined" && window.RFBLOCK_API_URL) ? window.RFBLOCK_API_URL : "",
+  status: {
+    connected: false,
+    version: null,
+    skrfVersion: null,
+    lastChecked: null
+  },
+
+  /**
+   * Check connection and health of the Python scikit-rf backend.
+   */
+  async checkStatus() {
+    try {
+      const resp = await fetch(`${this.baseUrl}/api/v1/status`, {
+        method: "GET",
+        headers: { "Accept": "application/json" }
+      });
+      if (resp.ok) {
+        const data = await resp.json();
+        this.status.connected = (data.status === "online");
+        this.status.version = data.version || null;
+        this.status.skrfVersion = data.skrf_version || null;
+        this.status.lastChecked = Date.now();
+        this.notifyStatusChange();
+        return this.status;
+      }
+    } catch (e) {
+      // Backend not running or inaccessible (client operates in standalone JS mode)
+    }
+    this.status.connected = false;
+    this.status.lastChecked = Date.now();
+    this.notifyStatusChange();
+    return this.status;
+  },
+
+  /**
+   * Run full S-Parameter cascade physics analysis via the Python scikit-rf solver.
+   */
+  async solveSParams(schematicPayload) {
+    if (!this.status.connected) {
+      await this.checkStatus();
+    }
+    const resp = await fetch(`${this.baseUrl}/api/v1/analyze/sparams`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(schematicPayload)
+    });
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({ detail: "Engine analysis failed" }));
+      throw new Error(err.detail || `HTTP ${resp.status}`);
+    }
+    return await resp.json();
+  },
+
+  /**
+   * Export Touchstone (.s2p) file from Python backend.
+   */
+  async exportTouchstone(schematicPayload) {
+    const resp = await fetch(`${this.baseUrl}/api/v1/export/touchstone`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(schematicPayload)
+    });
+    if (!resp.ok) {
+      throw new Error(`Touchstone export failed (HTTP ${resp.status})`);
+    }
+    return await resp.text();
+  },
+
+  /**
+   * Dispatches custom event to notify UI components of engine status changes.
+   */
+  notifyStatusChange() {
+    if (typeof window !== "undefined" && typeof window.dispatchEvent === "function") {
+      window.dispatchEvent(new CustomEvent("rfblock:engine-status", { detail: { ...this.status } }));
+    }
+  }
+};
+
+if (typeof module !== "undefined" && module.exports) {
+  module.exports = { EngineClient };
+}
+
+
+/* --- File: js/components/helpers.js --- */
+"use strict";
+
+/* Central Component Registry & Helpers */
+if (typeof COMP === "undefined") {
+  var COMP = {};
+  var ORDER = [];
+}
+if (typeof def === "undefined") {
+  var def = function(o) { COMP[o.type] = o; ORDER.push(o.type); };
+}
 
 /* Helper for switch state resolution */
 const swState = (p, n) => {
@@ -1442,7 +1538,11 @@ const swState = (p, n) => {
   return (isFinite(v) && v >= 1 && v <= n) ? Math.round(v) : 1;
 };
 
-/* --- Sources ------------------------------------------------------ */
+
+/* --- File: js/components/sources.js --- */
+"use strict";
+
+/* --- Sources & Signal Generators ---------------------------------- */
 def({
   type: "source", keys: "signal generator cw carrier input", name: "Source", group: "Sources", w: 60, h: 60,
   ports: [{ id: "out", side: "right", kind: "out", dx: 60, dy: 30 }],
@@ -1471,7 +1571,12 @@ def({
   sym() { return `<circle class="blk-shape" cx="30" cy="30" r="28.5"/><path class="blk-glyph" d="M15 30 q7.5 -10.5 15 0 t15 0"/>`; }
 });
 
-/* --- Gain / Loss -------------------------------------------------- */
+
+/* --- File: js/components/gain-loss.js --- */
+/* =====================================================================
+ * RF Block Diagram Editor - Gain / Loss Components
+ * ===================================================================== */
+
 def({
   type: "amp", keys: "amplifier lna pa gain driver buffer", name: "Amplifier", group: "Gain / Loss", w: 60, h: 60,
   ports: [{ id: "in", side: "left", kind: "in", dx: 0, dy: 30 }, { id: "out", side: "right", kind: "out", dx: 60, dy: 30 }],
@@ -1591,7 +1696,12 @@ def({
   sym() { return `<rect class="blk-shape" x="0" y="19.5" width="60" height="21" rx="10.5"/><path class="blk-glyph" d="M9 30H51" stroke-dasharray="2 3"/>`; }
 });
 
-/* --- Filtering ---------------------------------------------------- */
+
+/* --- File: js/components/filters.js --- */
+/* =====================================================================
+ * RF Block Diagram Editor - Filtering Components
+ * ===================================================================== */
+
 def({
   type: "filter", keys: "bpf lpf hpf bsf notch band pass reject cavity saw", name: "Filter", group: "Filtering", w: 60, h: 60,
   ports: [{ id: "in", side: "left", kind: "inout", dx: 0, dy: 30 }, { id: "out", side: "right", kind: "inout", dx: 60, dy: 30 }],
@@ -1645,7 +1755,12 @@ def({
   }
 });
 
-/* --- Frequency ---------------------------------------------------- */
+
+/* --- File: js/components/converters.js --- */
+/* =====================================================================
+ * RF Block Diagram Editor - Frequency / Converter Components
+ * ===================================================================== */
+
 def({
   type: "mixer", keys: "downconvert upconvert conversion image if rf lo", name: "Mixer", group: "Frequency", w: 60, h: 60, topLabel: true,
   ports: [{ id: "rf", side: "left", kind: "in", dx: 0, dy: 30 }, { id: "if", side: "right", kind: "out", dx: 60, dy: 30 }, { id: "lo", side: "bottom", kind: "in", dx: 30, dy: 60 }],
@@ -1701,7 +1816,12 @@ def({
   }
 });
 
-/* --- Routing ------------------------------------------------------ */
+
+/* --- File: js/components/routing.js --- */
+/* =====================================================================
+ * RF Block Diagram Editor - Routing Components
+ * ===================================================================== */
+
 def({
   type: "splitter", keys: "divider power divider wilkinson split fan-out 1:n way", name: "Splitter", group: "Routing", w: 120, h: 120,
   dynSize: p => ({ w: 60, h: 60 * cint(p.ways, 2, 8) }),
@@ -1969,7 +2089,12 @@ def({
   }
 });
 
-/* --- Passive ------------------------------------------------------ */
+
+/* --- File: js/components/passives.js --- */
+/* =====================================================================
+ * RF Block Diagram Editor - Passive Components
+ * ===================================================================== */
+
 def({
   type: "isolator", keys: "one-way non-reciprocal ferrite", name: "Isolator", group: "Passive", w: 60, h: 60,
   ports: [{ id: "in", side: "left", kind: "in", dx: 0, dy: 30 }, { id: "out", side: "right", kind: "out", dx: 60, dy: 30 }],
@@ -1998,7 +2123,12 @@ def({
   sym() { return `<rect class="blk-shape" x="0" y="6" width="60" height="48" rx="6"/><circle class="blk-glyph" cx="30" cy="30" r="13.5"/><path class="blk-glyph" d="M30 12V48"/>`; }
 });
 
-/* --- Terminals ---------------------------------------------------- */
+
+/* --- File: js/components/terminals.js --- */
+/* =====================================================================
+ * RF Block Diagram Editor - Terminal Components
+ * ===================================================================== */
+
 def({
   type: "rfin", keys: "connector input port sma source", name: "In connector", group: "Terminals", w: 60, h: 60,
   ports: [{ id: "out", side: "right", kind: "out", dx: 60, dy: 30 }],
@@ -2054,6 +2184,12 @@ def({
   val: () => "50 \u03a9",
   sym() { return `<path class="blk-glyph" d="M0 30l4.5 -9 9 18 9 -18 9 18 4.5 -9H45"/><path class="blk-line" d="M45 18V42"/><path class="blk-line" d="M51 22.5V37.5"/><path class="blk-line" d="M57 27V33"/>`; }
 });
+
+
+/* --- File: js/components/containers.js --- */
+/* =====================================================================
+ * RF Block Diagram Editor - Hierarchy, Custom & Annotation Components
+ * ===================================================================== */
 
 /* --- Hierarchy ----------------------------------------------------- */
 def({
@@ -2139,7 +2275,6 @@ def({
 });
 
 const GROUPS = ["Terminals", "Sources", "Gain / Loss", "Filtering", "Frequency", "Routing", "Passive", "Hierarchy", "Custom", "Annotate"];
-
 
 
 /* --- File: js/state.js --- */
@@ -3563,10 +3698,13 @@ function computeLinearAnalysis(band) {
 
 
 
-/* --- File: js/layout/router.js --- */
+/* --- File: js/layout/manhattan-router.js --- */
 "use strict";
 
-/* Orthogonal Line Router & Obstacle Avoidance */
+/* =====================================================================
+ * RF Block Diagram Editor - Orthogonal Line Router & Manhattan Routing
+ * ===================================================================== */
+
 function buildPathWithJumpers(pts, allVerticalSegs, currentConnId) {
   if (!pts || pts.length < 2) return "";
   if (typeof settings !== "undefined" && settings.enableJumpers === false) {
@@ -3677,6 +3815,17 @@ function obstacleRects(m) {
   return out;
 }
 
+function segHitsRect(s, rx1, ry1, rx2, ry2) {
+  if (s.horiz) {
+    const y = s.p.y; if (y < ry1 || y > ry2) return false;
+    const x1 = Math.min(s.p.x, s.q.x), x2 = Math.max(s.p.x, s.q.x);
+    return x2 >= rx1 && x1 <= rx2;
+  }
+  const x = s.p.x; if (x < rx1 || x > rx2) return false;
+  const y1 = Math.min(s.p.y, s.q.y), y2 = Math.max(s.p.y, s.q.y);
+  return y2 >= ry1 && y1 <= rx2;
+}
+
 function route(a, z, cn) {
   const S = 16, off = p => ({ left: [-S, 0], right: [S, 0], top: [0, -S], bottom: [0, S] }[p.side] || [S, 0]);
   const [ax, ay] = off(a), [zx, zy] = off(z);
@@ -3776,6 +3925,25 @@ function route(a, z, cn) {
   return { d, pts, mx, my, orient, jogAxis, segs, seg: segSel };
 }
 
+if (typeof module !== "undefined" && module.exports) {
+  module.exports = {
+    buildPathWithJumpers,
+    distToSeg,
+    insertWaypointInOrder,
+    obstacleRects,
+    segHitsRect,
+    route
+  };
+}
+
+
+/* --- File: js/layout/pill-layout.js --- */
+"use strict";
+
+/* =====================================================================
+ * RF Block Diagram Editor - Indicator Pill Layout & Geometry
+ * ===================================================================== */
+
 function measurePillText(text) {
   if (!text) return { text: "", w: 32, h: 20 };
   const charWidth = 7.6;
@@ -3799,68 +3967,60 @@ function pillDims(lvl, nf) {
 function pointAtRouteFraction(points, fraction) {
   if (!points || !points.length) return { x: 0, y: 0 };
   if (points.length === 1) return { x: points[0].x, y: points[0].y };
-  const lengths = [];
   let total = 0;
+  const lengths = [];
   for (let i = 0; i < points.length - 1; i++) {
-    const length = Math.hypot(points[i + 1].x - points[i].x, points[i + 1].y - points[i].y);
-    lengths.push(length);
-    total += length;
+    const len = Math.hypot(points[i + 1].x - points[i].x, points[i + 1].y - points[i].y);
+    lengths.push(len);
+    total += len;
   }
   if (!total) return { x: points[0].x, y: points[0].y };
-  let remaining = Math.max(0, Math.min(1, Number(fraction) || 0)) * total;
+  let target = Math.max(0, Math.min(1, Number(fraction) || 0)) * total;
   for (let i = 0; i < lengths.length; i++) {
-    const length = lengths[i];
-    if (remaining <= length || i === lengths.length - 1) {
-      const t = length ? Math.max(0, Math.min(1, remaining / length)) : 0;
+    if (target <= lengths[i] || i === lengths.length - 1) {
+      const segFraction = lengths[i] ? Math.max(0, Math.min(1, target / lengths[i])) : 0;
       return {
-        x: points[i].x + (points[i + 1].x - points[i].x) * t,
-        y: points[i].y + (points[i + 1].y - points[i].y) * t
+        x: points[i].x + (points[i + 1].x - points[i].x) * segFraction,
+        y: points[i].y + (points[i + 1].y - points[i].y) * segFraction
       };
     }
-    remaining -= length;
+    target -= lengths[i];
   }
   return { x: points[points.length - 1].x, y: points[points.length - 1].y };
 }
 
 function positionOnRoute(points, x, y) {
-  if (!points || points.length < 2) return { t: 0, dx: x - (points && points[0] ? points[0].x : 0), dy: y - (points && points[0] ? points[0].y : 0) };
+  if (!points || points.length < 2) return { t: 0.5, dx: 0, dy: 0 };
   let total = 0;
-  const lengths = [];
-  for (let i = 0; i < points.length - 1; i++) {
-    const length = Math.hypot(points[i + 1].x - points[i].x, points[i + 1].y - points[i].y);
-    lengths.push(length);
-    total += length;
-  }
-  if (!total) return { t: 0, dx: x - points[0].x, dy: y - points[0].y };
-  let best = { distance: Infinity, along: 0, x: points[0].x, y: points[0].y };
-  let traversed = 0;
-  for (let i = 0; i < lengths.length; i++) {
-    const a = points[i], b = points[i + 1], length = lengths[i];
-    const vx = b.x - a.x, vy = b.y - a.y;
-    const t = length ? Math.max(0, Math.min(1, ((x - a.x) * vx + (y - a.y) * vy) / (length * length))) : 0;
-    const px = a.x + vx * t, py = a.y + vy * t;
-    const distance = Math.hypot(x - px, y - py);
-    if (distance < best.distance) best = { distance, along: traversed + length * t, x: px, y: py };
-    traversed += length;
-  }
-  return { t: best.along / total, dx: x - best.x, dy: y - best.y };
-}
+  let best = { dist: Infinity, t: 0.5, x: points[0].x, y: points[0].y, along: 0 };
+  let accumulated = 0;
 
-function segHitsRect(s, rx1, ry1, rx2, ry2) {
-  if (s.horiz) {
-    const y = s.p.y; if (y < ry1 || y > ry2) return false;
-    const x1 = Math.min(s.p.x, s.q.x), x2 = Math.max(s.p.x, s.q.x);
-    return x2 >= rx1 && x1 <= rx2;
+  for (let i = 0; i < points.length - 1; i++) {
+    const p = points[i], q = points[i + 1];
+    const dx = q.x - p.x, dy = q.y - p.y;
+    const len2 = dx * dx + dy * dy;
+    const len = Math.sqrt(len2);
+    if (!len) continue;
+    let localT = ((x - p.x) * dx + (y - p.y) * dy) / len2;
+    localT = Math.max(0, Math.min(1, localT));
+    const projX = p.x + localT * dx;
+    const projY = p.y + localT * dy;
+    const dist = Math.hypot(x - projX, y - projY);
+    if (dist < best.dist) {
+      best = { dist, t: localT, x: projX, y: projY, along: accumulated + localT * len };
+    }
+    accumulated += len;
+    total += len;
   }
-  const x = s.p.x; if (x < rx1 || x > rx2) return false;
-  const y1 = Math.min(s.p.y, s.q.y), y2 = Math.max(s.p.y, s.q.y);
-  return y2 >= ry1 && y1 <= rx2;
+
+  if (!total) return { t: 0.5, dx: x - points[0].x, dy: y - points[0].y };
+  return { t: best.along / total, dx: x - best.x, dy: y - best.y };
 }
 
 function pickClear(cands, d, segs, rects) {
   for (const c of cands) {
     const rx1 = c.x - d.w / 2 - 2, rx2 = c.x + d.w / 2 + 2, ry1 = c.y - d.h / 2 - 2, ry2 = c.y + d.h / 2 + 2;
-    const segHit = segs.some(s => segHitsRect(s, rx1, ry1, rx2, ry2));
+    const segHit = segs.some(s => typeof segHitsRect === "function" ? segHitsRect(s, rx1, ry1, rx2, ry2) : false);
     const rectHit = (rects || []).some(r => !(rx2 < r.x1 || rx1 > r.x2 || ry2 < r.y1 || ry1 > r.y2));
     if (!segHit && !rectHit) return c;
   }
@@ -3877,7 +4037,7 @@ function pillCenter(R, lvl, allSegs, rects, nf) {
       if (L.len > seg.len) { seg = L; cx = (L.p.x + L.q.x) / 2; cy = (L.p.y + L.q.y) / 2; }
     }
   }
-  if (!seg) return { x: cx, y: cy - (d.h / 2 + 4) };
+  if (!seg) return { x: cx, y: cy };
   if (seg.horiz) {
     const lo = Math.min(seg.p.x, seg.q.x) + d.w / 2 + 8, hi = Math.max(seg.p.x, seg.q.x) - d.w / 2 - 8;
     cx = lo <= hi ? Math.min(Math.max(cx, lo), hi) : (seg.p.x + seg.q.x) / 2;
@@ -3893,9 +4053,10 @@ function pillCenter(R, lvl, allSegs, rects, nf) {
 function pill(cx, cy, lvl, connId, nf) {
   const unk = (lvl === undefined || !isFinite(lvl));
   const d = pillDims(lvl, nf);
+  const escapeFn = typeof esc === "function" ? esc : (s => String(s || ""));
   const rows = d.nrow
-    ? `<text class="ptx" x="0" y="-7" dominant-baseline="central" text-anchor="middle">${esc(d.full)}</text><text class="pun" x="0" y="8" dominant-baseline="central" text-anchor="middle">${esc(d.nrow)}</text>`
-    : `<text class="ptx" x="0" y="0" dominant-baseline="central" text-anchor="middle">${esc(d.full)}</text>`;
+    ? `<text class="ptx" x="0" y="-7" dominant-baseline="central" text-anchor="middle">${escapeFn(d.full)}</text><text class="pun" x="0" y="8" dominant-baseline="central" text-anchor="middle">${escapeFn(d.nrow)}</text>`
+    : `<text class="ptx" x="0" y="0" dominant-baseline="central" text-anchor="middle">${escapeFn(d.full)}</text>`;
   return `<g class="pill${unk ? " unk" : ""}"${connId ? ` data-conn="${connId}"` : ""} transform="translate(${cx} ${cy})"><rect class="pbg" x="${-d.w / 2}" y="${-d.h / 2}" width="${d.w}" height="${d.h}" rx="5"/>${rows}</g>`;
 }
 
@@ -3950,7 +4111,7 @@ function indicatorPillLayout(R, indicators) {
   /* Render Above-Wire Stack (stacked upwards starting directly above wire) */
   const nAbove = aboveGroup.length;
   for (let i = 0; i < nAbove; i++) {
-    const distFromWire = nAbove - 1 - i; // 0 for closest to wire, 1 for top
+    const distFromWire = nAbove - 1 - i;
     const py = wireY - (pillH / 2 + gap) - distFromWire * (pillH + gap);
     entries.push({ ...aboveGroup[i], x: wireX, y: py });
   }
@@ -3978,16 +4139,30 @@ function pillStack(R, indicators, connId) {
   const savedAnchor = savedPosition ? pointAtRouteFraction(R.pts, savedPosition.t) : null;
   const shiftX = savedAnchor ? savedAnchor.x + (Number(savedPosition.dx) || 0) - layout.anchorX : (legacyOffset ? legacyOffset.dx : 0);
   const shiftY = savedAnchor ? savedAnchor.y + (Number(savedPosition.dy) || 0) - layout.anchorY : (legacyOffset ? legacyOffset.dy : 0);
+  const escapeFn = typeof esc === "function" ? esc : (s => String(s || ""));
   let html = "";
   for (const item of layout.entries) {
     const x = item.x + shiftX, y = item.y + shiftY;
     html += `<g class="pill pill-${item.type}"${connId ? ` data-conn="${connId}" data-pill-type="${item.type}" data-pill-anchor-x="${layout.anchorX + shiftX}" data-pill-anchor-y="${layout.anchorY + shiftY}"` : ""} transform="translate(${x} ${y})">`
       + `<rect class="pbg" x="${-colWidth / 2}" y="${-pillHeight / 2}" width="${colWidth}" height="${pillHeight}" rx="5"/>`
-      + `<text class="ptx" x="0" y="0" dominant-baseline="central" text-anchor="middle">${esc(item.text)}</text></g>`;
+      + `<text class="ptx" x="0" y="0" dominant-baseline="central" text-anchor="middle">${escapeFn(item.text)}</text></g>`;
   }
   return html;
 }
 
+if (typeof module !== "undefined" && module.exports) {
+  module.exports = {
+    measurePillText,
+    pillDims,
+    pointAtRouteFraction,
+    positionOnRoute,
+    pickClear,
+    pillCenter,
+    pill,
+    indicatorPillLayout,
+    pillStack
+  };
+}
 
 
 /* --- File: js/subsystems.js --- */
@@ -4294,11 +4469,14 @@ function xlsxBlob(rows, widths, tabName) {
 
 
 
-/* --- File: js/io/vsdx-exporter.js --- */
+/* --- File: js/io/vsdx/templates.js --- */
 "use strict";
 
-/* Native Microsoft Visio (.vsdx) Binary Generator
-   Generates native OpenXML Visio OPC zip package with vector shapes, text & dynamic connectors */
+/* =====================================================================
+ * RF Block Diagram Editor - Visio VSDX OPC XML Templates & Validator
+ * ===================================================================== */
+
+const VSDX_XML_HDR = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n';
 
 function vsdxEsc(v) {
   return String(v == null ? "" : v)
@@ -4316,6 +4494,215 @@ function vsdxColor(hex) {
   if (/^#[0-9a-fA-F]{6}$/.test(h)) return h.toLowerCase();
   return "#ffffff";
 }
+
+function getVsdxContentTypesXml() {
+  return VSDX_XML_HDR
+    + `<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">\n`
+    + `  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>\n`
+    + `  <Default Extension="xml" ContentType="application/xml"/>\n`
+    + `  <Override PartName="/docProps/app.xml" ContentType="application/vnd.openxmlformats-officedocument.extended-properties+xml"/>\n`
+    + `  <Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/>\n`
+    + `  <Override PartName="/visio/document.xml" ContentType="application/vnd.ms-visio.drawing.main+xml"/>\n`
+    + `  <Override PartName="/visio/pages/pages.xml" ContentType="application/vnd.ms-visio.pages+xml"/>\n`
+    + `  <Override PartName="/visio/pages/page1.xml" ContentType="application/vnd.ms-visio.page+xml"/>\n`
+    + `  <Override PartName="/visio/masters/masters.xml" ContentType="application/vnd.ms-visio.masters+xml"/>\n`
+    + `  <Override PartName="/visio/windows.xml" ContentType="application/vnd.ms-visio.windows+xml"/>\n`
+    + `</Types>`;
+}
+
+function getVsdxAppXml() {
+  return VSDX_XML_HDR + `<Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties" xmlns:vt="http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes"><Application>RF Chain</Application></Properties>`;
+}
+
+function getVsdxCoreXml() {
+  return VSDX_XML_HDR + `<cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:dcmitype="http://purl.org/dc/dcmitype/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><dc:title>RF Chain Block Diagram</dc:title><dc:creator>RF Chain Editor</dc:creator><cp:lastModifiedBy>RF Chain Editor</cp:lastModifiedBy></cp:coreProperties>`;
+}
+
+function getVsdxRootRelsXml() {
+  return VSDX_XML_HDR
+    + `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">\n`
+    + `  <Relationship Id="rId1" Type="http://schemas.microsoft.com/visio/2010/relationships/document" Target="visio/document.xml"/>\n`
+    + `  <Relationship Id="rId2" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/>\n`
+    + `  <Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties" Target="docProps/app.xml"/>\n`
+    + `</Relationships>`;
+}
+
+function getVsdxDocXml() {
+  return VSDX_XML_HDR
+    + `<VisioDocument xmlns="http://schemas.microsoft.com/office/visio/2012/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">\n`
+    + `  <DocumentProperties>\n`
+    + `    <Title>RF Chain Block Diagram</Title>\n`
+    + `    <Creator>RF Chain Editor</Creator>\n`
+    + `  </DocumentProperties>\n`
+    + `  <FaceNames>\n`
+    + `    <FaceName ID="1" Name="Calibri" Flags="0"/>\n`
+    + `  </FaceNames>\n`
+    + `  <StyleSheets>\n`
+    + `    <StyleSheet ID="0" Name="Normal">\n`
+    + `      <Cell N="Font" V="1"/>\n`
+    + `    </StyleSheet>\n`
+    + `  </StyleSheets>\n`
+    + `</VisioDocument>`;
+}
+
+function getVsdxDocRelsXml() {
+  return VSDX_XML_HDR
+    + `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">\n`
+    + `  <Relationship Id="rId1" Type="http://schemas.microsoft.com/visio/2010/relationships/pages" Target="pages/pages.xml"/>\n`
+    + `  <Relationship Id="rId2" Type="http://schemas.microsoft.com/visio/2010/relationships/masters" Target="masters/masters.xml"/>\n`
+    + `  <Relationship Id="rId3" Type="http://schemas.microsoft.com/visio/2010/relationships/windows" Target="windows.xml"/>\n`
+    + `</Relationships>`;
+}
+
+function getVsdxPagesXml() {
+  return VSDX_XML_HDR
+    + `<Pages xmlns="http://schemas.microsoft.com/office/visio/2012/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">\n`
+    + `  <Page ID="0" Name="Page-1" NameU="Page-1">\n`
+    + `    <Rel r:id="rId1"/>\n`
+    + `  </Page>\n`
+    + `</Pages>`;
+}
+
+function getVsdxPagesRelsXml() {
+  return VSDX_XML_HDR
+    + `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">\n`
+    + `  <Relationship Id="rId1" Type="http://schemas.microsoft.com/visio/2010/relationships/page" Target="page1.xml"/>\n`
+    + `</Relationships>`;
+}
+
+function getVsdxWindowsXml() {
+  return VSDX_XML_HDR
+    + `<Windows xmlns="http://schemas.microsoft.com/office/visio/2012/main">\n`
+    + `  <Window ID="0" WindowType="Drawing" WindowWidth="1600" WindowHeight="1000" ViewScale="1" Page="1"/>\n`
+    + `</Windows>`;
+}
+
+function validateVsdxPackage(entries) {
+  const parts = (entries || []).map(e => e && e.name ? e.name : "").filter(Boolean);
+  const required = [
+    "[Content_Types].xml",
+    "_rels/.rels",
+    "docProps/app.xml",
+    "docProps/core.xml",
+    "visio/document.xml",
+    "visio/_rels/document.xml.rels",
+    "visio/pages/pages.xml",
+    "visio/pages/_rels/pages.xml.rels",
+    "visio/pages/page1.xml",
+    "visio/masters/masters.xml",
+    "visio/windows.xml"
+  ];
+  const missing = required.filter(name => !parts.includes(name));
+  if (missing.length) throw new Error(`Invalid VSDX package: missing required part(s): ${missing.join(", ")}`);
+
+  const partMap = new Map((entries || []).filter(Boolean).map(e => [e.name, String(e.data || "")]));
+  const xmlTypes = partMap.get("[Content_Types].xml") || "";
+  const docRels = partMap.get("visio/_rels/document.xml.rels") || "";
+  const pageRels = partMap.get("visio/pages/_rels/pages.xml.rels") || "";
+  const pageXml = partMap.get("visio/pages/page1.xml") || "";
+
+  const need = [
+    '/visio/document.xml',
+    '/visio/pages/pages.xml',
+    '/visio/pages/page1.xml',
+    '/visio/windows.xml',
+    '/docProps/core.xml',
+    '/docProps/app.xml'
+  ];
+  for (const token of need) {
+    if (!xmlTypes.includes(`PartName="${token}"`)) throw new Error(`Invalid VSDX package: missing Content_Types entry for ${token}`);
+  }
+
+  if (!/Relationship Id="rId1"[^>]*Target="visio\/document\.xml"/.test((partMap.get("_rels/.rels") || ""))) {
+    throw new Error("Invalid VSDX package: package root relationship is missing or malformed.");
+  }
+  if (!/Relationship Id="rId1"[^>]*Target="pages\/pages\.xml"/.test(docRels)) {
+    throw new Error("Invalid VSDX package: document relationships are missing the pages target.");
+  }
+  if (!/Relationship Id="rId1"[^>]*Target="page1\.xml"/.test(pageRels)) {
+    throw new Error("Invalid VSDX package: page relationships are missing the page target.");
+  }
+  if (!/<Page\b[^>]*xmlns=/.test(pageXml)) {
+    throw new Error("Invalid VSDX package: page XML must use a Visio Page root element.");
+  }
+
+  const xmlFiles = ["[Content_Types].xml", "_rels/.rels", "visio/document.xml", "visio/_rels/document.xml.rels", "visio/pages/pages.xml", "visio/pages/_rels/pages.xml.rels", "visio/pages/page1.xml", "visio/masters/masters.xml", "visio/windows.xml", "docProps/core.xml", "docProps/app.xml"];
+  for (const name of xmlFiles) {
+    const xml = partMap.get(name) || "";
+    if (!xml.startsWith("<?xml")) throw new Error(`Invalid VSDX package: ${name} is not valid XML.`);
+  }
+
+  const shapeTags = [...pageXml.matchAll(/<Shape\b([^>]*)>/g)];
+  const shapeIds = new Set();
+  for (const match of shapeTags) {
+    const id = (match[1].match(/\bID="(\d+)"/) || [])[1];
+    if (!id) throw new Error("Invalid VSDX page: a Shape is missing its numeric ID.");
+    if (shapeIds.has(id)) throw new Error(`Invalid VSDX page: duplicate Shape ID ${id}.`);
+    shapeIds.add(id);
+  }
+  if (!shapeTags.length) throw new Error("Invalid VSDX page: no shapes were generated.");
+
+  const masterXml = partMap.get("visio/masters/masters.xml") || "";
+  const masterIds = new Set([...masterXml.matchAll(/<Master\b[^>]*\bID="(\d+)"/g)].map(match => match[1]));
+  for (const match of pageXml.matchAll(/<Shape\b([^>]*)>/g)) {
+    const masterId = (match[1].match(/\bMaster="(\d+)"/) || [])[1];
+    if (masterId && !masterIds.has(masterId)) throw new Error(`Invalid VSDX page: Shape references missing Master ID ${masterId}.`);
+  }
+  for (const connect of pageXml.matchAll(/<Connect\b([^>]*)\/>/g)) {
+    for (const attr of ["FromSheet", "ToSheet"]) {
+      const id = (connect[1].match(new RegExp(`\\b${attr}="(\\d+)"`)) || [])[1];
+      if (id && !shapeIds.has(id)) throw new Error(`Invalid VSDX page: connector references missing Shape ID ${id}.`);
+    }
+    const targetId = (connect[1].match(/\bToSheet="(\d+)"/) || [])[1];
+    const targetCell = (connect[1].match(/\bToCell="([^"]+)"/) || [])[1];
+    if (targetId && targetCell && targetCell.startsWith("Connections.X")) {
+      const pointNo = Number(targetCell.slice("Connections.X".length));
+      const targetShape = [...pageXml.matchAll(/<Shape\b([^>]*)>([\s\S]*?)<\/Shape>/g)]
+        .find(shape => (shape[1].match(/\bID="(\d+)"/) || [])[1] === targetId);
+      if (!targetShape || !new RegExp(`<Section N="Connection"[^>]*>[\\s\\S]*?<Row IX="${pointNo - 1}"`).test(targetShape[2])) {
+        throw new Error(`Invalid VSDX page: connector target ${targetId}/${targetCell} does not resolve to a port connection point.`);
+      }
+    }
+  }
+  for (const match of pageXml.matchAll(/<Shape\b([^>]*)NameU="Dynamic connector"([^>]*)>([\s\S]*?)<\/Shape>/g)) {
+    const attrs = `${match[1]} ${match[2]}`;
+    if (!/\bOneD="1"/.test(attrs) || !/<Cell N="BeginX"/.test(match[3]) || !/<Cell N="EndX"/.test(match[3])) {
+      throw new Error("Invalid VSDX page: a connector is missing 1D endpoint coordinates.");
+    }
+  }
+  if (shapeTags.some(match => /\bNameU="[^"]+ symbol"/.test(match[1]))
+      && !/<Shape\b[^>]*NameU="[^"]+ symbol"[^>]*>[\s\S]*?<Section N="Geometry"/.test(pageXml)) {
+    throw new Error("Invalid VSDX page: component symbols are missing vector geometry.");
+  }
+
+  return true;
+}
+
+if (typeof module !== "undefined" && module.exports) {
+  module.exports = {
+    VSDX_XML_HDR,
+    vsdxEsc,
+    vsdxColor,
+    getVsdxContentTypesXml,
+    getVsdxAppXml,
+    getVsdxCoreXml,
+    getVsdxRootRelsXml,
+    getVsdxDocXml,
+    getVsdxDocRelsXml,
+    getVsdxPagesXml,
+    getVsdxPagesRelsXml,
+    getVsdxWindowsXml,
+    validateVsdxPackage
+  };
+}
+
+
+/* --- File: js/io/vsdx/geometry-converter.js --- */
+"use strict";
+
+/* =====================================================================
+ * RF Block Diagram Editor - Visio VSDX Geometry & SVG Converter
+ * ===================================================================== */
 
 function svgNumber(value, fallback = 0) {
   const n = Number(value);
@@ -4420,7 +4807,6 @@ function sampleSvgPath(data) {
         for (let s = 1; s <= steps; s++) { const a = startA + delta * s / steps; point(cx + rx * cos * Math.cos(a) - ry * sin * Math.sin(a), cy + rx * sin * Math.cos(a) + ry * cos * Math.sin(a)); }
         lastC = lastQ = null; consumed = true;
       } else {
-        // Unknown SVG commands are rejected rather than replaced by a generic rectangle.
         return [];
       }
     }
@@ -4539,11 +4925,34 @@ function transformSymbolPoint(point, naturalW, naturalH, footprintW, footprintH,
   return { x: footprintW / 2 + rx, y: footprintH / 2 + ry };
 }
 
+if (typeof module !== "undefined" && module.exports) {
+  module.exports = {
+    svgNumber,
+    svgAttributes,
+    sampleSvgPath,
+    sampleEllipse,
+    roundedRectPath,
+    svgSymbolPrimitives,
+    makeGeometrySection,
+    pointAlongPolyline,
+    transformSymbolPoint
+  };
+}
+
+
+/* --- File: js/io/vsdx/shape-builder.js --- */
+"use strict";
+
+/* =====================================================================
+ * RF Block Diagram Editor - Visio VSDX Shape & Text Builder
+ * ===================================================================== */
+
 function buildShapeXml(id, name, pinX, pinY, widthIn, heightIn, geometry, style, text = "", connectionPoints = []) {
+  const esc = (typeof vsdxEsc === "function") ? vsdxEsc : (s => String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"));
   const resolveColor = color => color === "block" ? style.blockFill : color === "ink" ? style.ink : (color || "#ffffff");
   const fill = style.fill ? resolveColor(style.fillColor) : "#ffffff";
   const stroke = style.stroke ? resolveColor(style.strokeColor) : "#ffffff";
-  let xml = `    <Shape ID="${id}" NameU="${vsdxEsc(name)}" Type="Shape" LineStyle="0" FillStyle="0" TextStyle="0">\n`
+  let xml = `    <Shape ID="${id}" NameU="${esc(name)}" Type="Shape" LineStyle="0" FillStyle="0" TextStyle="0">\n`
     + `      <Cell N="Width" V="${widthIn}"/><Cell N="Height" V="${heightIn}"/>\n`
     + `      <Cell N="PinX" V="${pinX}"/><Cell N="PinY" V="${pinY}"/>\n`
     + `      <Cell N="LocPinX" V="${widthIn / 2}"/><Cell N="LocPinY" V="${heightIn / 2}"/>\n`
@@ -4553,7 +4962,7 @@ function buildShapeXml(id, name, pinX, pinY, widthIn, heightIn, geometry, style,
     + `      <Cell N="LeftMargin" V="0"/><Cell N="RightMargin" V="0"/><Cell N="TopMargin" V="0"/><Cell N="BottomMargin" V="0"/>\n`
     + geometry
     + (connectionPoints.length ? `<Section N="Connection" IX="0">${connectionPoints.map((point, index) => `<Row IX="${index}"><Cell N="X" V="${point.x}"/><Cell N="Y" V="${point.y}"/><Cell N="DirX" V="${point.dirX}"/><Cell N="DirY" V="${point.dirY}"/><Cell N="Type" V="0"/></Row>`).join("")}</Section>\n` : "")
-    + (text ? `<Text><cp IX="0"/><pp IX="0"/>${vsdxEsc(text)}</Text>\n` : "")
+    + (text ? `<Text><cp IX="0"/><pp IX="0"/>${esc(text)}</Text>\n` : "")
     + `    </Shape>\n`;
   return xml;
 }
@@ -4605,6 +5014,7 @@ function blockLabelY(b, f, appSettings) {
 }
 
 function buildTextShapeXml(id, text, centerX, centerY, widthPx, heightPx, fontPx, color, bold, align, dpi, toInX, toInY, angleRadians = 0) {
+  const esc = (typeof vsdxEsc === "function") ? vsdxEsc : (s => String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"));
   const widthIn = Math.max(0.01, widthPx / dpi), heightIn = Math.max(0.01, heightPx / dpi);
   const x = toInX(centerX), y = toInY(centerY);
   const alignVal = (align === "middle" || align === "center") ? 1 : (align === "end" || align === "right") ? 2 : 0;
@@ -4619,110 +5029,32 @@ function buildTextShapeXml(id, text, centerX, centerY, widthPx, heightPx, fontPx
     + `      <Cell N="TxtMarginLeft" V="0"/><Cell N="TxtMarginRight" V="0"/><Cell N="TxtMarginTop" V="0"/><Cell N="TxtMarginBottom" V="0"/>\n`
     + `      <Section N="Paragraph" IX="0"><Row IX="0"><Cell N="HorzAlign" V="${alignVal}"/></Row></Section>\n`
     + `      <Section N="Character" IX="0"><Row IX="0"><Cell N="Font" V="1"/><Cell N="Size" V="${fontPx / 96}"/><Cell N="Color" V="${color}"/><Cell N="Style" V="${bold ? 1 : 0}"/></Row></Section>\n`
-    + `      <Text><cp IX="0"/><pp IX="0"/>${vsdxEsc(text)}</Text>\n`
+    + `      <Text><cp IX="0"/><pp IX="0"/>${esc(text)}</Text>\n`
     + `    </Shape>\n`;
 }
 
-function validateVsdxPackage(entries) {
-  const parts = (entries || []).map(e => e && e.name ? e.name : "").filter(Boolean);
-  const required = [
-    "[Content_Types].xml",
-    "_rels/.rels",
-    "docProps/app.xml",
-    "docProps/core.xml",
-    "visio/document.xml",
-    "visio/_rels/document.xml.rels",
-    "visio/pages/pages.xml",
-    "visio/pages/_rels/pages.xml.rels",
-    "visio/pages/page1.xml",
-    "visio/masters/masters.xml",
-    "visio/windows.xml"
-  ];
-  const missing = required.filter(name => !parts.includes(name));
-  if (missing.length) throw new Error(`Invalid VSDX package: missing required part(s): ${missing.join(", ")}`);
-
-  const partMap = new Map((entries || []).filter(Boolean).map(e => [e.name, String(e.data || "")]));
-  const xmlTypes = partMap.get("[Content_Types].xml") || "";
-  const docRels = partMap.get("visio/_rels/document.xml.rels") || "";
-  const pageRels = partMap.get("visio/pages/_rels/pages.xml.rels") || "";
-  const pageXml = partMap.get("visio/pages/page1.xml") || "";
-
-  const need = [
-    '/visio/document.xml',
-    '/visio/pages/pages.xml',
-    '/visio/pages/page1.xml',
-    '/visio/windows.xml',
-    '/docProps/core.xml',
-    '/docProps/app.xml'
-  ];
-  for (const token of need) {
-    if (!xmlTypes.includes(`PartName="${token}"`)) throw new Error(`Invalid VSDX package: missing Content_Types entry for ${token}`);
-  }
-
-  if (!/Relationship Id="rId1"[^>]*Target="visio\/document\.xml"/.test((partMap.get("_rels/.rels") || ""))) {
-    throw new Error("Invalid VSDX package: package root relationship is missing or malformed.");
-  }
-  if (!/Relationship Id="rId1"[^>]*Target="pages\/pages\.xml"/.test(docRels)) {
-    throw new Error("Invalid VSDX package: document relationships are missing the pages target.");
-  }
-  if (!/Relationship Id="rId1"[^>]*Target="page1\.xml"/.test(pageRels)) {
-    throw new Error("Invalid VSDX package: page relationships are missing the page target.");
-  }
-  if (!/<Page\b[^>]*xmlns=/.test(pageXml)) {
-    throw new Error("Invalid VSDX package: page XML must use a Visio Page root element.");
-  }
-
-  const xmlFiles = ["[Content_Types].xml", "_rels/.rels", "visio/document.xml", "visio/_rels/document.xml.rels", "visio/pages/pages.xml", "visio/pages/_rels/pages.xml.rels", "visio/pages/page1.xml", "visio/masters/masters.xml", "visio/windows.xml", "docProps/core.xml", "docProps/app.xml"];
-  for (const name of xmlFiles) {
-    const xml = partMap.get(name) || "";
-    if (!xml.startsWith("<?xml")) throw new Error(`Invalid VSDX package: ${name} is not valid XML.`);
-  }
-
-  const shapeTags = [...pageXml.matchAll(/<Shape\b([^>]*)>/g)];
-  const shapeIds = new Set();
-  for (const match of shapeTags) {
-    const id = (match[1].match(/\bID="(\d+)"/) || [])[1];
-    if (!id) throw new Error("Invalid VSDX page: a Shape is missing its numeric ID.");
-    if (shapeIds.has(id)) throw new Error(`Invalid VSDX page: duplicate Shape ID ${id}.`);
-    shapeIds.add(id);
-  }
-  if (!shapeTags.length) throw new Error("Invalid VSDX page: no shapes were generated.");
-
-  const masterXml = partMap.get("visio/masters/masters.xml") || "";
-  const masterIds = new Set([...masterXml.matchAll(/<Master\b[^>]*\bID="(\d+)"/g)].map(match => match[1]));
-  for (const match of pageXml.matchAll(/<Shape\b([^>]*)>/g)) {
-    const masterId = (match[1].match(/\bMaster="(\d+)"/) || [])[1];
-    if (masterId && !masterIds.has(masterId)) throw new Error(`Invalid VSDX page: Shape references missing Master ID ${masterId}.`);
-  }
-  for (const connect of pageXml.matchAll(/<Connect\b([^>]*)\/>/g)) {
-    for (const attr of ["FromSheet", "ToSheet"]) {
-      const id = (connect[1].match(new RegExp(`\\b${attr}="(\\d+)"`)) || [])[1];
-      if (id && !shapeIds.has(id)) throw new Error(`Invalid VSDX page: connector references missing Shape ID ${id}.`);
-    }
-    const targetId = (connect[1].match(/\bToSheet="(\d+)"/) || [])[1];
-    const targetCell = (connect[1].match(/\bToCell="([^"]+)"/) || [])[1];
-    if (targetId && targetCell && targetCell.startsWith("Connections.X")) {
-      const pointNo = Number(targetCell.slice("Connections.X".length));
-      const targetShape = [...pageXml.matchAll(/<Shape\b([^>]*)>([\s\S]*?)<\/Shape>/g)]
-        .find(shape => (shape[1].match(/\bID="(\d+)"/) || [])[1] === targetId);
-      if (!targetShape || !new RegExp(`<Section N="Connection"[^>]*>[\\s\\S]*?<Row IX="${pointNo - 1}"`).test(targetShape[2])) {
-        throw new Error(`Invalid VSDX page: connector target ${targetId}/${targetCell} does not resolve to a port connection point.`);
-      }
-    }
-  }
-  for (const match of pageXml.matchAll(/<Shape\b([^>]*)NameU="Dynamic connector"([^>]*)>([\s\S]*?)<\/Shape>/g)) {
-    const attrs = `${match[1]} ${match[2]}`;
-    if (!/\bOneD="1"/.test(attrs) || !/<Cell N="BeginX"/.test(match[3]) || !/<Cell N="EndX"/.test(match[3])) {
-      throw new Error("Invalid VSDX page: a connector is missing 1D endpoint coordinates.");
-    }
-  }
-  if (shapeTags.some(match => /\bNameU="[^"]+ symbol"/.test(match[1]))
-      && !/<Shape\b[^>]*NameU="[^"]+ symbol"[^>]*>[\s\S]*?<Section N="Geometry"/.test(pageXml)) {
-    throw new Error("Invalid VSDX page: component symbols are missing vector geometry.");
-  }
-
-  return true;
+if (typeof module !== "undefined" && module.exports) {
+  module.exports = {
+    buildShapeXml,
+    resolveExportPort,
+    blockLabelY,
+    buildTextShapeXml
+  };
 }
+
+
+/* --- File: js/io/vsdx/exporter.js --- */
+"use strict";
+
+/* =====================================================================
+ * RF Block Diagram Editor - Native Microsoft Visio (.vsdx) Exporter
+ * ===================================================================== */
+
+if (typeof require !== "undefined") {
+  Object.assign(globalThis, require("./templates.js"), require("./geometry-converter.js"), require("./shape-builder.js"));
+}
+
+var XML_HDR = (typeof VSDX_XML_HDR !== "undefined") ? VSDX_XML_HDR : '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n';
 
 function buildVsdxBlob(blocksList, connsList, Pdict, NFdict, PSecondaryDict, componentRegistryOverride, settingsOverride) {
   const blks = blocksList || [];
@@ -4792,84 +5124,19 @@ function buildVsdxBlob(blocksList, connsList, Pdict, NFdict, PSecondaryDict, com
   const toInY = py => Math.round((pageHin - ((py - miny + marginPx) / dpi)) * 10000) / 10000;
   const toInLen = len => Math.round((len / dpi) * 10000) / 10000;
 
-  /* XML Headers */
-  const XML_HDR = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n';
+  const contentTypesXml = getVsdxContentTypesXml();
+  const appXml = getVsdxAppXml();
+  const coreXml = getVsdxCoreXml();
+  const rootRelsXml = getVsdxRootRelsXml();
+  const docXml = getVsdxDocXml();
+  const docRelsXml = getVsdxDocRelsXml();
+  const pagesXml = getVsdxPagesXml();
+  const pagesRelsXml = getVsdxPagesRelsXml();
+  const windowsXml = getVsdxWindowsXml();
 
-  /* Content Types */
-  const contentTypesXml = XML_HDR
-    + `<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">\n`
-    + `  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>\n`
-    + `  <Default Extension="xml" ContentType="application/xml"/>\n`
-    + `  <Override PartName="/docProps/app.xml" ContentType="application/vnd.openxmlformats-officedocument.extended-properties+xml"/>\n`
-    + `  <Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/>\n`
-    + `  <Override PartName="/visio/document.xml" ContentType="application/vnd.ms-visio.drawing.main+xml"/>\n`
-    + `  <Override PartName="/visio/pages/pages.xml" ContentType="application/vnd.ms-visio.pages+xml"/>\n`
-    + `  <Override PartName="/visio/pages/page1.xml" ContentType="application/vnd.ms-visio.page+xml"/>\n`
-    + `  <Override PartName="/visio/masters/masters.xml" ContentType="application/vnd.ms-visio.masters+xml"/>\n`
-    + `  <Override PartName="/visio/windows.xml" ContentType="application/vnd.ms-visio.windows+xml"/>\n`
-    + `</Types>`;
-
-  const appXml = XML_HDR + `<Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties" xmlns:vt="http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes"><Application>RF Chain</Application></Properties>`;
-  const coreXml = XML_HDR + `<cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:dcmitype="http://purl.org/dc/dcmitype/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><dc:title>RF Chain Block Diagram</dc:title><dc:creator>RF Chain Editor</dc:creator><cp:lastModifiedBy>RF Chain Editor</cp:lastModifiedBy></cp:coreProperties>`;
-
-  /* Root Relationships */
-  const rootRelsXml = XML_HDR
-    + `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">\n`
-    + `  <Relationship Id="rId1" Type="http://schemas.microsoft.com/visio/2010/relationships/document" Target="visio/document.xml"/>\n`
-    + `  <Relationship Id="rId2" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/>\n`
-    + `  <Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties" Target="docProps/app.xml"/>\n`
-    + `</Relationships>`;
-
-  /* Visio Document */
-  const docXml = XML_HDR
-    + `<VisioDocument xmlns="http://schemas.microsoft.com/office/visio/2012/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">\n`
-    + `  <DocumentProperties>\n`
-    + `    <Title>RF Chain Block Diagram</Title>\n`
-    + `    <Creator>RF Chain Editor</Creator>\n`
-    + `  </DocumentProperties>\n`
-    + `  <FaceNames>\n`
-    + `    <FaceName ID="1" Name="Calibri" Flags="0"/>\n`
-    + `  </FaceNames>\n`
-    + `  <StyleSheets>\n`
-    + `    <StyleSheet ID="0" Name="Normal">\n`
-    + `      <Cell N="Font" V="1"/>\n`
-    + `    </StyleSheet>\n`
-    + `  </StyleSheets>\n`
-    + `</VisioDocument>`;
-
-  /* Document Relationships */
-  const docRelsXml = XML_HDR
-    + `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">\n`
-    + `  <Relationship Id="rId1" Type="http://schemas.microsoft.com/visio/2010/relationships/pages" Target="pages/pages.xml"/>\n`
-    + `  <Relationship Id="rId2" Type="http://schemas.microsoft.com/visio/2010/relationships/masters" Target="masters/masters.xml"/>\n`
-    + `  <Relationship Id="rId3" Type="http://schemas.microsoft.com/visio/2010/relationships/windows" Target="windows.xml"/>\n`
-    + `</Relationships>`;
-
-  /* Pages Manifest */
-  const pagesXml = XML_HDR
-    + `<Pages xmlns="http://schemas.microsoft.com/office/visio/2012/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">\n`
-    + `  <Page ID="0" Name="Page-1" NameU="Page-1">\n`
-    + `    <Rel r:id="rId1"/>\n`
-    + `  </Page>\n`
-    + `</Pages>`;
-
-  /* Pages Relationships */
-  const pagesRelsXml = XML_HDR
-    + `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">\n`
-    + `  <Relationship Id="rId1" Type="http://schemas.microsoft.com/visio/2010/relationships/page" Target="page1.xml"/>\n`
-    + `</Relationships>`;
-
-  /* Masters Manifest */
   let mastersXml = XML_HDR
     + `<Masters xmlns="http://schemas.microsoft.com/office/visio/2012/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">`;
 
-  /* Windows View */
-  const windowsXml = XML_HDR
-    + `<Windows xmlns="http://schemas.microsoft.com/office/visio/2012/main">\n`
-    + `  <Window ID="0" WindowType="Drawing" WindowWidth="1600" WindowHeight="1000" ViewScale="1" Page="1"/>\n`
-    + `</Windows>`;
-
-  /* Build Page 1 Diagram Shapes & Connectors */
   let shapesXml = "";
   let connectsXml = "";
   let nextShapeId = 1;
@@ -5223,10 +5490,13 @@ if (typeof module !== "undefined" && module.exports) {
 }
 
 
-/* --- File: js/io/file-io.js --- */
+/* --- File: js/io/document-io.js --- */
 "use strict";
 
-/* File I/O & Image Export Engine */
+/* =====================================================================
+ * RF Block Diagram Editor - Document I/O Engine (JSON, Native File System)
+ * ===================================================================== */
+
 let fileHandle = null, fileName = "untitled.rfbd", dirty = false;
 
 const fsOK = (() => {
@@ -5285,32 +5555,25 @@ function downloadFallback(text, name) {
   setTimeout(() => URL.revokeObjectURL(url), 2000);
 }
 
-async function saveDoc(asNew) {
+async function saveDoc(forceSaveAs) {
+  commitSheet();
   const text = docText();
-  if (fsOK) {
-    try {
-      if (!asNew && fileHandle && await ensureWrite(fileHandle)) {
-        await writeTo(fileHandle, text);
-        markClean();
-        hint(`Saved to ${fileName}`);
-        return;
-      }
-      const h = await window.showSaveFilePicker({ ...PICK, suggestedName: (asNew ? fileName : PICK.suggestedName) });
-      await writeTo(h, text);
-      setFile(h.name, h);
-      hint(`Saved to ${fileName}`);
-      return;
-    } catch (err) {
-      if (err && err.name === "AbortError") { hint("Save cancelled."); return; }
+  if (forceSaveAs || !fileHandle || !window.showSaveFilePicker) {
+    if (window.showSaveFilePicker) {
+      window.showSaveFilePicker(PICK).then(async h => {
+        await writeTo(h, text);
+        setFile(h.name, h);
+        hint("Saved " + h.name);
+      }).catch(err => { if (err.name !== "AbortError") downloadFallback(text, fileName); });
+    } else {
+      downloadFallback(text, fileName);
     }
+  } else {
+    ensureWrite(fileHandle).then(ok => {
+      if (!ok) return;
+      writeTo(fileHandle, text).then(() => { markClean(); hint("Saved " + fileName); });
+    }).catch(() => downloadFallback(text, fileName));
   }
-  const nm = asNew ? (prompt("Save as file name:", fileName) || "").trim() : fileName;
-  if (asNew && !nm) { hint("Save cancelled."); return; }
-  const out = /\.(rfbd|json)$/i.test(nm || fileName) ? (nm || fileName) : (nm || fileName) + ".rfbd";
-  downloadFallback(text, out);
-  fileName = out;
-  markClean();
-  hint(fsOK ? `Downloaded ${out}` : `Downloaded ${out} (this browser can't pick a folder; Chrome or Edge can)`);
 }
 
 function loadDoc(text, name, handle) {
@@ -5408,28 +5671,57 @@ async function openDoc() {
   }
 }
 
-function saveDoc(forceSaveAs) {
+function exportVsdx() {
   commitSheet();
-  const text = docText();
-  if (forceSaveAs || !fileHandle || !window.showSaveFilePicker) {
-    if (window.showSaveFilePicker) {
-      window.showSaveFilePicker(PICK).then(async h => {
-        await writeTo(h, text);
-        setFile(h.name, h);
-        hint("Saved " + h.name);
-      }).catch(err => { if (err.name !== "AbortError") downloadFallback(text, fileName); });
-    } else {
-      downloadFallback(text, fileName);
-    }
-  } else {
-    ensureWrite(fileHandle).then(ok => {
-      if (!ok) return;
-      writeTo(fileHandle, text).then(() => { markClean(); hint("Saved " + fileName); });
-    }).catch(() => downloadFallback(text, fileName));
+  if (!blocks.length) {
+    hint("Can't export Visio VSDX — the diagram is empty.");
+    return;
+  }
+  if (typeof buildVsdxBlob !== "function") {
+    alert("VSDX Exporter module is not loaded.");
+    return;
+  }
+  try {
+    const P = computePowers("primary");
+    const PSecondary = computePowers("secondary");
+    const needNoise = !!(settings.showNF || settings.showNoiseFloor);
+    const NFm = needNoise ? computeNoise(P) : null;
+    const blob = buildVsdxBlob(blocks, conns, P, NFm, PSecondary, null, settings);
+    const base = (fileName || "rf-chain").replace(/\.(rfbd|json|vsdx|png|svg)$/i, "");
+    const name = `${base}.vsdx`;
+    const url = URL.createObjectURL(blob), a = document.createElement("a");
+    a.href = url; a.download = name; a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+    hint(`Exported ${name}`);
+  } catch (err) {
+    console.error(err);
+    alert("Error generating Visio VSDX file: " + (err.message || err));
   }
 }
 
-/* SVG / PNG Export Generator */
+if (typeof module !== "undefined" && module.exports) {
+  module.exports = {
+    docText,
+    setFile,
+    markDirty,
+    markClean,
+    paintFileStat,
+    downloadFallback,
+    saveDoc,
+    loadDoc,
+    openDoc,
+    exportVsdx
+  };
+}
+
+
+/* --- File: js/io/svg-exporter.js --- */
+"use strict";
+
+/* =====================================================================
+ * RF Block Diagram Editor - SVG & Vector Drawing Exporter
+ * ===================================================================== */
+
 function buildExportSVG(scale = 1) {
   if (!blocks.length) return null;
 
@@ -5556,7 +5848,6 @@ function buildExportSVG(scale = 1) {
       }
       const nm = c.isInterconnect ? "" : (b.params.label || c.name);
       const v = c.val ? c.val(b.params) : "";
-      /* Universal label layout with independent floating offsets: val above at y=-13, name below at y=f.h+18, info at y=f.h+33 */
       const lblY = (typeof blockLabelY === "function") ? blockLabelY(b, f, settings) : { valY: -13, nameY: f.h + 18, infoY: f.h + 33 };
       const valOffX = Number(b.params._valOffX != null ? b.params._valOffX : b.params._lblOffX) || 0;
       const valOffY = Number(b.params._valOffY != null ? b.params._valOffY : b.params._lblOffY) || 0;
@@ -5577,34 +5868,9 @@ function buildExportSVG(scale = 1) {
     + `<rect x="${minx}" y="${miny}" width="${W}" height="${H}" fill="#ffffff"/>${body}</svg>`;
 }
 
-function exportVsdx() {
-  commitSheet();
-  if (!blocks.length) {
-    hint("Can't export Visio VSDX — the diagram is empty.");
-    return;
-  }
-  if (typeof buildVsdxBlob !== "function") {
-    alert("VSDX Exporter module is not loaded.");
-    return;
-  }
-  try {
-    const P = computePowers("primary");
-    const PSecondary = computePowers("secondary");
-    const needNoise = !!(settings.showNF || settings.showNoiseFloor);
-    const NFm = needNoise ? computeNoise(P) : null;
-    const blob = buildVsdxBlob(blocks, conns, P, NFm, PSecondary, null, settings);
-    const base = (fileName || "rf-chain").replace(/\.(rfbd|json|vsdx|png|svg)$/i, "");
-    const name = `${base}.vsdx`;
-    const url = URL.createObjectURL(blob), a = document.createElement("a");
-    a.href = url; a.download = name; a.click();
-    setTimeout(() => URL.revokeObjectURL(url), 2000);
-    hint(`Exported ${name}`);
-  } catch (err) {
-    console.error(err);
-    alert("Error generating Visio VSDX file: " + (err.message || err));
-  }
+if (typeof module !== "undefined" && module.exports) {
+  module.exports = { buildExportSVG };
 }
-
 
 
 /* --- File: js/ui/canvas-renderer.js --- */
@@ -6462,19 +6728,13 @@ function exportBudgetCsv() {
 
 
 
-/* --- File: js/ui/sparams-renderer.js --- */
+/* --- File: js/ui/sparams/graph-chart.js --- */
 "use strict";
 
-/* ====================================================================
-   RF Analyser Settings & Multi-Port S-Parameter Invocation Grid Panel
-   ==================================================================== */
+/* =====================================================================
+ * RF Block Diagram Editor - S-Parameters SVG Graph Chart & Exporters
+ * ===================================================================== */
 
-let sparamsTabs = []; // Array of { id, name, band, res }
-let activeTabIdx = 0;
-let linearMarkers = [{ id: "M1", f: 0 }];
-let invokedTraces = new Set(["S21", "S11", "S22"]); // Currently invoked S-parameter trace keys
-
-// Vibrant distinct colors for multi-port traces
 // Vibrant distinct colors for multi-port traces (dark theme optimized)
 const TRACE_COLORS = {
   S21: "#38bdf8", S11: "#f43f5e", S22: "#10b981", S31: "#a855f7",
@@ -6487,6 +6747,243 @@ const FALLBACK_COLORS = ["#38bdf8", "#f43f5e", "#10b981", "#a855f7", "#14b8a6", 
 function getTraceColor(key, idx = 0) {
   return TRACE_COLORS[key] || FALLBACK_COLORS[idx % FALLBACK_COLORS.length];
 }
+
+/* Render SVG Plotter for All Invoked Traces with Dynamic Y-Axis Auto-Scaling */
+function renderSvgPlot(res) {
+  const container = $("spChartContainer");
+  if (!container || !res || !res.freqs || !res.matrix) return;
+
+  const showCompare = $("chkCompare") && $("chkCompare").checked;
+  const freqs = res.freqs;
+  const N = freqs.length;
+  const fMin = freqs[0], fMax = freqs[N - 1];
+
+  const useGhz = fMax >= 1e8;
+  const fDiv = useGhz ? 1e9 : 1e6;
+  const fUnit = useGhz ? "GHz" : "MHz";
+
+  const W = container.clientWidth || 900;
+  const H = 360;
+  const margin = { top: 20, right: 30, bottom: 35, left: 55 };
+  const pw = W - margin.left - margin.right;
+  const ph = H - margin.top - margin.bottom;
+
+  // Compute dynamic Y-axis auto-scaling from active data (> -110 dB)
+  let dMin = Infinity, dMax = -Infinity;
+  invokedTraces.forEach(sKey => {
+    const arr = res.matrix[sKey];
+    if (arr) {
+      for (let k = 0; k < N; k++) {
+        const v = arr[k];
+        if (isFinite(v) && v > -110) {
+          if (v < dMin) dMin = v;
+          if (v > dMax) dMax = v;
+        }
+      }
+    }
+  });
+
+  let yMin, yMax;
+  if (!isFinite(dMin) || !isFinite(dMax)) {
+    yMin = -60; yMax = 30;
+  } else {
+    const span = Math.max(1, dMax - dMin);
+    yMin = Math.floor((dMin - Math.max(1, span * 0.2)) / 5) * 5;
+    yMax = Math.ceil((dMax + Math.max(1, span * 0.2)) / 5) * 5;
+    if (yMin >= yMax) { yMin = -60; yMax = 30; }
+  }
+
+  const getX = f => margin.left + ((f - fMin) / (fMax - fMin || 1)) * pw;
+  const getY = val => margin.top + (1 - (val - yMin) / (yMax - yMin || 1)) * ph;
+
+  let svgHtml = `<svg id="spSvgPlot" width="100%" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="user-select:none; font-family:var(--sans); background:var(--canvas); border-radius:6px">`;
+
+  // Grid Lines & Axis Labels
+  svgHtml += `<rect x="${margin.left}" y="${margin.top}" width="${pw}" height="${ph}" fill="var(--canvas)" stroke="var(--line)"/>`;
+
+  const yStep = Math.max(2, Math.ceil((yMax - yMin) / 6 / 2) * 2);
+  for (let db = yMin; db <= yMax; db += yStep) {
+    const y = getY(db);
+    if (y >= margin.top && y <= H - margin.bottom) {
+      svgHtml += `<line x1="${margin.left}" y1="${y}" x2="${W - margin.right}" y2="${y}" stroke="${db===0?'var(--ink-dim)':'var(--grid-maj)'}" stroke-width="${db===0?1.5:1}"/>`;
+      svgHtml += `<text x="${margin.left - 8}" y="${y + 4}" font-size="10" font-family="var(--mono)" fill="var(--ink-dim)" text-anchor="end">${db} dB</text>`;
+    }
+  }
+
+  for (let i = 0; i <= 5; i++) {
+    const fVal = fMin + (i / 5) * (fMax - fMin);
+    const x = getX(fVal);
+    svgHtml += `<line x1="${x}" y1="${margin.top}" x2="${x}" y2="${H - margin.bottom}" stroke="var(--grid-maj)" stroke-width="1"/>`;
+    svgHtml += `<text x="${x}" y="${H - margin.bottom + 18}" font-size="10" font-family="var(--mono)" fill="var(--ink-dim)" text-anchor="middle">${(fVal / fDiv).toFixed(2)} ${fUnit}</text>`;
+  }
+
+  const makePath = arr => {
+    let d = "";
+    for (let k = 0; k < N; k++) {
+      const x = getX(freqs[k]);
+      const y = Math.max(margin.top, Math.min(H - margin.bottom, getY(arr[k])));
+      d += (k === 0 ? "M" : "L") + `${x.toFixed(1)} ${y.toFixed(1)}`;
+    }
+    return d;
+  };
+
+  // Comparative Overlays for Benchmark Saved Tabs
+  if (showCompare && sparamsTabs.length > 1) {
+    sparamsTabs.forEach((tb, idx) => {
+      if (idx === activeTabIdx || !tb.res || !tb.res.matrix) return;
+      invokedTraces.forEach(sKey => {
+        if (tb.res.matrix[sKey]) {
+          svgHtml += `<path d="${makePath(tb.res.matrix[sKey])}" fill="none" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="4 3" opacity="0.75"/>`;
+        }
+      });
+    });
+  }
+
+  // Active Invoked Traces
+  let traceIdx = 0;
+  invokedTraces.forEach(sKey => {
+    if (res.matrix[sKey]) {
+      const col = getTraceColor(sKey, traceIdx++);
+      svgHtml += `<path d="${makePath(res.matrix[sKey])}" fill="none" stroke="${col}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>`;
+    }
+  });
+
+  // Frequency Markers
+  if (linearMarkers.length) {
+    if (linearMarkers[0].f === 0) linearMarkers[0].f = (fMin + fMax) / 2;
+
+    linearMarkers.forEach(m => {
+      const mx = getX(m.f);
+      svgHtml += `<line x1="${mx}" y1="${margin.top}" x2="${mx}" y2="${H - margin.bottom}" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="4 3"/>`;
+      svgHtml += `<polygon points="${mx-6},${margin.top} ${mx+6},${margin.top} ${mx},${margin.top+10}" fill="#f59e0b"/>`;
+      svgHtml += `<text x="${mx}" y="${margin.top - 4}" font-size="11" font-family="var(--mono)" font-weight="bold" fill="#f59e0b" text-anchor="middle">${m.id}</text>`;
+    });
+  }
+
+  svgHtml += `</svg>`;
+  container.innerHTML = svgHtml;
+}
+
+/* Export Multi-Port Graph Data to CSV */
+function exportSParamsCsv(res) {
+  if (!res || !res.freqs || !res.matrix) return;
+  const freqs = res.freqs;
+  const invKeys = Array.from(invokedTraces);
+  let csv = "Frequency_Hz," + invKeys.join(",") + "\n";
+
+  for (let k = 0; k < freqs.length; k++) {
+    const row = [freqs[k].toFixed(0)];
+    invKeys.forEach(sKey => {
+      const arr = res.matrix[sKey];
+      row.push(arr ? arr[k].toFixed(4) : "-120.0000");
+    });
+    csv += row.join(",") + "\n";
+  }
+
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "rf_multi_port_linear_analysis.csv";
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+/* Export SVG Vector Graph File */
+function exportSParamsSvg() {
+  const container = $("spChartContainer");
+  if (!container) return;
+  const svgEl = container.querySelector("svg");
+  if (!svgEl) return;
+  const svgText = new XMLSerializer().serializeToString(svgEl);
+  const blob = new Blob([svgText], { type: "image/svg+xml;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "multi_port_s_parameters.svg";
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+/* Export PNG Raster Graph Image File */
+function exportSParamsPng() {
+  const container = $("spChartContainer");
+  if (!container) return;
+  const svgEl = container.querySelector("svg");
+  if (!svgEl) return;
+  const svgText = new XMLSerializer().serializeToString(svgEl);
+  const img = new Image();
+  const url = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svgText);
+  img.onload = () => {
+    const cv = document.createElement("canvas");
+    cv.width = 1800; cv.height = 720;
+    const g = cv.getContext("2d");
+    g.fillStyle = "#ffffff";
+    g.fillRect(0, 0, cv.width, cv.height);
+    g.drawImage(img, 0, 0, cv.width, cv.height);
+    cv.toBlob(blob => {
+      const u = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = u;
+      a.download = "multi_port_s_parameters.png";
+      a.click();
+      URL.revokeObjectURL(u);
+    });
+  };
+  img.src = url;
+}
+
+/* Export System Touchstone (.s2p / .sNp) File */
+function exportTouchstoneS2p(res) {
+  if (!res || !res.freqs || !res.matrix) return;
+  const freqs = res.freqs;
+  const P = (res.portsList && res.portsList.length) || 2;
+  let sNp = `! RF Chain System Multi-Port S-Parameters (${P}-Port Export)\n`;
+  sNp += `! Date: ${new Date().toISOString()}\n`;
+  sNp += `# Hz S DB R 50\n`;
+
+  for (let k = 0; k < freqs.length; k++) {
+    let line = `${freqs[k].toFixed(0)}`;
+    for (let i = 1; i <= P; i++) {
+      for (let j = 1; j <= P; j++) {
+        const arr = res.matrix[`S${i}${j}`];
+        const db = arr ? arr[k].toFixed(3) : "-120.000";
+        line += ` ${db} 0.00`;
+      }
+    }
+    sNp += line + "\n";
+  }
+
+  const ext = P === 2 ? ".s2p" : `.s${P}p`;
+  const blob = new Blob([sNp], { type: "text/plain;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `system_linear_analysis${ext}`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+if (typeof module !== "undefined" && module.exports) {
+  module.exports = {
+    TRACE_COLORS,
+    FALLBACK_COLORS,
+    getTraceColor,
+    renderSvgPlot,
+    exportSParamsCsv,
+    exportSParamsSvg,
+    exportSParamsPng,
+    exportTouchstoneS2p
+  };
+}
+
+
+/* --- File: js/ui/sparams/trace-grid.js --- */
+"use strict";
+
+/* =====================================================================
+ * RF Block Diagram Editor - S-Parameters Trace Grid & Analyser Settings
+ * ===================================================================== */
 
 /* --- Analyser Settings Drawer Toggle & Renderer --- */
 function toggleAnalyserDrawer() {
@@ -6592,6 +7089,112 @@ function renderAnalyserSettings() {
   }
 }
 
+/* Render Table for Markers and Invoked S-Parameters */
+function renderMarkerTable(res) {
+  const box = $("spMarkerTable");
+  if (!box || !res || !res.freqs || !res.matrix) return;
+
+  const freqs = res.freqs;
+  const fMin = freqs[0], fMax = freqs[freqs.length - 1];
+  const useGhz = fMax >= 1e8;
+  const fDiv = useGhz ? 1e9 : 1e6;
+  const fUnit = useGhz ? "GHz" : "MHz";
+
+  const invKeys = Array.from(invokedTraces);
+
+  const getValAt = (arr, targetF) => {
+    if (!arr) return "-";
+    let idx = 0;
+    while (idx < freqs.length - 1 && freqs[idx + 1] < targetF) idx++;
+    const v = arr[idx];
+    return isFinite(v) ? v.toFixed(2) + " dB" : "-";
+  };
+
+  let h = `<table style="width:100%; border-collapse:collapse; font-size:12px; text-align:left; color:var(--ink)">
+    <thead>
+      <tr style="border-bottom:1px solid var(--line); color:var(--ink-dim)">
+        <th style="padding:6px">Marker</th>
+        <th style="padding:6px">Frequency (${fUnit})</th>`;
+
+  invKeys.forEach(sKey => {
+    const col = getTraceColor(sKey);
+    h += `<th style="padding:6px; color:${col}">${sKey}</th>`;
+  });
+
+  h += `<th style="padding:6px">Action</th>
+      </tr>
+    </thead>
+    <tbody>`;
+
+  const m1F = linearMarkers.length ? linearMarkers[0].f : fMin;
+
+  linearMarkers.forEach((m, idx) => {
+    const deltaF = ((m.f - m1F) / fDiv).toFixed(3);
+
+    h += `<tr style="border-bottom:1px solid var(--line)">
+      <td style="padding:6px; font-weight:bold">${m.id}</td>
+      <td style="padding:6px">
+        <input type="number" step="0.01" value="${(m.f / fDiv).toFixed(3)}" data-midx="${idx}" class="sp-mkr-input" style="width:75px; padding:3px 6px; background:var(--chrome-2); color:var(--ink); border:1px solid var(--line); border-radius:4px"/>
+        ${idx > 0 ? `<span style="font-size:10px; color:var(--ink-dim); margin-left:4px">(Δ ${deltaF > 0 ? '+'+deltaF : deltaF})</span>` : ""}
+      </td>`;
+
+    invKeys.forEach(sKey => {
+      const v = getValAt(res.matrix[sKey], m.f);
+      const col = getTraceColor(sKey);
+      h += `<td style="padding:6px; color:${col}; font-weight:600">${v}</td>`;
+    });
+
+    h += `<td style="padding:6px">
+        ${idx > 0 ? `<button class="btn btn-sm btn-del sp-del-mkr" data-midx="${idx}">✕</button>` : `<span style="color:#64748b">Ref</span>`}
+      </td>
+    </tr>`;
+  });
+
+  h += `</tbody></table>`;
+  box.innerHTML = h;
+
+  box.querySelectorAll(".sp-mkr-input").forEach(inp => {
+    inp.onchange = e => {
+      const idx = parseInt(e.target.getAttribute("data-midx"));
+      const newF = parseFloat(e.target.value) * fDiv;
+      if (isFinite(newF) && newF >= fMin && newF <= fMax) {
+        linearMarkers[idx].f = newF;
+        renderSvgPlot(res);
+        renderMarkerTable(res);
+      }
+    };
+  });
+
+  box.querySelectorAll(".sp-del-mkr").forEach(btn => {
+    btn.onclick = e => {
+      const idx = parseInt(e.target.getAttribute("data-midx"));
+      linearMarkers.splice(idx, 1);
+      renderSvgPlot(res);
+      renderMarkerTable(res);
+    };
+  });
+}
+
+if (typeof module !== "undefined" && module.exports) {
+  module.exports = {
+    toggleAnalyserDrawer,
+    renderAnalyserSettings,
+    renderMarkerTable
+  };
+}
+
+
+/* --- File: js/ui/sparams/modal-controller.js --- */
+"use strict";
+
+/* =====================================================================
+ * RF Block Diagram Editor - S-Parameters Modal Controller & Tab Manager
+ * ===================================================================== */
+
+let sparamsTabs = []; // Array of { id, name, band, res }
+let activeTabIdx = 0;
+let linearMarkers = [{ id: "M1", f: 0 }];
+let invokedTraces = new Set(["S21", "S11", "S22"]); // Currently invoked S-parameter trace keys
 
 /* --- Full-Stage Multi-Port S-Params Panel & Tab Management --- */
 function toggleSParamsDrawer() {
@@ -6619,14 +7222,16 @@ async function fetchBackendSParams(band) {
       blocks: typeof blocks !== "undefined" ? blocks : [],
       conns: typeof conns !== "undefined" ? conns : []
     };
+    if (typeof EngineClient !== "undefined") {
+      return await EngineClient.solveSParams(payload);
+    }
     const res = await fetch("/api/v1/analyze/sparams", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload)
     });
     if (res.ok) {
-      const data = await res.json();
-      return data;
+      return await res.json();
     }
   } catch (err) {
     // Backend offline or fallback to JS solver
@@ -6726,10 +7331,8 @@ function renderLinearAnalysis() {
   }
 
   if (!res.error && portsList.length >= 2) {
-    // --- Interactive Transmission Trace Selector ---
     const P = portsList.length;
 
-    // Build list of valid transmission S_ij (i != j) combinations
     const availableTraces = [];
     for (let i = 1; i <= P; i++) {
       for (let j = 1; j <= P; j++) {
@@ -6745,11 +7348,9 @@ function renderLinearAnalysis() {
       }
     }
 
-    // Clean out old S_ii return loss keys if present
     invokedTraces.forEach(k => {
       if (/^S(\d+)\1$/.test(k)) invokedTraces.delete(k);
     });
-    // Auto-invoke traces with active data (> -110 dB) if current selection is empty or isolated
     let hasValidActive = false;
     invokedTraces.forEach(sk => {
       if (res.matrix[sk] && res.matrix[sk].some(v => v > -110)) hasValidActive = true;
@@ -6963,306 +7564,13 @@ function renderLinearAnalysis() {
   }
 }
 
-/* Render SVG Plotter for All Invoked Traces with Dynamic Y-Axis Auto-Scaling */
-function renderSvgPlot(res) {
-  const container = $("spChartContainer");
-  if (!container || !res || !res.freqs || !res.matrix) return;
-
-  const showCompare = $("chkCompare") && $("chkCompare").checked;
-  const freqs = res.freqs;
-  const N = freqs.length;
-  const fMin = freqs[0], fMax = freqs[N - 1];
-
-  const useGhz = fMax >= 1e8;
-  const fDiv = useGhz ? 1e9 : 1e6;
-  const fUnit = useGhz ? "GHz" : "MHz";
-
-  const W = container.clientWidth || 900;
-  const H = 360;
-  const margin = { top: 20, right: 30, bottom: 35, left: 55 };
-  const pw = W - margin.left - margin.right;
-  const ph = H - margin.top - margin.bottom;
-
-  // Compute dynamic Y-axis auto-scaling from active data (> -110 dB)
-  let dMin = Infinity, dMax = -Infinity;
-  invokedTraces.forEach(sKey => {
-    const arr = res.matrix[sKey];
-    if (arr) {
-      for (let k = 0; k < N; k++) {
-        const v = arr[k];
-        if (isFinite(v) && v > -110) {
-          if (v < dMin) dMin = v;
-          if (v > dMax) dMax = v;
-        }
-      }
-    }
-  });
-
-  let yMin, yMax;
-  if (!isFinite(dMin) || !isFinite(dMax)) {
-    yMin = -60; yMax = 30;
-  } else {
-    const span = Math.max(1, dMax - dMin);
-    yMin = Math.floor((dMin - Math.max(1, span * 0.2)) / 5) * 5;
-    yMax = Math.ceil((dMax + Math.max(1, span * 0.2)) / 5) * 5;
-    if (yMin >= yMax) { yMin = -60; yMax = 30; }
-  }
-
-  const getX = f => margin.left + ((f - fMin) / (fMax - fMin || 1)) * pw;
-  const getY = val => margin.top + (1 - (val - yMin) / (yMax - yMin || 1)) * ph;
-
-  let svgHtml = `<svg id="spSvgPlot" width="100%" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="user-select:none; font-family:var(--sans); background:var(--canvas); border-radius:6px">`;
-
-  // Grid Lines & Axis Labels
-  svgHtml += `<rect x="${margin.left}" y="${margin.top}" width="${pw}" height="${ph}" fill="var(--canvas)" stroke="var(--line)"/>`;
-
-  const yStep = Math.max(2, Math.ceil((yMax - yMin) / 6 / 2) * 2);
-  for (let db = yMin; db <= yMax; db += yStep) {
-    const y = getY(db);
-    if (y >= margin.top && y <= H - margin.bottom) {
-      svgHtml += `<line x1="${margin.left}" y1="${y}" x2="${W - margin.right}" y2="${y}" stroke="${db===0?'var(--ink-dim)':'var(--grid-maj)'}" stroke-width="${db===0?1.5:1}"/>`;
-      svgHtml += `<text x="${margin.left - 8}" y="${y + 4}" font-size="10" font-family="var(--mono)" fill="var(--ink-dim)" text-anchor="end">${db} dB</text>`;
-    }
-  }
-
-  for (let i = 0; i <= 5; i++) {
-    const fVal = fMin + (i / 5) * (fMax - fMin);
-    const x = getX(fVal);
-    svgHtml += `<line x1="${x}" y1="${margin.top}" x2="${x}" y2="${H - margin.bottom}" stroke="var(--grid-maj)" stroke-width="1"/>`;
-    svgHtml += `<text x="${x}" y="${H - margin.bottom + 18}" font-size="10" font-family="var(--mono)" fill="var(--ink-dim)" text-anchor="middle">${(fVal / fDiv).toFixed(2)} ${fUnit}</text>`;
-  }
-
-  const makePath = arr => {
-    let d = "";
-    for (let k = 0; k < N; k++) {
-      const x = getX(freqs[k]);
-      const y = Math.max(margin.top, Math.min(H - margin.bottom, getY(arr[k])));
-      d += (k === 0 ? "M" : "L") + `${x.toFixed(1)} ${y.toFixed(1)}`;
-    }
-    return d;
+if (typeof module !== "undefined" && module.exports) {
+  module.exports = {
+    toggleSParamsDrawer,
+    fetchBackendSParams,
+    runNewSParamSweep,
+    renderLinearAnalysis
   };
-
-  // Comparative Overlays for Benchmark Saved Tabs
-  if (showCompare && sparamsTabs.length > 1) {
-    sparamsTabs.forEach((tb, idx) => {
-      if (idx === activeTabIdx || !tb.res || !tb.res.matrix) return;
-      invokedTraces.forEach(sKey => {
-        if (tb.res.matrix[sKey]) {
-          svgHtml += `<path d="${makePath(tb.res.matrix[sKey])}" fill="none" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="4 3" opacity="0.75"/>`;
-        }
-      });
-    });
-  }
-
-  // Active Invoked Traces
-  let traceIdx = 0;
-  invokedTraces.forEach(sKey => {
-    if (res.matrix[sKey]) {
-      const col = getTraceColor(sKey, traceIdx++);
-      svgHtml += `<path d="${makePath(res.matrix[sKey])}" fill="none" stroke="${col}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>`;
-    }
-  });
-
-  // Frequency Markers
-  if (linearMarkers.length) {
-    if (linearMarkers[0].f === 0) linearMarkers[0].f = (fMin + fMax) / 2;
-
-    linearMarkers.forEach(m => {
-      const mx = getX(m.f);
-      svgHtml += `<line x1="${mx}" y1="${margin.top}" x2="${mx}" y2="${H - margin.bottom}" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="4 3"/>`;
-      svgHtml += `<polygon points="${mx-6},${margin.top} ${mx+6},${margin.top} ${mx},${margin.top+10}" fill="#f59e0b"/>`;
-      svgHtml += `<text x="${mx}" y="${margin.top - 4}" font-size="11" font-family="var(--mono)" font-weight="bold" fill="#f59e0b" text-anchor="middle">${m.id}</text>`;
-    });
-  }
-
-  svgHtml += `</svg>`;
-  container.innerHTML = svgHtml;
-}
-
-/* Render Table for Markers and Invoked S-Parameters */
-function renderMarkerTable(res) {
-  const box = $("spMarkerTable");
-  if (!box || !res || !res.freqs || !res.matrix) return;
-
-  const freqs = res.freqs;
-  const fMin = freqs[0], fMax = freqs[freqs.length - 1];
-  const useGhz = fMax >= 1e8;
-  const fDiv = useGhz ? 1e9 : 1e6;
-  const fUnit = useGhz ? "GHz" : "MHz";
-
-  const invKeys = Array.from(invokedTraces);
-
-  const getValAt = (arr, targetF) => {
-    if (!arr) return "-";
-    let idx = 0;
-    while (idx < freqs.length - 1 && freqs[idx + 1] < targetF) idx++;
-    const v = arr[idx];
-    return isFinite(v) ? v.toFixed(2) + " dB" : "-";
-  };
-
-  let h = `<table style="width:100%; border-collapse:collapse; font-size:12px; text-align:left; color:var(--ink)">
-    <thead>
-      <tr style="border-bottom:1px solid var(--line); color:var(--ink-dim)">
-        <th style="padding:6px">Marker</th>
-        <th style="padding:6px">Frequency (${fUnit})</th>`;
-
-  invKeys.forEach(sKey => {
-    const col = getTraceColor(sKey);
-    h += `<th style="padding:6px; color:${col}">${sKey}</th>`;
-  });
-
-  h += `<th style="padding:6px">Action</th>
-      </tr>
-    </thead>
-    <tbody>`;
-
-  const m1F = linearMarkers.length ? linearMarkers[0].f : fMin;
-
-  linearMarkers.forEach((m, idx) => {
-    const deltaF = ((m.f - m1F) / fDiv).toFixed(3);
-
-    h += `<tr style="border-bottom:1px solid var(--line)">
-      <td style="padding:6px; font-weight:bold">${m.id}</td>
-      <td style="padding:6px">
-        <input type="number" step="0.01" value="${(m.f / fDiv).toFixed(3)}" data-midx="${idx}" class="sp-mkr-input" style="width:75px; padding:3px 6px; background:var(--chrome-2); color:var(--ink); border:1px solid var(--line); border-radius:4px"/>
-        ${idx > 0 ? `<span style="font-size:10px; color:var(--ink-dim); margin-left:4px">(Δ ${deltaF > 0 ? '+'+deltaF : deltaF})</span>` : ""}
-      </td>`;
-
-    invKeys.forEach(sKey => {
-      const v = getValAt(res.matrix[sKey], m.f);
-      const col = getTraceColor(sKey);
-      h += `<td style="padding:6px; color:${col}; font-weight:600">${v}</td>`;
-    });
-
-    h += `<td style="padding:6px">
-        ${idx > 0 ? `<button class="btn btn-sm btn-del sp-del-mkr" data-midx="${idx}">✕</button>` : `<span style="color:#64748b">Ref</span>`}
-      </td>
-    </tr>`;
-  });
-
-  h += `</tbody></table>`;
-  box.innerHTML = h;
-
-  box.querySelectorAll(".sp-mkr-input").forEach(inp => {
-    inp.onchange = e => {
-      const idx = parseInt(e.target.getAttribute("data-midx"));
-      const newF = parseFloat(e.target.value) * fDiv;
-      if (isFinite(newF) && newF >= fMin && newF <= fMax) {
-        linearMarkers[idx].f = newF;
-        renderSvgPlot(res);
-        renderMarkerTable(res);
-      }
-    };
-  });
-
-  box.querySelectorAll(".sp-del-mkr").forEach(btn => {
-    btn.onclick = e => {
-      const idx = parseInt(e.target.getAttribute("data-midx"));
-      linearMarkers.splice(idx, 1);
-      renderSvgPlot(res);
-      renderMarkerTable(res);
-    };
-  });
-}
-
-/* Export Multi-Port Graph Data to CSV */
-function exportSParamsCsv(res) {
-  if (!res || !res.freqs || !res.matrix) return;
-  const freqs = res.freqs;
-  const invKeys = Array.from(invokedTraces);
-  let csv = "Frequency_Hz," + invKeys.join(",") + "\n";
-
-  for (let k = 0; k < freqs.length; k++) {
-    const row = [freqs[k].toFixed(0)];
-    invKeys.forEach(sKey => {
-      const arr = res.matrix[sKey];
-      row.push(arr ? arr[k].toFixed(4) : "-120.0000");
-    });
-    csv += row.join(",") + "\n";
-  }
-
-  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "rf_multi_port_linear_analysis.csv";
-  a.click();
-  URL.revokeObjectURL(url);
-}
-
-/* Export SVG Vector Graph File */
-function exportSParamsSvg() {
-  const container = $("spChartContainer");
-  if (!container) return;
-  const svgEl = container.querySelector("svg");
-  if (!svgEl) return;
-  const svgText = new XMLSerializer().serializeToString(svgEl);
-  const blob = new Blob([svgText], { type: "image/svg+xml;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "multi_port_s_parameters.svg";
-  a.click();
-  URL.revokeObjectURL(url);
-}
-
-/* Export PNG Raster Graph Image File */
-function exportSParamsPng() {
-  const container = $("spChartContainer");
-  if (!container) return;
-  const svgEl = container.querySelector("svg");
-  if (!svgEl) return;
-  const svgText = new XMLSerializer().serializeToString(svgEl);
-  const img = new Image();
-  const url = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svgText);
-  img.onload = () => {
-    const cv = document.createElement("canvas");
-    cv.width = 1800; cv.height = 720;
-    const g = cv.getContext("2d");
-    g.fillStyle = "#ffffff";
-    g.fillRect(0, 0, cv.width, cv.height);
-    g.drawImage(img, 0, 0, cv.width, cv.height);
-    cv.toBlob(blob => {
-      const u = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = u;
-      a.download = "multi_port_s_parameters.png";
-      a.click();
-      URL.revokeObjectURL(u);
-    });
-  };
-  img.src = url;
-}
-
-/* Export System Touchstone (.s2p / .sNp) File */
-function exportTouchstoneS2p(res) {
-  if (!res || !res.freqs || !res.matrix) return;
-  const freqs = res.freqs;
-  const P = (res.portsList && res.portsList.length) || 2;
-  let sNp = `! RF Chain System Multi-Port S-Parameters (${P}-Port Export)\n`;
-  sNp += `! Date: ${new Date().toISOString()}\n`;
-  sNp += `# Hz S DB R 50\n`;
-
-  for (let k = 0; k < freqs.length; k++) {
-    let line = `${freqs[k].toFixed(0)}`;
-    for (let i = 1; i <= P; i++) {
-      for (let j = 1; j <= P; j++) {
-        const arr = res.matrix[`S${i}${j}`];
-        const db = arr ? arr[k].toFixed(3) : "-120.000";
-        line += ` ${db} 0.00`;
-      }
-    }
-    sNp += line + "\n";
-  }
-
-  const ext = P === 2 ? ".s2p" : `.s${P}p`;
-  const blob = new Blob([sNp], { type: "text/plain;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `system_linear_analysis${ext}`;
-  a.click();
-  URL.revokeObjectURL(url);
 }
 
 
