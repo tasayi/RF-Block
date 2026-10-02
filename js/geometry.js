@@ -39,11 +39,17 @@ function getPorts(b) {
   const c = COMP[b.type];
   const raw = c.dynPorts ? c.dynPorts(b.params) : (c.ports || []);
   const rot = (b.rot || 0) % 360, flip = !!b.flip;
-  if (!rot && !flip) return raw.map(p => ({ id: p.id, kind: p.kind, side: p.side, dx: p.dx, dy: p.dy }));
   const D = dims(c, b.params), Wn = D.w, Hn = D.h, fw = (rot === 90 || rot === 270) ? Hn : Wn, fh = (rot === 90 || rot === 270) ? Wn : Hn;
+  const symbolScale = (typeof DESIGN_TOKENS !== "undefined" && DESIGN_TOKENS.symbolScale) || 1;
   return raw.map(p => {
-    const m = mapPt(p.dx, p.dy, rot, flip, Wn, Hn, fw, fh);
-    return { id: p.id, kind: p.kind, side: mapSide(p.side, rot, flip), dx: m.x, dy: m.y };
+    const m = (rot || flip) ? mapPt(p.dx, p.dy, rot, flip, Wn, Hn, fw, fh) : { x: p.dx, y: p.dy };
+    return {
+      id: p.id,
+      kind: p.kind,
+      side: mapSide(p.side, rot, flip),
+      dx: fw / 2 + (m.x - fw / 2) * symbolScale,
+      dy: fh / 2 + (m.y - fh / 2) * symbolScale
+    };
   });
 }
 
@@ -67,20 +73,71 @@ const findBlock = id => blocks.find(b => b.id === id);
 
 function markInside(p, w, h) {
   const o = 4;
-  if (p.side === "left") return { x: o, y: p.dy };
-  if (p.side === "right") return { x: w - o, y: p.dy };
-  if (p.side === "top") return { x: p.dx, y: o };
-  return { x: p.dx, y: h - o };
+  if (p.side === "left") return { x: p.dx + o, y: p.dy };
+  if (p.side === "right") return { x: p.dx - o, y: p.dy };
+  if (p.side === "top") return { x: p.dx, y: p.dy + o };
+  return { x: p.dx, y: p.dy - o };
+}
+
+function blockLabelY(b, f, appSettings) {
+  const cfg = appSettings || (typeof settings !== "undefined" ? settings : {});
+  const nAbove = (cfg.showNF ? 1 : 0) + (cfg.showPwr1 !== false ? 1 : 0);
+  const nBelow = (cfg.showPwr2 ? 1 : 0) + (cfg.showNoiseFloor ? 1 : 0);
+
+  const wireDy = (f && f.h != null) ? f.h / 2 : 30;
+  const stackTopRel = wireDy - 21 * nAbove;
+  const stackBtmRel = wireDy + 21 * nBelow;
+
+  const defaultValY = Math.min(-13, stackTopRel - 10);
+  const defaultNameY = Math.max((f && f.h != null ? f.h : 60) + 18, stackBtmRel + 18);
+  const defaultInfoY = defaultNameY + 15;
+
+  return { valY: defaultValY, nameY: defaultNameY, infoY: defaultInfoY };
 }
 
 function bboxOf(b) {
   const c = COMP[b.type];
-  if (c.isLabel) { return { x: b.x - 4, y: b.y - 16, w: measureLabel(b), h: 22 }; }
+  if (c.isLabel) { return { x: b.x - 4, y: b.y - 18, w: measureLabel(b), h: 28 }; }
   const s = footprint(b);
-  if (c.topLabel || c.lblPos === "top") {
-    return { x: b.x, y: b.y - 26, w: s.w, h: s.h + 26 };
+  const symbolScale = (typeof DESIGN_TOKENS !== "undefined" && DESIGN_TOKENS.symbolScale) || 1;
+  const extraX = Math.max(0, s.w * (symbolScale - 1) / 2);
+  const extraY = Math.max(0, s.h * (symbolScale - 1) / 2);
+
+  const p = b.params || {};
+  const valOffX = Number(p._valOffX != null ? p._valOffX : p._lblOffX) || 0;
+  const valOffY = Number(p._valOffY != null ? p._valOffY : p._lblOffY) || 0;
+  const nameOffX = Number(p._nameOffX != null ? p._nameOffX : p._lblOffX) || 0;
+  const nameOffY = Number(p._nameOffY != null ? p._nameOffY : p._lblOffY) || 0;
+  const infoOffX = Number(p._infoOffX != null ? p._infoOffX : p._lblOffX) || 0;
+  const infoOffY = Number(p._infoOffY != null ? p._infoOffY : p._lblOffY) || 0;
+
+  const hasInfo = c.info && c.info(p);
+  const lblY = blockLabelY(b, s);
+  let minX = b.x - extraX;
+  let maxX = b.x + s.w + extraX;
+  let minY = b.y - extraY;
+  let maxY = b.y + s.h + extraY;
+
+  // Include top label (val)
+  minX = Math.min(minX, b.x + s.w / 2 + valOffX - 40);
+  maxX = Math.max(maxX, b.x + s.w / 2 + valOffX + 40);
+  minY = Math.min(minY, b.y + lblY.valY + valOffY - 12);
+
+  // Include name label
+  minX = Math.min(minX, b.x + s.w / 2 + nameOffX - 40);
+  maxX = Math.max(maxX, b.x + s.w / 2 + nameOffX + 40);
+  maxY = Math.max(maxY, b.y + lblY.nameY + nameOffY + 12);
+
+  // Include info label if present
+  if (hasInfo) {
+    minX = Math.min(minX, b.x + s.w / 2 + infoOffX - 40);
+    maxX = Math.max(maxX, b.x + s.w / 2 + infoOffX + 40);
+    maxY = Math.max(maxY, b.y + lblY.infoY + infoOffY + 12);
+  } else {
+    maxY = Math.max(maxY, b.y + lblY.nameY + nameOffY + 20);
   }
-  return { x: b.x, y: b.y, w: s.w, h: s.h };
+
+  return { x: minX, y: minY, w: maxX - minX, h: maxY - minY };
 }
 
 function screenToWorld(cx, cy) {

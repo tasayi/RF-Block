@@ -1,14 +1,18 @@
 "use strict";
 
 /* Power Level Solver Engine */
-function computePowers() { return withAllSheets(computePowersRaw); }
+function computePowers(mode) {
+  const budgetMode = normalizePowerBudgetMode(mode ?? (typeof settings !== "undefined" ? settings.powerBudget : "primary"));
+  return withAllSheets(() => computePowersRaw(budgetMode));
+}
 
-function computePowersRaw() {
+function computePowersRaw(mode) {
+  const budgetMode = normalizePowerBudgetMode(mode ?? (typeof settings !== "undefined" ? settings.powerBudget : "primary"));
   const out = {};
   for (const b of blocks) {
     const c = COMP[b.type];
     if (c.isSource && c.isSource(b.params)) {
-      const lv = Number(c.srcPower(b.params));
+      const lv = Number(c.srcPower(b.params, budgetMode));
       for (const pid of srcPorts(c, b.params)) out[key(b.id, pid)] = lv;
     }
   }

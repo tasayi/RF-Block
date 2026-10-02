@@ -7,14 +7,14 @@ function seedDemo() {
     blocks.push(b);
     return b;
   };
-  const ant = mk("antenna", 60, 140, { label: "ANT", role: "Rx", power: -70 });
-  const lna = mk("amp", 200, 140, { label: "LNA", gain: 18, nf: 1.2 });
-  const bpf = mk("filter", 340, 140, { label: "RF BPF", ftype: "BPF", il: 1.5, fc: "2.4 GHz" });
-  const mix = mk("mixer", 480, 140, { label: "MIX", cl: 7 });
-  const lo = mk("lo", 480, 280, { label: "LO", power: 8, freq: "2.0 GHz" });
-  const ifa = mk("amp", 620, 140, { label: "IF AMP", gain: 20, nf: 3 });
-  const ifl = mk("filter", 760, 140, { label: "IF BPF", ftype: "BPF", il: 2, fc: "400 MHz" });
-  const det = mk("detector", 900, 140, { label: "DET" });
+  const ant = mk("antenna", 80, 220, { label: "ANT", role: "Rx", power: -70 });
+  const lna = mk("amp", 220, 220, { label: "LNA", gain: 18, nf: 1.2 });
+  const bpf = mk("filter", 360, 220, { label: "RF BPF", ftype: "BPF", il: 1.5, fc: "2.4 GHz" });
+  const mix = mk("mixer", 500, 220, { label: "MIX", cl: 7 });
+  const lo = mk("lo", 500, 390, { label: "LO", power: 8, freq: "2.0 GHz" });
+  const ifa = mk("amp", 640, 220, { label: "IF AMP", gain: 20, nf: 3 });
+  const ifl = mk("filter", 780, 220, { label: "IF BPF", ftype: "BPF", il: 2, fc: "400 MHz" });
+  const det = mk("detector", 920, 220, { label: "DET" });
 
   const C = (fb, fp, tb, tp) => conns.push({ id: uid("c"), from: { block: fb.id, port: fp }, to: { block: tb.id, port: tp } });
   C(ant, "ant", lna, "in"); C(lna, "out", bpf, "in"); C(bpf, "out", mix, "rf");
@@ -29,9 +29,23 @@ function initEvents() {
       drag = { mode: "pan", sx: e.clientX, sy: e.clientY, tx0: view.tx, ty0: view.ty, moved: false };
       svg.classList.add("panning"); attachDrag(); return;
     }
+    if (e.button === 2) {
+      drag = { mode: "pan", right: true, sx: e.clientX, sy: e.clientY, tx0: view.tx, ty0: view.ty, moved: false };
+      attachDrag(); return;
+    }
     if (e.button !== 0) return;
+    const nodeEl = e.target.closest(".wire-node-g, .wire-node");
     const pillEl = e.target.closest(".pill"); let portEl = e.target.closest(".port");
     const blockEl = e.target.closest(".block"), connEl = e.target.closest(".conn");
+
+    if (nodeEl) {
+      e.preventDefault();
+      const cid = nodeEl.getAttribute("data-conn");
+      const idx = parseInt(nodeEl.getAttribute("data-node"));
+      selConn = cid; selected = new Set(); renderAll();
+      drag = { mode: "nodedrag", conn: cid, index: idx, moved: false, pre: snapState() };
+      attachDrag(); return;
+    }
 
     if (portEl && blockEl) {
       const pb = findBlock(portEl.getAttribute("data-block"));
@@ -42,11 +56,55 @@ function initEvents() {
 
     if (pillEl && pillEl.getAttribute("data-conn")) {
       e.preventDefault();
-      const cid = pillEl.getAttribute("data-conn"); selConn = cid; selected = new Set(); renderAll();
-      const base = connBase(cid), tip = pillTip(cid), w0 = screenToWorld(e.clientX, e.clientY);
-      drag = { mode: "label", conn: cid, base, grabx: w0.x - tip.x, graby: w0.y - tip.y, moved: false, pre: snapState() };
+      const cid = pillEl.getAttribute("data-conn"), pillType = pillEl.getAttribute("data-pill-type");
+      const transform = pillEl.getAttribute("transform") || "";
+      const centerMatch = /translate\(\s*([-+\d.eE]+)[ ,]+([-+\d.eE]+)\s*\)/.exec(transform);
+      const w0 = screenToWorld(e.clientX, e.clientY);
+      if (pillType && centerMatch) {
+        const center = { x: Number(centerMatch[1]), y: Number(centerMatch[2]) };
+        const anchorX = Number(pillEl.getAttribute("data-pill-anchor-x"));
+        const anchorY = Number(pillEl.getAttribute("data-pill-anchor-y"));
+        selConn = cid; selected = new Set(); renderAll();
+        drag = { mode: "pill", conn: cid, type: pillType, start: center,
+          anchorDx: Number.isFinite(anchorX) ? anchorX - center.x : 0,
+          anchorDy: Number.isFinite(anchorY) ? anchorY - center.y : 0,
+          grabx: w0.x - center.x, graby: w0.y - center.y, moved: false, pre: snapState() };
+      } else {
+        selConn = cid; selected = new Set(); renderAll();
+        const base = connBase(cid), tip = pillTip(cid);
+        drag = { mode: "label", conn: cid, base, grabx: w0.x - tip.x, graby: w0.y - tip.y, moved: false, pre: snapState() };
+      }
       attachDrag(); return;
     }
+
+    const lblEl = e.target.closest(".lbl-name, .lbl-val, .lbl-info");
+    if (lblEl && lblEl.getAttribute("data-block")) {
+      e.preventDefault();
+      const bid = lblEl.getAttribute("data-block");
+      const lblType = lblEl.getAttribute("data-lbl") || "name";
+      const b = findBlock(bid);
+      if (b) {
+        selectOnly(bid);
+        renderAll();
+        const w0 = screenToWorld(e.clientX, e.clientY);
+        const startOffX = Number(b.params[`_${lblType}OffX`] != null ? b.params[`_${lblType}OffX`] : b.params._lblOffX) || 0;
+        const startOffY = Number(b.params[`_${lblType}OffY`] != null ? b.params[`_${lblType}OffY`] : b.params._lblOffY) || 0;
+        drag = {
+          mode: "blocklabel",
+          blockId: bid,
+          lblType,
+          startOffX,
+          startOffY,
+          startMouseX: w0.x,
+          startMouseY: w0.y,
+          moved: false,
+          pre: snapState()
+        };
+        attachDrag();
+        return;
+      }
+    }
+
     if (portEl) {
       e.preventDefault();
       const from = { block: portEl.getAttribute("data-block"), port: portEl.getAttribute("data-port") };
@@ -86,19 +144,79 @@ function initEvents() {
     }
 
     const w = screenToWorld(e.clientX, e.clientY);
-    drag = { mode: "marquee", sx: w.x, sy: w.y, cur: { x: w.x, y: w.y }, moved: false };
+    if (e.shiftKey) {
+      drag = { mode: "pan", sx: e.clientX, sy: e.clientY, tx0: view.tx, ty0: view.ty, moved: false };
+      svg.classList.add("panning");
+    } else {
+      drag = { mode: "marquee", sx: w.x, sy: w.y, cur: { x: w.x, y: w.y }, moved: false };
+    }
     attachDrag();
   });
 
   svg.addEventListener("dblclick", e => {
+    const nodeEl = e.target.closest(".wire-node-g, .wire-node");
+    if (nodeEl) {
+      e.preventDefault();
+      const cid = nodeEl.getAttribute("data-conn");
+      const idx = parseInt(nodeEl.getAttribute("data-node"));
+      const cn = conns.find(c => c.id === cid);
+      if (cn && cn.waypoints) {
+        pushHistory();
+        cn.waypoints.splice(idx, 1);
+        if (!cn.waypoints.length) delete cn.waypoints;
+        renderAll();
+        hint("Waypoint node removed.");
+      }
+      return;
+    }
+    const lblEl = e.target.closest(".lbl-name, .lbl-val, .lbl-info");
+    if (lblEl && lblEl.getAttribute("data-block")) {
+      const b = findBlock(lblEl.getAttribute("data-block"));
+      const lblType = lblEl.getAttribute("data-lbl") || "name";
+      if (b) {
+        pushHistory();
+        delete b.params[`_${lblType}OffX`];
+        delete b.params[`_${lblType}OffY`];
+        delete b.params._lblOffX;
+        delete b.params._lblOffY;
+        renderAll();
+        const lblDesc = lblType === "val" ? "Gain/loss" : lblType === "info" ? "Info" : "Name";
+        hint(`${lblDesc} label reset to default position.`);
+        return;
+      }
+    }
     const blkEl = e.target.closest(".block");
     if (blkEl) {
       const b = findBlock(blkEl.getAttribute("data-block"));
       if (b && COMP[b.type].isSubsystem) { e.preventDefault(); openSubsystem(b); return; }
     }
     const pillEl = e.target.closest(".pill"), connEl = e.target.closest(".conn");
-    if (pillEl && pillEl.getAttribute("data-conn")) { const cn = conns.find(c => c.id === pillEl.getAttribute("data-conn")); if (cn && cn.labelOff) { delete cn.labelOff; renderCanvas(); hint("Label reset to default."); } return; }
-    if (connEl) { const cn = conns.find(c => c.id === connEl.getAttribute("data-conn")); if (cn && cn.jog != null) { delete cn.jog; renderCanvas(); hint("Wire straightened."); } }
+    if (pillEl && pillEl.getAttribute("data-conn")) {
+      const cn = conns.find(c => c.id === pillEl.getAttribute("data-conn"));
+      if (cn && (cn.pillPosition || cn.pillPositions || cn.labelOff)) {
+        pushHistory();
+        delete cn.pillPosition;
+        delete cn.pillPositions;
+        delete cn.labelOff;
+        renderCanvas();
+        hint("Annotation stack returned to its default connector position.");
+      }
+      return;
+    }
+    if (connEl) {
+      const cid = connEl.getAttribute("data-conn");
+      const cn = conns.find(c => c.id === cid);
+      if (cn) {
+        pushHistory();
+        const w = screenToWorld(e.clientX, e.clientY);
+        const pt = { x: snap(w.x), y: snap(w.y) };
+        insertWaypointInOrder(cn, pt);
+        delete cn.jog;
+        renderAll();
+        hint("Added routing waypoint. Drag node handle to shape wire.");
+      }
+      return;
+    }
   });
 
   svg.addEventListener("wheel", e => {
@@ -133,7 +251,26 @@ function initEvents() {
 
   /* Context menu trigger */
   svg.addEventListener("contextmenu", e => {
+    if (typeof rightPanMoved !== "undefined" && rightPanMoved) {
+      rightPanMoved = false;
+      e.preventDefault();
+      return;
+    }
     e.preventDefault();
+    const nodeEl = e.target.closest(".wire-node-g, .wire-node");
+    if (nodeEl) {
+      const cid = nodeEl.getAttribute("data-conn");
+      const idx = parseInt(nodeEl.getAttribute("data-node"));
+      const cn = conns.find(c => c.id === cid);
+      if (cn && cn.waypoints) {
+        pushHistory();
+        cn.waypoints.splice(idx, 1);
+        if (!cn.waypoints.length) delete cn.waypoints;
+        renderAll();
+        hint("Waypoint node removed.");
+      }
+      return;
+    }
     const blockEl = e.target.closest(".block"), connEl = e.target.closest(".conn"), pillCtx = e.target.closest(".pill");
     if (blockEl) {
       const id = blockEl.getAttribute("data-block"); if (!selected.has(id)) selectOnly(id); renderAll();
@@ -157,9 +294,19 @@ function initEvents() {
       selConn = (connEl ? connEl.getAttribute("data-conn") : pillCtx.getAttribute("data-conn"));
       selected = new Set(); renderAll();
       const cn = conns.find(c => c.id === selConn);
-      ctxItems([ctxItem(cn && cn.hidePill ? "Show the dBm label" : "Hide the dBm label on this wire", "", "pill"),
-        "divider",
-        ctxItem("Delete connection", "Del", "delc", "danger")]); showCtx(e.clientX, e.clientY);
+      const pillType = pillCtx && pillCtx.getAttribute("data-pill-type");
+      const items = [
+        ctxItem(cn && cn.hidePill ? "Show the dBm label" : "Hide the dBm label on this wire", "", "pill"),
+        ctxItem("Add routing waypoint here", "", "wp-add")
+      ];
+      if (pillType && cn && (cn.pillPosition || cn.pillPositions || cn.labelOff)) {
+        items.push(ctxItem("Reset annotation stack position", "double-click", "pill-reset"));
+      }
+      if (cn && (cn.jog != null || (cn.waypoints && cn.waypoints.length))) {
+        items.push(ctxItem("Straighten wire (clear waypoints)", "", "wp-clear"));
+      }
+      items.push("divider", ctxItem("Delete connection", "Del", "delc", "danger"));
+      ctxItems(items); showCtx(e.clientX, e.clientY);
     }
     else { ctxItems([ctxItem("Select all", "⌘A", "all"), ctxItem("Fit view", "", "fit")]); showCtx(e.clientX, e.clientY); }
   });
@@ -229,8 +376,60 @@ function initEvents() {
   if ($("tglSnap")) $("tglSnap").addEventListener("change", e => { settings.snap = e.target.checked; });
   if ($("tglGrid")) $("tglGrid").addEventListener("change", e => { settings.grid = e.target.checked; renderCanvas(); });
   if ($("tglLabels")) $("tglLabels").addEventListener("change", e => { settings.showLabels = e.target.checked; renderCanvas(); });
+  if ($("tglJumpers")) $("tglJumpers").addEventListener("change", e => { settings.enableJumpers = e.target.checked; renderCanvas(); });
+  if ($("tglPwr1")) $("tglPwr1").addEventListener("change", e => { settings.showPwr1 = e.target.checked; renderCanvas(); });
+  if ($("tglPwr2")) $("tglPwr2").addEventListener("change", e => { settings.showPwr2 = e.target.checked; renderCanvas(); });
+  if ($("selPowerBudget")) $("selPowerBudget").addEventListener("change", e => {
+    settings.powerBudget = normalizePowerBudgetMode(e.target.value);
+    if ($("selPowerBudget")) $("selPowerBudget").value = settings.powerBudget;
+    renderCanvas();
+    if (typeof renderBudget === "function") renderBudget();
+  });
+  if ($("tglNFloor")) $("tglNFloor").addEventListener("change", e => { settings.showNoiseFloor = e.target.checked; renderCanvas(); });
   if ($("tglNF")) $("tglNF").addEventListener("change", e => { settings.showNF = e.target.checked; renderCanvas(); renderInspector(); });
+  
+  const updateBw = (newVal, newUnit) => {
+    const val = Math.max(0.000001, +(newVal !== undefined ? newVal : (settings.bandwidthVal || 1)) || 1);
+    const unit = newUnit || settings.bandwidthUnit || "MHz";
+    const mult = { Hz: 1, kHz: 1e3, MHz: 1e6, GHz: 1e9 }[unit] || 1e6;
+    settings.bandwidthVal = val;
+    settings.bandwidthUnit = unit;
+    settings.bandwidthHz = val * mult;
+
+    if ($("tbBw") && $("tbBw").value != val) $("tbBw").value = val;
+    if ($("tbBwUnit") && $("tbBwUnit").value !== unit) $("tbBwUnit").value = unit;
+    if ($("bgBw") && $("bgBw").value != val) $("bgBw").value = val;
+    if ($("bgBwUnit") && $("bgBwUnit").value !== unit) $("bgBwUnit").value = unit;
+
+    renderCanvas();
+    if (typeof budgetOpen === "function" && budgetOpen()) renderBudget();
+  };
+
+  if ($("tbBw")) {
+    $("tbBw").addEventListener("input", e => updateBw(e.target.value, $("tbBwUnit") ? $("tbBwUnit").value : undefined));
+    $("tbBw").addEventListener("change", e => updateBw(e.target.value, $("tbBwUnit") ? $("tbBwUnit").value : undefined));
+  }
+  if ($("tbBwUnit")) {
+    $("tbBwUnit").addEventListener("change", e => updateBw($("tbBw") ? $("tbBw").value : undefined, e.target.value));
+  }
+  if ($("bgBw")) {
+    $("bgBw").addEventListener("input", e => updateBw(e.target.value, $("bgBwUnit") ? $("bgBwUnit").value : undefined));
+    $("bgBw").addEventListener("change", e => updateBw(e.target.value, $("bgBwUnit") ? $("bgBwUnit").value : undefined));
+  }
+  if ($("bgBwUnit")) {
+    $("bgBwUnit").addEventListener("change", e => updateBw($("bgBw") ? $("bgBw").value : undefined, e.target.value));
+  }
   if ($("tglColor")) $("tglColor").addEventListener("change", e => { settings.color = e.target.checked; renderPalette(); renderCanvas(); });
+  if ($("tglTheme")) $("tglTheme").addEventListener("change", e => { applyTheme(e.target.checked ? "light" : "dark"); renderPalette(); renderCanvas(); });
+  if ($("selLayout")) $("selLayout").addEventListener("change", e => {
+    pushHistory();
+    const val = e.target.value;
+    if (sheets[cur]) sheets[cur].layoutPreset = val;
+    settings.layoutPreset = val;
+    renderCanvas();
+    const lObj = LAYOUT_PRESETS[val] || LAYOUT_PRESETS.free;
+    hint(`Layout preset set to ${lObj.name}`);
+  });
 
   if ($("zIn")) $("zIn").onclick = () => zoomAt(1.15);
   if ($("zOut")) $("zOut").onclick = () => zoomAt(1 / 1.15);
@@ -264,16 +463,24 @@ function initEvents() {
     a.href = url; a.download = "rf-chain.svg"; a.click(); URL.revokeObjectURL(url); hint("Exported rf-chain.svg");
   };
 
-  if ($("btnPng")) $("btnPng").onclick = () => {
+  if ($("btnPng")) $("btnPng").onclick = async () => {
+    if (document.fonts && document.fonts.ready) {
+      try { await document.fonts.ready; } catch (e) {}
+    }
     const s = buildExportSVG(2); if (!s) { hint("Nothing to export yet."); return; }
     const img = new Image(), url = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(s);
     img.onload = () => {
       const cv = document.createElement("canvas"); cv.width = img.width; cv.height = img.height;
-      const g = cv.getContext("2d"); g.fillStyle = "#fff"; g.fillRect(0, 0, cv.width, cv.height); g.drawImage(img, 0, 0);
+      const g = cv.getContext("2d");
+      g.fillStyle = "#ffffff"; g.fillRect(0, 0, cv.width, cv.height);
+      g.imageSmoothingEnabled = true; g.imageSmoothingQuality = "high";
+      g.drawImage(img, 0, 0);
       cv.toBlob(b => { const u = URL.createObjectURL(b), a = document.createElement("a"); a.href = u; a.download = "rf-chain.png"; a.click(); URL.revokeObjectURL(u); hint("Exported rf-chain.png"); });
     };
     img.onerror = () => hint("PNG export failed in this browser — try SVG."); img.src = url;
   };
+
+  if ($("btnVsdx")) $("btnVsdx").onclick = exportVsdx;
 
   if ($("btnBom")) $("btnBom").onclick = () => {
     const rows = [["Ref", "Type", "MPN", "Sheet", "Parameters"]];
@@ -311,14 +518,61 @@ function initEvents() {
   if ($("cpApply")) $("cpApply").onclick = cpApply;
   if ($("cpCancel")) $("cpCancel").onclick = cpCancel;
   if ($("cpReset")) $("cpReset").onclick = cpDefault;
+
+  /* View dropdown toggle — uses fixed position to escape toolbar overflow clipping */
+  const viewBtn = $("btnViewDrop");
+  const viewPanel = $("viewDropPanel");
+  const viewWrap = $("viewDropWrap");
+  function positionViewPanel() {
+    const r = viewBtn.getBoundingClientRect();
+    viewPanel.style.top = (r.bottom + 6) + "px";
+    // Align right edge of panel to right edge of button, clamp to viewport
+    const panelW = viewPanel.offsetWidth || 280;
+    let left = r.right - panelW;
+    if (left < 8) left = 8;
+    viewPanel.style.left = left + "px";
+    viewPanel.style.right = "";
+  }
+  if (viewBtn && viewPanel && viewWrap) {
+    viewBtn.onclick = e => {
+      e.stopPropagation();
+      const open = viewPanel.classList.toggle("open");
+      viewBtn.classList.toggle("open", open);
+      if (open) positionViewPanel();
+    };
+    document.addEventListener("click", e => {
+      if (!viewWrap.contains(e.target) && !viewPanel.contains(e.target)) {
+        viewPanel.classList.remove("open");
+        viewBtn.classList.remove("open");
+      }
+    });
+    window.addEventListener("resize", () => {
+      if (viewPanel.classList.contains("open")) positionViewPanel();
+    });
+  }
 }
 
 function fitView() {
-  if (!blocks.length) { view = { tx: 60, ty: 56, scale: 1 }; applyView(); return; }
+  const curSheet = sheets[cur];
+  const presetKey = (curSheet && curSheet.layoutPreset) || settings.layoutPreset || "free";
+  const layoutObj = LAYOUT_PRESETS[presetKey] || LAYOUT_PRESETS.free;
+
   let minx = 1e9, miny = 1e9, maxx = -1e9, maxy = -1e9;
-  for (const b of blocks) { const bb = bboxOf(b); minx = Math.min(minx, bb.x - 8); miny = Math.min(miny, bb.y - 8); maxx = Math.max(maxx, bb.x + bb.w + 8); maxy = Math.max(maxy, bb.y + bb.h + 30); }
+  if (layoutObj && !layoutObj.isFree) {
+    minx = 40; miny = 40;
+    maxx = minx + layoutObj.w; maxy = miny + layoutObj.h;
+  }
+  if (blocks.length) {
+    for (const b of blocks) {
+      const bb = bboxOf(b);
+      minx = Math.min(minx, bb.x - 16); miny = Math.min(miny, bb.y - 16);
+      maxx = Math.max(maxx, bb.x + bb.w + 16); maxy = Math.max(maxy, bb.y + bb.h + 30);
+    }
+  } else if (layoutObj.isFree) {
+    view = { tx: 60, ty: 56, scale: 1 }; applyView(); return;
+  }
   const r = svg.getBoundingClientRect(), pad = 40;
-  const s = clamp(Math.min((r.width - pad * 2) / (maxx - minx), (r.height - pad * 2) / (maxy - miny)), 0.3, 2);
+  const s = clamp(Math.min((r.width - pad * 2) / (maxx - minx), (r.height - pad * 2) / (maxy - miny)), 0.25, 2);
   view.scale = s; view.tx = pad - minx * s + (r.width - pad * 2 - (maxx - minx) * s) / 2; view.ty = pad - miny * s + (r.height - pad * 2 - (maxy - miny) * s) / 2; applyView();
 }
 
@@ -330,6 +584,9 @@ function hint(t) {
 /* Initialization */
 window.addEventListener("DOMContentLoaded", () => {
   initEvents();
+  const savedTheme = (function() { try { return localStorage.getItem("rfblock_theme"); } catch(e) { return null; } })() || settings.theme || "dark";
+  applyTheme(savedTheme);
+  if ($("tglTheme")) $("tglTheme").checked = (settings.theme === "light");
   if ($("palSearch")) $("palSearch").addEventListener("input", renderPalette);
   renderPalette();
   renderSheets();

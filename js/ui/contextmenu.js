@@ -23,6 +23,18 @@ function ctxItems(list) {
     }
     if (a === "sub-open") { const b = findBlock([...selected][0]); if (b) openSubsystem(b); return; }
     if (a === "sub-group") { groupIntoSubsystem(); return; }
+    if (a === "pill-reset") {
+      const cn = conns.find(c => c.id === selConn);
+      if (cn && (cn.pillPosition || cn.pillPositions || cn.labelOff)) {
+        pushHistory();
+        delete cn.pillPosition;
+        delete cn.pillPositions;
+        delete cn.labelOff;
+        renderAll();
+        hint("Annotation stack returned to its default connector position.");
+      }
+      return;
+    }
     if (a === "sh-up") { goToParent(); return; }
     if (a === "sh-rename") { const el = $("sheetBar").querySelector(`.sheet-tab[data-i="${cur}"]`); renameSheet(cur, el); return; }
     if (a === "sh-dup") { duplicateSheet(); return; }
@@ -35,6 +47,27 @@ function ctxItems(list) {
     else if (a === "pill") {
       const cn = conns.find(c => c.id === selConn);
       if (cn) { pushHistory(); cn.hidePill = !cn.hidePill; renderAll(); hint(cn.hidePill ? "Label hidden. Right-click the wire to show it." : "Label shown."); }
+    }
+    else if (a === "wp-add") {
+      const cn = conns.find(c => c.id === selConn);
+      if (cn) {
+        pushHistory();
+        const w = screenToWorld(ctxAt.x, ctxAt.y);
+        insertWaypointInOrder(cn, { x: snap(w.x), y: snap(w.y) });
+        delete cn.jog;
+        renderAll();
+        hint("Added routing waypoint.");
+      }
+    }
+    else if (a === "wp-clear") {
+      const cn = conns.find(c => c.id === selConn);
+      if (cn) {
+        pushHistory();
+        delete cn.jog;
+        delete cn.waypoints;
+        renderAll();
+        hint("Wire straightened.");
+      }
     }
     else if (a === "delc") {
       if (selConn) { pushHistory(); conns = conns.filter(c => c.id !== selConn); selConn = null; renderAll(); }

@@ -8,6 +8,12 @@ classic.json
 classic.jsonp
 ext/
 modern.json
+.venv/
+__pycache__/
+*.spec
+dist/RFBlock-Engine*
+.github/
+
 modern.jsonp
 resources/sass/.sass-cache/
 resources/.arch-internal-preview.css

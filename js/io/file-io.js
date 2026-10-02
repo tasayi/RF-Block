@@ -15,8 +15,8 @@ const PICK = {
 function docText() {
   commitSheet();
   return JSON.stringify({
-    format: "rf-block-diagram", version: 3, settings: { ...settings }, typeColor: { ...typeColor }, cur,
-    sheets: sheets.map(sh => ({ id: sh.id, name: sh.name, view: sh.view, parent: sh.parent || null, blocks: sh.blocks, connections: sh.conns }))
+    format: "rf-block-diagram", version: 4, settings: { ...settings }, typeColor: { ...typeColor }, cur,
+    sheets: sheets.map(sh => ({ id: sh.id, name: sh.name, view: sh.view, layoutPreset: sh.layoutPreset || "free", parent: sh.parent || null, blocks: sh.blocks, connections: sh.conns }))
   }, null, 2);
 }
 
@@ -101,7 +101,21 @@ function loadDoc(text, name, handle) {
     return;
   }
   pushHistory();
-  const fix = b => ({ rot: 0, flip: false, ...b });
+  const fileVer = Number(d.version) || 1;
+  const fix = b => {
+    let nb = { rot: 0, flip: false, ...b };
+    if (fileVer < 4) {
+      nb.x = (nb.x || 0) * 2;
+      nb.y = (nb.y || 0) * 2;
+    }
+    return nb;
+  };
+  const fixConn = cn => {
+    if (fileVer < 4 && cn && cn.waypoints && Array.isArray(cn.waypoints)) {
+      return { ...cn, waypoints: cn.waypoints.map(w => ({ x: w.x * 2, y: w.y * 2 })) };
+    }
+    return cn;
+  };
 
   /* Security Sanitizer Fix: Validate typeColor values against normHex */
   typeColor = {};
@@ -117,18 +131,22 @@ function loadDoc(text, name, handle) {
       id: sh.id || ("s" + (i + 1)),
       name: sh.name || ("Sheet " + (i + 1)),
       blocks: (sh.blocks || []).map(fix),
-      conns: sh.connections || sh.conns || [],
+      conns: (sh.connections || sh.conns || []).map(fixConn),
       view: sh.view || { tx: 60, ty: 56, scale: 1 },
       parent: sh.parent || undefined
     }));
     if (!sheets.length) sheets = [{ id: "s1", name: "Sheet 1", blocks: [], conns: [], view: { tx: 60, ty: 56, scale: 1 } }];
     cur = Math.min(d.cur || 0, sheets.length - 1);
   } else {
-    sheets = [{ id: "s1", name: "Sheet 1", blocks: d.blocks.map(fix), conns: d.connections || [], view: d.view || { tx: 60, ty: 56, scale: 1 } }];
+    sheets = [{ id: "s1", name: "Sheet 1", blocks: d.blocks.map(fix), conns: (d.connections || []).map(fixConn), view: d.view || { tx: 60, ty: 56, scale: 1 } }];
     cur = 0;
   }
   settings = { ...settings, ...(d.settings || {}) };
   if ($("tglColor")) $("tglColor").checked = settings.color !== false;
+  if ($("tglTheme")) {
+    $("tglTheme").checked = (settings.theme === "light");
+    applyTheme(settings.theme || "dark");
+  }
   adoptSheet(cur);
   renderSheets();
   clearSel();
@@ -136,7 +154,14 @@ function loadDoc(text, name, handle) {
   $("tglSnap").checked = settings.snap;
   $("tglGrid").checked = settings.grid;
   if ($("tglLabels")) $("tglLabels").checked = settings.showLabels !== false;
+  if ($("tglPwr1")) $("tglPwr1").checked = settings.showPwr1 !== false;
+  if ($("tglPwr2")) $("tglPwr2").checked = !!settings.showPwr2;
+  if ($("selPowerBudget")) $("selPowerBudget").value = normalizePowerBudgetMode(settings.powerBudget);
+  if ($("tglNFloor")) $("tglNFloor").checked = !!settings.showNoiseFloor;
   if ($("tglNF")) $("tglNF").checked = !!settings.showNF;
+  if ($("tbBw")) $("tbBw").value = settings.bandwidthVal !== undefined ? settings.bandwidthVal : 1;
+  if ($("tbBwUnit")) $("tbBwUnit").value = settings.bandwidthUnit || "MHz";
+  if ($("selLayout")) $("selLayout").value = (sheets[cur] && sheets[cur].layoutPreset) || settings.layoutPreset || "free";
   applyView();
   renderAll();
   setFile(name, handle || null);
@@ -180,33 +205,67 @@ function saveDoc(forceSaveAs) {
 
 /* SVG / PNG Export Generator */
 function buildExportSVG(scale = 1) {
-  let minx = 1e9, miny = 1e9, maxx = -1e9, maxy = -1e9;
   if (!blocks.length) return null;
+
+  const pad = DESIGN_TOKENS.exportPadding || 24;
+  let minx = 1e9, miny = 1e9, maxx = -1e9, maxy = -1e9;
   for (const b of blocks) {
     const bb = bboxOf(b);
-    minx = Math.min(minx, bb.x - 16); miny = Math.min(miny, bb.y - 16);
-    maxx = Math.max(maxx, bb.x + bb.w + 16); maxy = Math.max(maxy, bb.y + bb.h + 30);
+    minx = Math.min(minx, bb.x - pad); miny = Math.min(miny, bb.y - pad);
+    maxx = Math.max(maxx, bb.x + bb.w + pad); maxy = Math.max(maxy, bb.y + bb.h + pad + 16);
   }
+  for (const cn of conns) {
+    if (cn.waypoints && cn.waypoints.length) {
+      for (const wp of cn.waypoints) {
+        minx = Math.min(minx, wp.x - pad); miny = Math.min(miny, wp.y - pad);
+        maxx = Math.max(maxx, wp.x + pad); maxy = Math.max(maxy, wp.y + pad);
+      }
+    }
+    const savedPosition = cn.pillPosition || Object.values(cn.pillPositions || {})[0];
+    if (savedPosition) {
+      const a = portPt(findBlock(cn.from.block), cn.from.port), z = portPt(findBlock(cn.to.block), cn.to.port);
+      if (a && z) {
+        const R = route(a, z, cn), anchor = pointAtRouteFraction(R.pts, savedPosition.t);
+        const x = anchor.x + (Number(savedPosition.dx) || 0), y = anchor.y + (Number(savedPosition.dy) || 0);
+        minx = Math.min(minx, x - 64 - pad); miny = Math.min(miny, y - 64 - pad);
+        maxx = Math.max(maxx, x + 64 + pad); maxy = Math.max(maxy, y + 64 + pad);
+      }
+    }
+  }
+
   const W = Math.max(200, maxx - minx), H = Math.max(150, maxy - miny);
+  const fontSans = DESIGN_TOKENS.fontFamily;
+  const isLight = (settings && settings.theme === "light");
+  const pwr1Bg = isLight ? "#fef3c7" : "#1c1408", pwr1Bd = isLight ? "#d97706" : "#f59e0b", pwr1Tx = isLight ? "#92400e" : "#f59e0b";
+  const pwr2Bg = isLight ? "#e0f2fe" : "#071828", pwr2Bd = isLight ? "#0284c7" : "#38bdf8", pwr2Tx = isLight ? "#0c4a6e" : "#38bdf8";
+  const nfBg   = isLight ? "#d1fae5" : "#051810", nfBd   = isLight ? "#059669" : "#10b981", nfTx   = isLight ? "#064e3b" : "#10b981";
+  const nflBg  = isLight ? "#ede9fe" : "#120c22", nflBd  = isLight ? "#7c3aed" : "#a78bfa", nflTx  = isLight ? "#4c1d95" : "#a78bfa";
   const css = `
-    svg{font-family:ui-sans-serif,system-ui,sans-serif;background:#fff}
+    svg{font-family:${fontSans};background:#ffffff;text-rendering:geometricPrecision}
     .block-hit,.sel-ring,.port-hit,.port-mark{display:none}
-    .blk-shape{fill:#fff;stroke:#2b3440;stroke-width:2;stroke-linejoin:round}
-    .blk-line{fill:none;stroke:#2b3440;stroke-width:2;stroke-linecap:round}
-    .blk-glyph{fill:none;stroke:#2b3440;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
-    .blk-fillg{fill:#2b3440;stroke:none}
-    .lbl-name{fill:#2b3440;font-family:monospace;font-size:11px;font-weight:600;text-anchor:middle}
-    .lbl-val{fill:#6b7683;font-family:monospace;font-size:9.5px;text-anchor:middle}
-    .ic-tag{fill:#2b3440;font-family:monospace;font-size:13px;font-weight:700}
-    .cust-tx{fill:#2b3440;font-family:sans-serif;font-size:12.5px;font-weight:600}
-    .port-lbl{fill:#2b3440;opacity:.62;font-family:monospace;font-size:8.5px;font-weight:600}
-    .free-label{fill:#2b3440;font-family:monospace;font-size:14px;font-weight:600}
-    .wire{fill:none;stroke:#3c4756;stroke-width:1.8}
-    .pbg{fill:#fff;stroke:#efd3a0;stroke-width:1}
-    .ptx{fill:#b45309;font-family:monospace;font-size:10.5px;font-weight:600;text-anchor:middle}
-    .pun{fill:#b45309;opacity:.7;font-family:monospace;font-size:8px;font-weight:600;text-anchor:middle}
-    .unk .pbg{fill:#f4f6f8;stroke:#d7dde3}.unk .ptx{fill:#94a1af}.unk .pun{fill:#94a1af}`;
-  const P = computePowers();
+    .blk-shape{fill:var(--blk-fill,#ffffff);stroke:var(--blk-stroke,#0f172a);stroke-width:2;stroke-linejoin:round}
+    .blk-line{fill:none;stroke:var(--blk-stroke,#0f172a);stroke-width:2;stroke-linecap:round}
+    .blk-glyph{fill:none;stroke:var(--blk-stroke,#0f172a);stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+    .blk-fillg{fill:var(--blk-stroke,#0f172a);stroke:none}
+    .lbl-name{fill:#000000;font-family:${fontSans};font-size:${DESIGN_TOKENS.fontSizes.large}px;font-weight:700;text-anchor:middle}
+    .lbl-val{fill:#1e293b;font-family:${fontSans};font-size:${DESIGN_TOKENS.fontSizes.normal}px;font-weight:600;text-anchor:middle}
+    .lbl-info{fill:#64748b;font-family:${fontSans};font-size:${DESIGN_TOKENS.fontSizes.small}px;font-weight:500;text-anchor:middle}
+    .ic-tag{fill:#000000;font-family:${fontSans};font-size:${DESIGN_TOKENS.fontSizes.large}px;font-weight:700}
+    .cust-tx{fill:#000000;font-family:${fontSans};font-size:${DESIGN_TOKENS.fontSizes.large}px;font-weight:600}
+    .port-lbl{fill:#000000;opacity:.9;font-family:${fontSans};font-size:${DESIGN_TOKENS.fontSizes.small}px;font-weight:600}
+    .free-label{fill:#000000;font-family:${fontSans};font-size:${DESIGN_TOKENS.fontSizes.heading}px;font-weight:600}
+    .wire{fill:none;stroke:#0f172a;stroke-width:2.2}
+    .pill .pbg{fill:#ffffff;stroke:#efd3a0;stroke-width:1.2;rx:5}
+    .pill .ptx{fill:#b45309;font-family:${fontSans};font-size:${DESIGN_TOKENS.fontSizes.normal}px;font-weight:600;text-anchor:middle}
+    .pill .pun{fill:#b45309;opacity:.9;font-family:${fontSans};font-size:${DESIGN_TOKENS.fontSizes.normal}px;font-weight:600;text-anchor:middle}
+    .pill-pwr1 .pbg{fill:${pwr1Bg};stroke:${pwr1Bd}} .pill-pwr1 .ptx{fill:${pwr1Tx}}
+    .pill-pwr2 .pbg{fill:${pwr2Bg};stroke:${pwr2Bd}} .pill-pwr2 .ptx{fill:${pwr2Tx}}
+    .pill-nf .pbg{fill:${nfBg};stroke:${nfBd}} .pill-nf .ptx{fill:${nfTx}}
+    .pill-nfloor .pbg{fill:${nflBg};stroke:${nflBd}} .pill-nfloor .ptx{fill:${nflTx}}
+    .unk .pbg{fill:#f4f6f8;stroke:#d7dde3}.unk .ptx{fill:#64748b}.unk .pun{fill:#64748b}`;
+
+  const P = computePowers("primary");
+  const PSecondary = computePowers("secondary");
   let body = "", pillsBody = "";
   const ERS = [];
   for (const cn of conns) {
@@ -214,16 +273,38 @@ function buildExportSVG(scale = 1) {
     if (!a || !z) continue;
     ERS.push({ cn, R: route(a, z, cn) });
   }
+  const allVertSegs = [];
+  for (const { cn, R } of ERS) {
+    if (R.segs) {
+      for (const s of R.segs) {
+        if (!s.horiz) allVertSegs.push({ ...s, connId: cn.id });
+      }
+    }
+  }
   const esegs = [].concat(...ERS.map(r => r.R.segs || []));
   const erects = obstacleRects(0);
-  const eNF = settings.showNF ? computeNoise(P) : null;
+  const needNoise = !!(settings.showNF || settings.showNoiseFloor);
+  const eNF = needNoise ? computeNoise(P) : null;
   for (const { cn, R } of ERS) {
-    body += `<path class="wire" d="${R.d}" marker-end="url(#ea)"/>`;
+    const pathD = buildPathWithJumpers(R.pts, allVertSegs, cn.id);
+    body += `<path class="wire" d="${pathD}" marker-end="url(#ea)"/>`;
     if (settings.showLabels === false || cn.hidePill) continue;
     const lv = P[key(cn.from.block, cn.from.port)];
-    const nf = eNF ? nfDb(eNF[key(cn.from.block, cn.from.port)]) : undefined;
-    const bs = pillCenter(R, lv, esegs, erects, nf), of = cn.labelOff || { dx: 0, dy: 0 };
-    pillsBody += pill(bs.x + of.dx, bs.y + of.dy, lv, null, nf);
+    const nnObj = eNF ? eNF[key(cn.from.block, cn.from.port)] : undefined;
+    const nfVal = nfDb(nnObj);
+    const srcLvl = (typeof startBlocks === "function" && startBlocks().length) ? P[key(startBlocks()[0].id, srcPorts(COMP[startBlocks()[0].type], startBlocks()[0].params)[0])] : 0;
+    const nflVal = (nnObj && typeof computeNoiseFloor === "function") ? computeNoiseFloor(nnObj, lv, srcLvl, settings.bandwidthHz) : undefined;
+
+    const lvlPrimary = P[key(cn.from.block, cn.from.port)];
+    const lvlSecondary = PSecondary[key(cn.from.block, cn.from.port)];
+    const indicators = {
+      pwr1: (settings.showPwr1 !== false && lvlPrimary !== undefined && isFinite(lvlPrimary)) ? dbm(lvlPrimary) : null,
+      pwr2: (settings.showPwr2 === true && lvlSecondary !== undefined && isFinite(lvlSecondary)) ? dbm(lvlSecondary) : null,
+      nfloor: (settings.showNoiseFloor === true && nflVal !== undefined && isFinite(nflVal)) ? dbm(nflVal) : null,
+      nf: (settings.showNF === true && nfVal !== undefined && isFinite(nfVal)) ? ("NF " + fmt(nfVal) + " dB") : null
+    };
+
+    pillsBody += pillStack(R, indicators, cn.id);
   }
   for (const b of blocks) {
     const c = COMP[b.type], f = footprint(b);
@@ -231,8 +312,9 @@ function buildExportSVG(scale = 1) {
     if (c.isLabel) {
       body += `<text class="free-label" x="0" y="0" dominant-baseline="middle">${esc(b.params.text || "Label")}</text>`;
     } else {
-      const tf = rotTransform(b);
-      body += `<g${tf ? ` transform="${tf}"` : ""}>${c.sym(b.params)}</g>`;
+      const rotTf = rotTransform(b);
+      const symTf = (rotTf ? `${rotTf} ` : "") + `translate(${f.w / 2} ${f.h / 2}) scale(${DESIGN_TOKENS.symbolScale}) translate(${-f.w / 2} ${-f.h / 2})`;
+      body += `<g${symTf ? ` transform="${symTf}"` : ""}>${c.sym(b.params)}</g>`;
       if (c.isInterconnect) {
         const rt = (b.params.tag || "?"), disp = icTagText(isSubTag(rt) ? subTagPort(rt) : rt);
         const tx = (b.rot || b.flip) ? f.w / 2 : (icSend(b.params) ? 16 : 23);
@@ -248,19 +330,18 @@ function buildExportSVG(scale = 1) {
       }
       const nm = c.isInterconnect ? "" : (b.params.label || c.name);
       const v = c.val ? c.val(b.params) : "";
-      if (c.topLabel || c.lblPos === "top") {
-        if (nm && v) {
-          body += `<text class="lbl-name" x="${f.w / 2}" y="-22">${esc(nm)}</text>`;
-          body += `<text class="lbl-val" x="${f.w / 2}" y="-10">${esc(v)}</text>`;
-        } else if (nm) {
-          body += `<text class="lbl-name" x="${f.w / 2}" y="-10">${esc(nm)}</text>`;
-        } else if (v) {
-          body += `<text class="lbl-val" x="${f.w / 2}" y="-10">${esc(v)}</text>`;
-        }
-      } else {
-        if (nm) body += `<text class="lbl-name" x="${f.w / 2}" y="${f.h + 13}">${esc(nm)}</text>`;
-        if (v) body += `<text class="lbl-val" x="${f.w / 2}" y="${f.h + (nm ? 25 : 13)}">${esc(v)}</text>`;
-      }
+      /* Universal label layout with independent floating offsets: val above at y=-13, name below at y=f.h+18, info at y=f.h+33 */
+      const lblY = (typeof blockLabelY === "function") ? blockLabelY(b, f, settings) : { valY: -13, nameY: f.h + 18, infoY: f.h + 33 };
+      const valOffX = Number(b.params._valOffX != null ? b.params._valOffX : b.params._lblOffX) || 0;
+      const valOffY = Number(b.params._valOffY != null ? b.params._valOffY : b.params._lblOffY) || 0;
+      const nameOffX = Number(b.params._nameOffX != null ? b.params._nameOffX : b.params._lblOffX) || 0;
+      const nameOffY = Number(b.params._nameOffY != null ? b.params._nameOffY : b.params._lblOffY) || 0;
+      const infoOffX = Number(b.params._infoOffX != null ? b.params._infoOffX : b.params._lblOffX) || 0;
+      const infoOffY = Number(b.params._infoOffY != null ? b.params._infoOffY : b.params._lblOffY) || 0;
+      const info = c.info ? c.info(b.params) : "";
+      if (v)    body += `<text class="lbl-val"  x="${f.w / 2 + valOffX}" y="${lblY.valY + valOffY}">${esc(v)}</text>`;
+      if (nm)   body += `<text class="lbl-name" x="${f.w / 2 + nameOffX}" y="${lblY.nameY + nameOffY}">${esc(nm)}</text>`;
+      if (info) body += `<text class="lbl-info" x="${f.w / 2 + infoOffX}" y="${lblY.infoY + infoOffY}">${esc(info)}</text>`;
     }
     body += `</g>`;
   }
@@ -268,5 +349,33 @@ function buildExportSVG(scale = 1) {
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${Math.round(W * scale)}" height="${Math.round(H * scale)}" viewBox="${minx} ${miny} ${W} ${H}">`
     + `<defs><marker id="ea" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#3c4756"/></marker><style>${css}</style></defs>`
     + `<rect x="${minx}" y="${miny}" width="${W}" height="${H}" fill="#ffffff"/>${body}</svg>`;
+}
+
+function exportVsdx() {
+  commitSheet();
+  if (!blocks.length) {
+    hint("Can't export Visio VSDX — the diagram is empty.");
+    return;
+  }
+  if (typeof buildVsdxBlob !== "function") {
+    alert("VSDX Exporter module is not loaded.");
+    return;
+  }
+  try {
+    const P = computePowers("primary");
+    const PSecondary = computePowers("secondary");
+    const needNoise = !!(settings.showNF || settings.showNoiseFloor);
+    const NFm = needNoise ? computeNoise(P) : null;
+    const blob = buildVsdxBlob(blocks, conns, P, NFm, PSecondary, null, settings);
+    const base = (fileName || "rf-chain").replace(/\.(rfbd|json|vsdx|png|svg)$/i, "");
+    const name = `${base}.vsdx`;
+    const url = URL.createObjectURL(blob), a = document.createElement("a");
+    a.href = url; a.download = name; a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+    hint(`Exported ${name}`);
+  } catch (err) {
+    console.error(err);
+    alert("Error generating Visio VSDX file: " + (err.message || err));
+  }
 }
 

@@ -1,5 +1,21 @@
 "use strict";
 
+/* Centralized Design System Tokens */
+const DESIGN_TOKENS = {
+  fontMin: 12,
+  fontSizes: {
+    small: 12,      // port-lbl, pun (units), lbl-info
+    normal: 13,     // lbl-val (parameters), indicator pills
+    large: 14,      // lbl-name, cust-tx, ic-tag
+    heading: 16,    // free-label (annotations)
+    title: 18       // header titles
+  },
+  fontFamily: 'Calibri, "Calibri Light", "Segoe UI", Arial, sans-serif',
+  fontFamilyMono: 'Calibri, "Calibri Light", "Segoe UI", Arial, sans-serif',
+  symbolScale: 1, // Component symbols and their authored ports share the same coordinate grid.
+  exportPadding: 24
+};
+
 /* Group default tints (fallback) */
 const GROUP_TINT = {
   "Terminals": "#eef2f7",
@@ -14,50 +30,51 @@ const GROUP_TINT = {
   "Annotate": "#ffffff"
 };
 
-/* Distinct individual component block type colors (optimized for white backgrounds) */
+/* Distinct individual component block type colors (optimized for crisp schematic readability) */
 const TYPE_TINT = {
   /* Sources & Generators */
-  "source":      "#fee2e2",  // Soft Red/Coral
-  "lo":          "#fef08a",  // Soft Gold/Yellow
-  "rfin":        "#e0f2fe",  // Soft Sky Blue
+  "source":      "#fee2e2",  // Soft Rose / Coral
+  "lo":          "#fef08a",  // Soft Gold / Yellow
 
   /* Terminals & Output */
-  "rfout":       "#e2e8f0",  // Soft Slate
-  "antenna":     "#bae6fd",  // Soft Azure Blue
-  "detector":    "#ccfbf1",  // Soft Teal
-  "termination": "#f3f4f6",  // Light Neutral Gray
+  "rfin":        "#0284c7",  // Bright Azure Blue Connector
+  "rfout":       "#2563eb",  // Bright Blue Connector
+  "antenna":     "#38bdf8",  // Bright Sky Blue Antenna
+  "detector":    "#0d9488",  // Teal Detector
+  "termination": "#475569",  // Neutral Slate Load
 
   /* Gain & Loss */
-  "amp":         "#dcfce7",  // Soft Mint Green (Amplifier/LNA/PA)
-  "bamp":        "#dcfce7",  // Soft Mint Green (Bypass Amplifier)
-  "atten":       "#ffedd5",  // Soft Warm Peach/Orange (Attenuator)
-  "dsa":         "#ffedd5",  // Soft Warm Peach/Orange (Digital Attenuator)
-  "limiter":     "#fed7aa",  // Soft Amber (Limiter)
-  "trace":       "#f1f5f9",  // Soft Gray Line
+  "amp":         "#bbf7d0",  // Crisp Emerald Green (Amplifier/LNA/PA)
+  "bamp":        "#bbf7d0",  // Crisp Emerald Green (Bypass Amplifier)
+  "atten":       "#fed7aa",  // Warm Peach (Attenuator)
+  "dsa":         "#fed7aa",  // Warm Peach (Digital Attenuator)
+  "eq":          "#fed7aa",  // Warm Peach (Equalizer)
+  "limiter":     "#fde68a",  // Warm Yellow (Limiter)
+  "trace":       "#e2e8f0",  // Light Slate Trace
 
   /* Filtering & Frequency */
-  "filter":      "#dbeafe",  // Soft Royal Blue (BPF/LPF/HPF)
-  "tfilter":     "#dbeafe",  // Soft Royal Blue (Tunable Filter)
-  "mixer":       "#f3e8ff",  // Soft Purple/Violet (Mixer)
-  "multiplier":  "#f3e8ff",  // Soft Purple/Violet (Multiplier)
-  "divider":     "#f3e8ff",  // Soft Purple/Violet (Divider)
-  "pll":         "#fef08a",  // Soft Gold/Yellow (PLL Synthesizer)
+  "filter":      "#bfdbfe",  // Royal Sky Blue (BPF/LPF/HPF)
+  "tfilter":     "#bfdbfe",  // Royal Sky Blue (Tunable Filter)
+  "mixer":       "#e9d5ff",  // Purple Lavender (Mixer)
+  "multiplier":  "#e9d5ff",  // Purple Lavender (Multiplier)
+  "divider":     "#e9d5ff",  // Purple Lavender (Divider)
+  "pll":         "#fef08a",  // Gold Yellow (PLL Synthesizer)
 
   /* Routing & Switching */
-  "splitter":    "#ecfccb",  // Soft Lime Green
-  "combiner":    "#d9f99d",  // Soft Olive Lime
-  "coupler":     "#fef3c7",  // Soft Warm Amber
-  "switch":      "#fae8ff",  // Soft Magenta/Pink (Switch)
-  "interconnect":"#e0e7ff",  // Soft Indigo (Off-page tag)
+  "splitter":    "#d9f99d",  // Lime Green
+  "combiner":    "#d9f99d",  // Lime Green
+  "coupler":     "#fef3c7",  // Warm Amber
+  "switch":      "#fbcfe8",  // Soft Magenta / Pink (Switch)
+  "interconnect":"#c7d2fe",  // Soft Indigo Tag
 
   /* Passive Components */
-  "isolator":    "#ffe4e6",  // Soft Rose
-  "circulator":  "#ede9fe",  // Soft Lavender
-  "phase":       "#cff4fc",  // Soft Cyan
+  "isolator":    "#fecdd3",  // Soft Rose
+  "circulator":  "#ddd6fe",  // Soft Violet
+  "phase":       "#a5f3fc",  // Soft Cyan
 
   /* Hierarchy & Annotation */
-  "subsystem":   "#f1f5f9",  // Soft Slate Container
-  "custom":      "#fef3c7",  // Soft Warm Cream
+  "subsystem":   "#e2e8f0",  // Light Slate Container
+  "custom":      "#fef3c7",  // Warm Cream
   "label":       "#ffffff"   // Pure White
 };
 
@@ -68,13 +85,33 @@ const SWATCHES = [
   "#e0f2fe", "#e0e7ff", "#f3e8ff", "#fce7f3", "#fee2e2", "#fef9c3"
 ];
 
+/* Layout Presets for Document & Print Compatibility */
+const LAYOUT_PRESETS = {
+  free:         { id: "free",         name: "Free / Custom", isFree: true,  w: 0,    h: 0,    mmW: 0,   mmH: 0 },
+  a4_landscape: { id: "a4_landscape", name: "A4 Landscape", isFree: false, w: 1400, h: 990,  mmW: 297, mmH: 210 },
+  a4_portrait:  { id: "a4_portrait",  name: "A4 Portrait",  isFree: false, w: 990,  h: 1400, mmW: 210, mmH: 297 },
+  a3_landscape: { id: "a3_landscape", name: "A3 Landscape", isFree: false, w: 1980, h: 1400, mmW: 420, mmH: 297 },
+  a3_portrait:  { id: "a3_portrait",  name: "A3 Portrait",  isFree: false, w: 1400, h: 1980, mmW: 297, mmH: 420 }
+};
+
 /* Default application configuration settings */
 const DEFAULT_SETTINGS = {
   snap: true,
   grid: true,
-  gridSize: 20,
+  gridSize: 10,
+  showPwr1: true,
+  showPwr2: false,
+  powerBudget: "primary",
+  showNoiseFloor: false,
   showNF: false,
+  bandwidthVal: 1.0,
+  bandwidthUnit: "MHz",
+  bandwidthHz: 1e6,
   showLabels: true,
+  enableJumpers: true,
   color: true,
+  theme: "dark",
+  layoutPreset: "a4_portrait",
   analysisBand: { startFreq: 1, startUnit: "GHz", stopFreq: 10, stopUnit: "GHz", points: 101, sweepType: "lin" }
 };
+

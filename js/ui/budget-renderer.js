@@ -25,8 +25,7 @@ function renderBudget() {
 
   const startId = sel.value || (starts[0] ? starts[0].id : null);
   const { rows, P } = buildBudget(startId);
-  const bwMHz = Math.max(0.001, +($("bgBw") ? $("bgBw").value : 1) || 1);
-  const bwHz = bwMHz * 1e6;
+  const bwHz = (settings.bandwidthHz && settings.bandwidthHz > 0) ? settings.bandwidthHz : 1e6;
 
   if (!rows.length) {
     body.innerHTML = `<div class="bg-empty">Add a source (RF IN, Source, or an Rx antenna) and wire a chain to see the budget.</div>` + warnHtml(P);

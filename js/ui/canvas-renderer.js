@@ -1,7 +1,7 @@
 "use strict";
 
 /* Canvas SVG Render Loop */
-const layerConn = $("layerConn"), layerBlock = $("layerBlock"), layerPill = $("layerPill"), overlay = $("overlay"), gridRect = $("gridRect");
+const layerPage = $("layerPage"), layerConn = $("layerConn"), layerBlock = $("layerBlock"), layerPill = $("layerPill"), overlay = $("overlay"), gridRect = $("gridRect");
 
 function applyView() {
   world.setAttribute("transform", `translate(${view.tx} ${view.ty}) scale(${view.scale})`);
@@ -11,7 +11,34 @@ function applyView() {
 
 function renderCanvas() {
   gridRect.style.display = settings.grid ? "" : "none";
-  const P = computePowers();
+
+  /* Render Page Layout Frame for Document Presets */
+  const curSheet = sheets[cur];
+  const presetKey = (curSheet && curSheet.layoutPreset) || settings.layoutPreset || "free";
+  const layoutObj = LAYOUT_PRESETS[presetKey] || LAYOUT_PRESETS.free;
+
+  if (layerPage) {
+    if (layoutObj && !layoutObj.isFree) {
+      const margin = 40;
+      const pxW = layoutObj.w, pxH = layoutObj.h;
+      const x0 = margin, y0 = margin;
+      const badgeText = `${layoutObj.name} · ${layoutObj.mmW} × ${layoutObj.mmH} mm`;
+      const badgeWidth = badgeText.length * 8 + 24;
+
+      layerPage.innerHTML = `<g class="page-frame-group">`
+        + `<rect class="page-bg-frame" x="${x0}" y="${y0}" width="${pxW}" height="${pxH}" rx="6"/>`
+        + `<rect class="page-boundary" x="${x0}" y="${y0}" width="${pxW}" height="${pxH}" rx="6"/>`
+        + `<g transform="translate(${x0 + 16}, ${y0 + 26})">`
+        + `<rect class="page-badge-bg" x="-8" y="-16" width="${badgeWidth}" height="24" rx="4"/>`
+        + `<text class="page-badge" x="0" y="0" dominant-baseline="middle">${esc(badgeText)}</text>`
+        + `</g></g>`;
+    } else {
+      layerPage.innerHTML = "";
+    }
+  }
+
+  const P = computePowers("primary");
+  const PSecondary = computePowers("secondary");
   const hotSet = new Set();
   for (const b of blocks) {
     const c = COMP[b.type];
@@ -31,16 +58,47 @@ function renderCanvas() {
     if (!a || !z) continue;
     RS.push({ cn, R: route(a, z, cn), lvl: P[key(cn.from.block, cn.from.port)] });
   }
+
+  const allVertSegs = [];
+  for (const { cn, R } of RS) {
+    if (R.segs) {
+      for (const s of R.segs) {
+        if (!s.horiz) allVertSegs.push({ ...s, connId: cn.id });
+      }
+    }
+  }
+
   const segsAll = [].concat(...RS.map(r => r.R.segs || []));
   const rectsAll = obstacleRects(0);
-  const NFm = settings.showNF ? computeNoise(P) : null;
+  const needNoise = !!(settings.showNF || settings.showNoiseFloor);
+  const NFm = needNoise ? computeNoise(P) : null;
   for (const { cn, R, lvl } of RS) {
     const selc = selConn === cn.id, mk = selc ? "arrowSel" : "arrow";
-    wireHtml += `<g class="conn${selc ? " sel" : ""}" data-conn="${cn.id}"><path class="conn-hit" d="${R.d}"/><path class="wire" d="${R.d}" marker-end="url(#${mk})"/></g>`;
+    const pathD = buildPathWithJumpers(R.pts, allVertSegs, cn.id);
+    wireHtml += `<g class="conn${selc ? " sel" : ""}" data-conn="${cn.id}"><path class="conn-hit" d="${pathD}"/><path class="wire" d="${pathD}" marker-end="url(#${mk})"/>`;
+    if (selc && cn.waypoints && cn.waypoints.length) {
+      cn.waypoints.forEach((wp, idx) => {
+        wireHtml += `<g class="wire-node-g" data-conn="${cn.id}" data-node="${idx}"><circle class="wire-node-hit" cx="${wp.x}" cy="${wp.y}" r="14"/><circle class="wire-node" cx="${wp.x}" cy="${wp.y}" r="6"/></g>`;
+      });
+    }
+    wireHtml += `</g>`;
+
     if (settings.showLabels !== false && !cn.hidePill) {
-      const nf = NFm ? nfDb(NFm[key(cn.from.block, cn.from.port)]) : undefined;
-      const base = pillCenter(R, lvl, segsAll, rectsAll, nf), off = cn.labelOff || { dx: 0, dy: 0 };
-      pillHtml += pill(base.x + off.dx, base.y + off.dy, lvl, cn.id, nf);
+      const nnObj = NFm ? NFm[key(cn.from.block, cn.from.port)] : undefined;
+      const nfVal = nfDb(nnObj);
+      const srcLvl = (typeof startBlocks === "function" && startBlocks().length) ? P[key(startBlocks()[0].id, srcPorts(COMP[startBlocks()[0].type], startBlocks()[0].params)[0])] : 0;
+      const nflVal = (nnObj && typeof computeNoiseFloor === "function") ? computeNoiseFloor(nnObj, lvl, srcLvl, settings.bandwidthHz) : undefined;
+      
+      const lvlPrimary = P[key(cn.from.block, cn.from.port)];
+      const lvlSecondary = PSecondary[key(cn.from.block, cn.from.port)];
+      const indicators = {
+        pwr1: (settings.showPwr1 !== false && lvlPrimary !== undefined && isFinite(lvlPrimary)) ? dbm(lvlPrimary) : null,
+        pwr2: (settings.showPwr2 === true && lvlSecondary !== undefined && isFinite(lvlSecondary)) ? dbm(lvlSecondary) : null,
+        nfloor: (settings.showNoiseFloor === true && nflVal !== undefined && isFinite(nflVal)) ? dbm(nflVal) : null,
+        nf: (settings.showNF === true && nfVal !== undefined && isFinite(nfVal)) ? ("NF " + fmt(nfVal) + " dB") : null
+      };
+
+      pillHtml += pillStack(R, indicators, cn.id);
     }
   }
   layerConn.innerHTML = wireHtml;
@@ -57,10 +115,11 @@ function renderCanvas() {
         + `<rect class="block-hit" x="-4" y="-16" width="${f.w}" height="22" rx="4"/>`
         + `<text class="free-label" x="0" y="0" dominant-baseline="middle">${esc(b.params.text || "Label")}</text>`;
     } else {
-      const tf = rotTransform(b);
+      const rotTf = rotTransform(b);
+      const symTf = (rotTf ? `${rotTf} ` : "") + `translate(${f.w / 2} ${f.h / 2}) scale(${DESIGN_TOKENS.symbolScale}) translate(${-f.w / 2} ${-f.h / 2})`;
       bh += `<rect class="sel-ring" x="-8" y="-8" width="${f.w + 16}" height="${f.h + 16}" rx="9"/>`
         + `<rect class="block-hit" x="0" y="0" width="${f.w}" height="${f.h}"/>`
-        + `<g${tf ? ` transform="${tf}"` : ""}>${c.sym(b.params)}</g>`;
+        + `<g${symTf ? ` transform="${symTf}"` : ""}>${c.sym(b.params)}</g>`;
       if (c.isInterconnect) {
         const rt = (b.params.tag || "?"), disp = icTagText(isSubTag(rt) ? subTagPort(rt) : rt);
         const tx = (b.rot || b.flip) ? f.w / 2 : (icSend(b.params) ? 16 : 23);
@@ -86,19 +145,21 @@ function renderCanvas() {
         if (psh && psh !== sheets[cur]) nm = (icRecv(b.params) ? "\u2190 " : "\u2192 ") + psh.name;
       }
       const v = c.val ? c.val(b.params) : "";
-      if (c.topLabel || c.lblPos === "top") {
-        if (nm && v) {
-          bh += `<text class="lbl-name" x="${f.w / 2}" y="-22">${esc(nm)}</text>`;
-          bh += `<text class="lbl-val" x="${f.w / 2}" y="-10">${esc(v)}</text>`;
-        } else if (nm) {
-          bh += `<text class="lbl-name" x="${f.w / 2}" y="-10">${esc(nm)}</text>`;
-        } else if (v) {
-          bh += `<text class="lbl-val" x="${f.w / 2}" y="-10">${esc(v)}</text>`;
-        }
-      } else {
-        if (nm) bh += `<text class="lbl-name" x="${f.w / 2}" y="${f.h + 13}">${esc(nm)}</text>`;
-        if (v) bh += `<text class="lbl-val" x="${f.w / 2}" y="${f.h + (nm ? 25 : 13)}">${esc(v)}</text>`;
-      }
+      /* Universal label layout with independent floating offsets:
+         val  (gain/loss)         → ABOVE symbol at y = -13
+         nm   (name/label)        → BELOW symbol at y = f.h + 18
+         info (extra metadata)    → BELOW name at y = f.h + 33 (only if defined)  */
+      const lblY = (typeof blockLabelY === "function") ? blockLabelY(b, f, settings) : { valY: -13, nameY: f.h + 18, infoY: f.h + 33 };
+      const valOffX = Number(b.params._valOffX != null ? b.params._valOffX : b.params._lblOffX) || 0;
+      const valOffY = Number(b.params._valOffY != null ? b.params._valOffY : b.params._lblOffY) || 0;
+      const nameOffX = Number(b.params._nameOffX != null ? b.params._nameOffX : b.params._lblOffX) || 0;
+      const nameOffY = Number(b.params._nameOffY != null ? b.params._nameOffY : b.params._lblOffY) || 0;
+      const infoOffX = Number(b.params._infoOffX != null ? b.params._infoOffX : b.params._lblOffX) || 0;
+      const infoOffY = Number(b.params._infoOffY != null ? b.params._infoOffY : b.params._lblOffY) || 0;
+      const info = c.info ? c.info(b.params) : "";
+      if (v)    bh += `<text class="lbl-val"  x="${f.w / 2 + valOffX}" y="${lblY.valY + valOffY}" data-block="${b.id}" data-lbl="val">${esc(v)}</text>`;
+      if (nm)   bh += `<text class="lbl-name" x="${f.w / 2 + nameOffX}" y="${lblY.nameY + nameOffY}" data-block="${b.id}" data-lbl="name">${esc(nm)}</text>`;
+      if (info) bh += `<text class="lbl-info" x="${f.w / 2 + infoOffX}" y="${lblY.infoY + infoOffY}" data-block="${b.id}" data-lbl="info">${esc(info)}</text>`;
       for (const p of getPorts(b)) {
         const m = markInside(p, f.w, f.h);
         bh += `<g class="port ${p.kind}" data-block="${b.id}" data-port="${p.id}" data-kind="${p.kind}"><circle class="port-hit" cx="${p.dx}" cy="${p.dy}" r="10"/><circle class="port-mark" cx="${m.x}" cy="${m.y}" r="3"/></g>`;

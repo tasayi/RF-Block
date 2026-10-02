@@ -11,12 +11,16 @@ function renderInspector() {
     const P = computePowers(), lvl = P[key(cn.from.block, cn.from.port)];
     const nfv = nfDb(computeNoise(P)[key(cn.from.block, cn.from.port)]);
     const fb = findBlock(cn.from.block), tb = findBlock(cn.to.block);
+    const hasCustom = (cn.jog != null) || (cn.waypoints && cn.waypoints.length > 0);
+    const wpCount = cn.waypoints ? cn.waypoints.length : 0;
     box.innerHTML = `<div class="insp-title"><span class="chip">Link</span><h3>Connection</h3></div>
       <div class="readout"><div class="r big"><span>Level on wire</span><span>${esc(dbm(lvl))}</span></div>
         <div class="r"><span>Cascade NF</span><span>${nfv === undefined ? "\u2014" : esc(fmt(nfv) + " dB")}</span></div>
         <div class="r"><span>From</span><span>${esc((fb && fb.params.label) || (fb && COMP[fb.type].name) || "?")}·${esc(cn.from.port)}</span></div>
-        <div class="r"><span>To</span><span>${esc((tb && tb.params.label) || (tb && COMP[tb.type].name) || "?")}·${esc(cn.to.port)}</span></div></div>
+        <div class="r"><span>To</span><span>${esc((tb && tb.params.label) || (tb && COMP[tb.type].name) || "?")}·${esc(cn.to.port)}</span></div>
+        ${wpCount ? `<div class="r"><span>Waypoints</span><span>${wpCount} node${wpCount > 1 ? "s" : ""}</span></div>` : ""}</div>
       <label class="insp-check"><input type="checkbox" id="ibPill"${cn.hidePill ? "" : " checked"}/> Show the dBm label on this wire</label>
+      ${hasCustom ? `<button class="btn ins-btn" id="ibClearWp" style="margin-bottom:8px">⟲ Straighten wire</button>` : ""}
       <button class="btn btn-del" id="ibDelC">Delete connection</button>`;
     const ibP = $("ibPill");
     if (ibP) ibP.onchange = e => {
@@ -24,6 +28,14 @@ function renderInspector() {
       if (e.target.checked) delete cn.hidePill; else cn.hidePill = true;
       renderCanvas();
       hint(cn.hidePill ? "Label hidden on this wire." : "Label shown.");
+    };
+    const ibClr = $("ibClearWp");
+    if (ibClr) ibClr.onclick = () => {
+      pushHistory();
+      delete cn.jog;
+      delete cn.waypoints;
+      renderAll();
+      hint("Wire straightened.");
     };
     const ibD = $("ibDelC");
     if (ibD) ibD.onclick = () => { pushHistory(); conns = conns.filter(c => c.id !== cn.id); selConn = null; renderAll(); };

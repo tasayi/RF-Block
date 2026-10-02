@@ -35,6 +35,35 @@ const num = v => {
   return isFinite(n) ? n : undefined;
 };
 
+const readPowerValue = (p, keys) => {
+  if (!p || typeof p !== "object") return undefined;
+  for (const key of keys) {
+    const v = p[key];
+    if (v !== undefined && v !== null && v !== "") return v;
+  }
+  return undefined;
+};
+
+const normalizePowerBudgetMode = mode => {
+  const m = String(mode || "primary").toLowerCase();
+  return m === "secondary" ? "secondary" : "primary";
+};
+
+const getPrimarySourcePower = p => {
+  const v = readPowerValue(p, ["primaryPower", "primaryInputPower", "power"]);
+  return num(v) ?? 0;
+};
+
+const getSecondarySourcePower = p => {
+  const v = readPowerValue(p, ["secondaryPower", "secondaryInputPower", "power"]);
+  return num(v) ?? 0;
+};
+
+const getSelectedSourcePower = (p, mode) => {
+  const budgetMode = normalizePowerBudgetMode(mode ?? (typeof settings !== "undefined" ? settings.powerBudget : "primary"));
+  return budgetMode === "secondary" ? getSecondarySourcePower(p) : getPrimarySourcePower(p);
+};
+
 /* srcOut may name one port or several (a custom block with no inputs feeds them all) */
 const srcPorts = (c, p) => [].concat(c.srcOut(p)).filter(Boolean);
 
