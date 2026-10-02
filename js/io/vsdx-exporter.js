@@ -250,8 +250,10 @@ function buildShapeXml(id, name, pinX, pinY, widthIn, heightIn, geometry, style,
     + `      <Cell N="Width" V="${widthIn}"/><Cell N="Height" V="${heightIn}"/>\n`
     + `      <Cell N="PinX" V="${pinX}"/><Cell N="PinY" V="${pinY}"/>\n`
     + `      <Cell N="LocPinX" V="${widthIn / 2}"/><Cell N="LocPinY" V="${heightIn / 2}"/>\n`
-    + `      <Cell N="FillForegnd" V="${fill}"/><Cell N="LineColor" V="${stroke}"/>\n`
+    + `      <Cell N="FillForegnd" V="${fill}"/><Cell N="FillBkgnd" V="#ffffff"/><Cell N="FillPattern" V="${style.fill ? 1 : 0}"/>\n`
+    + `      <Cell N="LineColor" V="${stroke}"/>\n`
     + `      <Cell N="LineWeight" V="${style.stroke ? style.lineWidth / 96 : 0}"/><Cell N="LinePattern" V="${style.linePattern || 1}"/>\n`
+    + `      <Cell N="LeftMargin" V="0"/><Cell N="RightMargin" V="0"/><Cell N="TopMargin" V="0"/><Cell N="BottomMargin" V="0"/>\n`
     + geometry
     + (connectionPoints.length ? `<Section N="Connection" IX="0">${connectionPoints.map((point, index) => `<Row IX="${index}"><Cell N="X" V="${point.x}"/><Cell N="Y" V="${point.y}"/><Cell N="DirX" V="${point.dirX}"/><Cell N="DirY" V="${point.dirY}"/><Cell N="Type" V="0"/></Row>`).join("")}</Section>\n` : "")
     + (text ? `<Text><cp IX="0"/><pp IX="0"/>${vsdxEsc(text)}</Text>\n` : "")
@@ -292,12 +294,17 @@ function resolveExportPort(block, component, portId, footprintSize) {
 function buildTextShapeXml(id, text, centerX, centerY, widthPx, heightPx, fontPx, color, bold, align, dpi, toInX, toInY, angleRadians = 0) {
   const widthIn = Math.max(0.01, widthPx / dpi), heightIn = Math.max(0.01, heightPx / dpi);
   const x = toInX(centerX), y = toInY(centerY);
+  const alignVal = (align === "middle" || align === "center") ? 1 : (align === "end" || align === "right") ? 2 : 0;
   return `    <Shape ID="${id}" NameU="Text annotation" Type="Shape" LineStyle="0" FillStyle="0" TextStyle="0">\n`
     + `      <Cell N="Width" V="${widthIn}"/><Cell N="Height" V="${heightIn}"/><Cell N="PinX" V="${x}"/><Cell N="PinY" V="${y}"/><Cell N="LocPinX" V="${widthIn / 2}"/><Cell N="LocPinY" V="${heightIn / 2}"/>\n`
     + `      <Cell N="Angle" V="${angleRadians}"/>\n`
     + `      <Cell N="LinePattern" V="0"/><Cell N="FillPattern" V="0"/>\n`
-    + `      <Cell N="TxtPinX" V="${widthIn / 2}"/><Cell N="TxtPinY" V="${heightIn / 2}"/><Cell N="TxtWidth" V="${widthIn}"/><Cell N="TxtHeight" V="${heightIn}"/>\n`
+    + `      <Cell N="TxtPinX" V="${widthIn / 2}"/><Cell N="TxtPinY" V="${heightIn / 2}"/>\n`
+    + `      <Cell N="TxtLocPinX" V="${widthIn / 2}"/><Cell N="TxtLocPinY" V="${heightIn / 2}"/>\n`
+    + `      <Cell N="TxtWidth" V="${widthIn}"/><Cell N="TxtHeight" V="${heightIn}"/>\n`
+    + `      <Cell N="LeftMargin" V="0"/><Cell N="RightMargin" V="0"/><Cell N="TopMargin" V="0"/><Cell N="BottomMargin" V="0"/>\n`
     + `      <Cell N="TxtMarginLeft" V="0"/><Cell N="TxtMarginRight" V="0"/><Cell N="TxtMarginTop" V="0"/><Cell N="TxtMarginBottom" V="0"/>\n`
+    + `      <Section N="Paragraph" IX="0"><Row IX="0"><Cell N="HorzAlign" V="${alignVal}"/></Row></Section>\n`
     + `      <Section N="Character" IX="0"><Row IX="0"><Cell N="Font" V="1"/><Cell N="Size" V="${fontPx / 96}"/><Cell N="Color" V="${color}"/><Cell N="Style" V="${bold ? 1 : 0}"/></Row></Section>\n`
     + `      <Text><cp IX="0"/><pp IX="0"/>${vsdxEsc(text)}</Text>\n`
     + `    </Shape>\n`;
@@ -495,7 +502,7 @@ function buildVsdxBlob(blocksList, connsList, Pdict, NFdict, PSecondaryDict, com
   /* Root Relationships */
   const rootRelsXml = XML_HDR
     + `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">\n`
-    + `  <Relationship Id="rId1" Type="http://schemas.microsoft.com/office/visio/2012/relationships/document" Target="visio/document.xml"/>\n`
+    + `  <Relationship Id="rId1" Type="http://schemas.microsoft.com/visio/2010/relationships/document" Target="visio/document.xml"/>\n`
     + `  <Relationship Id="rId2" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/>\n`
     + `  <Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties" Target="docProps/app.xml"/>\n`
     + `</Relationships>`;
@@ -520,9 +527,9 @@ function buildVsdxBlob(blocksList, connsList, Pdict, NFdict, PSecondaryDict, com
   /* Document Relationships */
   const docRelsXml = XML_HDR
     + `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">\n`
-    + `  <Relationship Id="rId1" Type="http://schemas.microsoft.com/office/visio/2012/relationships/pages" Target="pages/pages.xml"/>\n`
-    + `  <Relationship Id="rId2" Type="http://schemas.microsoft.com/office/visio/2012/relationships/masters" Target="masters/masters.xml"/>\n`
-    + `  <Relationship Id="rId3" Type="http://schemas.microsoft.com/office/visio/2012/relationships/windows" Target="windows.xml"/>\n`
+    + `  <Relationship Id="rId1" Type="http://schemas.microsoft.com/visio/2010/relationships/pages" Target="pages/pages.xml"/>\n`
+    + `  <Relationship Id="rId2" Type="http://schemas.microsoft.com/visio/2010/relationships/masters" Target="masters/masters.xml"/>\n`
+    + `  <Relationship Id="rId3" Type="http://schemas.microsoft.com/visio/2010/relationships/windows" Target="windows.xml"/>\n`
     + `</Relationships>`;
 
   /* Pages Manifest */
@@ -536,7 +543,7 @@ function buildVsdxBlob(blocksList, connsList, Pdict, NFdict, PSecondaryDict, com
   /* Pages Relationships */
   const pagesRelsXml = XML_HDR
     + `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">\n`
-    + `  <Relationship Id="rId1" Type="http://schemas.microsoft.com/office/visio/2012/relationships/page" Target="page1.xml"/>\n`
+    + `  <Relationship Id="rId1" Type="http://schemas.microsoft.com/visio/2010/relationships/page" Target="page1.xml"/>\n`
     + `</Relationships>`;
 
   /* Masters Manifest */
@@ -653,15 +660,25 @@ function buildVsdxBlob(blocksList, connsList, Pdict, NFdict, PSecondaryDict, com
         name = `${owner ? (owner.params.label || "Section") : "Section"} · ${subTagPort(b.params.tag)}`;
       }
       const value = typeof c.val === "function" ? c.val(b.params || {}) : "";
+      const info = typeof c.info === "function" ? c.info(b.params || {}) : "";
       const fontSizes = (typeof DESIGN_TOKENS !== "undefined" && DESIGN_TOKENS.fontSizes) || { normal: 14, large: 16 };
-      const top = c.topLabel || c.lblPos === "top";
-      if (name && value) {
-        addText(name, b.x + f.w / 2, b.y + (top ? -23 : f.h + 12), Math.max(f.w + 24, name.length * 10), 20, fontSizes.large || 16, "#000000", true, "middle");
-        addText(value, b.x + f.w / 2, b.y + (top ? -8 : f.h + 27), Math.max(f.w + 24, value.length * 9), 18, fontSizes.normal || 14, "#1e293b", true, "middle");
-      } else if (name) {
-        addText(name, b.x + f.w / 2, b.y + (top ? -9 : f.h + 12), Math.max(f.w + 24, name.length * 10), 20, fontSizes.large || 16, "#000000", true, "middle");
-      } else if (value) {
-        addText(value, b.x + f.w / 2, b.y + (top ? -9 : f.h + 12), Math.max(f.w + 24, value.length * 9), 18, fontSizes.normal || 14, "#1e293b", true, "middle");
+
+      const p = b.params || {};
+      const valOffX = Number(p._valOffX != null ? p._valOffX : p._lblOffX) || 0;
+      const valOffY = Number(p._valOffY != null ? p._valOffY : p._lblOffY) || 0;
+      const nameOffX = Number(p._nameOffX != null ? p._nameOffX : p._lblOffX) || 0;
+      const nameOffY = Number(p._nameOffY != null ? p._nameOffY : p._lblOffY) || 0;
+      const infoOffX = Number(p._infoOffX != null ? p._infoOffX : p._lblOffX) || 0;
+      const infoOffY = Number(p._infoOffY != null ? p._infoOffY : p._lblOffY) || 0;
+
+      if (value) {
+        addText(value, b.x + f.w / 2 + valOffX, b.y - 13 + valOffY, Math.max(f.w + 32, value.length * 11 + 16), 18, fontSizes.large || 16, "#1e293b", true, "middle");
+      }
+      if (name) {
+        addText(name, b.x + f.w / 2 + nameOffX, b.y + f.h + 18 + nameOffY, Math.max(f.w + 32, name.length * 11 + 16), 20, fontSizes.large || 16, "#000000", true, "middle");
+      }
+      if (info) {
+        addText(info, b.x + f.w / 2 + infoOffX, b.y + f.h + 33 + infoOffY, Math.max(f.w + 32, info.length * 11 + 16), 18, fontSizes.normal || 14, "#64748b", true, "middle");
       }
     }
     if (!blockAnchorId) throw new Error(`Component "${b.type}" did not produce an exportable shape.`);
@@ -775,19 +792,29 @@ function buildVsdxBlob(blocksList, connsList, Pdict, NFdict, PSecondaryDict, com
       if (settings.showNoiseFloor === true && nflVal !== undefined && isFinite(nflVal)) indicators.push({ type: "nfloor", text: dbm(nflVal) });
 
       if (indicators.length > 0) {
-        const fallbackWidth = Math.max(36, ...indicators.map(ind => String(ind.text).length * 8.5 + 12));
+        const fallbackWidth = Math.max(28, ...indicators.map(ind => String(ind.text).length * 8.5 + 4));
+        const fallbackAnchorX = R.mx ?? (a.x + z.x) / 2;
+        const fallbackAnchorY = R.my ?? (a.y + z.y) / 2;
         const layout = typeof indicatorPillLayout === "function"
           ? indicatorPillLayout(R, Object.fromEntries(indicators.map(ind => [ind.type, ind.text])))
           : {
             colWidth: fallbackWidth,
             pillHeight: 20,
-            entries: indicators.map((ind, index) => ({
+            anchorX: fallbackAnchorX,
+            anchorY: fallbackAnchorY,
+            entries: indicators.map(ind => ({
               ...ind,
-              x: R.mx ?? (a.x + z.x) / 2,
-              y: (R.my ?? (a.y + z.y) / 2) + (index < 2 ? -1 : 1) * (14 + (index % 2) * 24)
+              x: fallbackAnchorX,
+              y: fallbackAnchorY + (ind.type === "pwr1" || ind.type === "nf" ? -14 : 14)
             }))
           };
         const { colWidth, pillHeight } = layout;
+        const PILL_THEMES = {
+          pwr1:   { fill: "#fef3c7", stroke: "#d97706", text: "#92400e" },
+          pwr2:   { fill: "#e0f2fe", stroke: "#0284c7", text: "#0c4a6e" },
+          nf:     { fill: "#d1fae5", stroke: "#059669", text: "#064e3b" },
+          nfloor: { fill: "#ede9fe", stroke: "#7c3aed", text: "#4c1d95" }
+        };
         const addPill = (ind, centerX, centerY) => {
           const pillShapeId = nextShapeId++;
           const pillWIn = toInLen(colWidth), pillHIn = toInLen(pillHeight);
@@ -795,20 +822,21 @@ function buildVsdxBlob(blocksList, connsList, Pdict, NFdict, PSecondaryDict, com
           const points = roundedRectPath(0, 0, colWidth, pillHeight, 5, 5)[0]
             .map(point => ({ x: toInLen(point.x), y: toInLen(pillHeight - point.y) }));
           const geometry = makeGeometrySection(points, 0, false, true);
+          const theme = PILL_THEMES[ind.type] || { fill: "#fef3c7", stroke: "#d97706", text: "#92400e" };
           const pillStyle = {
             fill: true,
-            fillColor: "#ffffff",
+            fillColor: theme.fill,
             stroke: true,
-            strokeColor: "#efd3a0",
+            strokeColor: theme.stroke,
             linePattern: 1,
             lineWidth: 1.2,
-            blockFill: "#ffffff",
-            ink: "#b45309"
+            blockFill: theme.fill,
+            ink: theme.stroke
           };
           shapesXml += buildShapeXml(pillShapeId, `IndicatorPill ${ind.type}`, pinX, pinY, pillWIn, pillHIn, geometry, pillStyle);
           const textShapeId = nextShapeId++;
-          const textWidth = typeof measurePillText === "function" ? measurePillText(ind.text).w - 12 : String(ind.text).length * 8.5;
-          shapesXml += buildTextShapeXml(textShapeId, ind.text, centerX, centerY, Math.max(1, textWidth), pillHeight, 15, "#b45309", true, "middle", dpi, toInX, toInY);
+          const safeTextWidth = Math.max(colWidth, String(ind.text).length * 9.5 + 8);
+          shapesXml += buildTextShapeXml(textShapeId, ind.text, centerX, centerY, safeTextWidth, pillHeight, 15, theme.text, true, "middle", dpi, toInX, toInY);
         };
         const savedPosition = cn.pillPosition || Object.values(cn.pillPositions || {})[0];
         let stackShiftX = 0, stackShiftY = 0;

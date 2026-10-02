@@ -200,6 +200,18 @@ function onMove(e) {
     if (Math.abs(w.x - drag.base.x) + Math.abs(w.y - drag.base.y) > 3) drag.moved = true;
     renderCanvas(); return;
   }
+  if (drag.mode === "blocklabel") {
+    const w = screenToWorld(e.clientX, e.clientY);
+    const b = findBlock(drag.blockId);
+    if (!b) return;
+    const dx = w.x - drag.startMouseX;
+    const dy = w.y - drag.startMouseY;
+    if (Math.hypot(dx, dy) > 3) drag.moved = true;
+    const t = drag.lblType || "name";
+    b.params[`_${t}OffX`] = Math.round(drag.startOffX + dx);
+    b.params[`_${t}OffY`] = Math.round(drag.startOffY + dy);
+    renderCanvas(); return;
+  }
   if (drag.mode === "wiredrag") {
     const w = screenToWorld(e.clientX, e.clientY); const cn = conns.find(c => c.id === drag.conn); if (!cn) return;
     const a = portPt(findBlock(cn.from.block), cn.from.port), z = portPt(findBlock(cn.to.block), cn.to.port); if (!a || !z) return;
@@ -226,6 +238,13 @@ function onUp(e) {
   if (drag.mode === "pan") {
     if (drag.right && drag.moved) rightPanMoved = true;
     if (!drag.moved && !drag.right) { clearSel(); renderAll(); }
+  }
+  if (drag.mode === "blocklabel") {
+    if (drag.moved) {
+      pushHistoryState(drag.pre);
+      const lblDesc = drag.lblType === "val" ? "Gain/loss" : drag.lblType === "info" ? "Info" : "Name";
+      hint(`${lblDesc} label repositioned.`);
+    }
   }
   if (drag.mode === "nodedrag") {
     if (drag.moved) { pushHistoryState(drag.pre); hint("Waypoint moved."); }

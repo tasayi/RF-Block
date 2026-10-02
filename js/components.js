@@ -14,46 +14,48 @@ const swState = (p, n) => {
 
 /* --- Sources ------------------------------------------------------ */
 def({
-  type: "source", keys: "signal generator cw carrier input", name: "Source", group: "Sources", w: 40, h: 40,
-  ports: [{ id: "out", side: "right", kind: "out", dx: 40, dy: 20 }],
+  type: "source", keys: "signal generator cw carrier input", name: "Source", group: "Sources", w: 80, h: 80,
+  ports: [{ id: "out", side: "right", kind: "out", dx: 80, dy: 40 }],
   params: { label: "SRC", power: 0, primaryPower: 0, secondaryPower: 0, freq: "1 GHz", anaPort: "None" },
   fields: [{ key: "anaPort", label: "Analysis Port", type: "select", options: ["None", "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8"] },
            { key: "primaryPower", label: "Primary input level", unit: "dBm", step: 0.5 },
            { key: "secondaryPower", label: "Secondary input level", unit: "dBm", step: 0.5 },
            { key: "power", label: "Legacy input level", unit: "dBm", step: 0.5 },
            { key: "freq", label: "Frequency", type: "text" }],
-  isSource: () => true, srcOut: () => "out", srcPower: (p, mode) => getSelectedSourcePower(p, mode), val: p => p.freq || dbm(getSelectedSourcePower(p)),
-  sym() { return `<circle class="blk-shape" cx="20" cy="20" r="19"/><path class="blk-glyph" d="M10 20 q5 -7 10 0 t10 0"/>`; }
+  isSource: () => true, srcOut: () => "out", srcPower: (p, mode) => getSelectedSourcePower(p, mode), val: p => dbm(getSelectedSourcePower(p)),
+  info: p => p.freq || "",
+  sym() { return `<circle class="blk-shape" cx="40" cy="40" r="38"/><path class="blk-glyph" d="M20 40 q10 -14 20 0 t20 0"/>`; }
 });
 
 def({
-  type: "lo", keys: "oscillator local synth vco source", name: "LO / Osc", group: "Frequency", w: 40, h: 40,
-  ports: [{ id: "out", side: "top", kind: "out", dx: 20, dy: 0 }],
+  type: "lo", keys: "oscillator local synth vco source", name: "LO / Osc", group: "Frequency", w: 80, h: 80,
+  ports: [{ id: "out", side: "top", kind: "out", dx: 40, dy: 0 }],
   params: { label: "LO", power: 10, primaryPower: 10, secondaryPower: 10, freq: "0.9 GHz", anaPort: "None" },
   fields: [{ key: "anaPort", label: "Analysis Port", type: "select", options: ["None", "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8"] },
            { key: "primaryPower", label: "Primary drive level", unit: "dBm", step: 0.5 },
            { key: "secondaryPower", label: "Secondary drive level", unit: "dBm", step: 0.5 },
            { key: "power", label: "Legacy drive level", unit: "dBm", step: 0.5 },
            { key: "freq", label: "Frequency", type: "text" }],
-  isSource: () => true, srcOut: () => "out", srcPower: (p, mode) => getSelectedSourcePower(p, mode), val: p => p.freq || dbm(getSelectedSourcePower(p)),
-  sym() { return `<circle class="blk-shape" cx="20" cy="20" r="19"/><path class="blk-glyph" d="M10 20 q5 -7 10 0 t10 0"/>`; }
+  isSource: () => true, srcOut: () => "out", srcPower: (p, mode) => getSelectedSourcePower(p, mode), val: p => dbm(getSelectedSourcePower(p)),
+  info: p => p.freq || "",
+  sym() { return `<circle class="blk-shape" cx="40" cy="40" r="38"/><path class="blk-glyph" d="M20 40 q10 -14 20 0 t20 0"/>`; }
 });
 
 /* --- Gain / Loss -------------------------------------------------- */
 def({
-  type: "amp", keys: "amplifier lna pa gain driver buffer", name: "Amplifier", group: "Gain / Loss", w: 40, h: 40,
-  ports: [{ id: "in", side: "left", kind: "in", dx: 0, dy: 20 }, { id: "out", side: "right", kind: "out", dx: 40, dy: 20 }],
+  type: "amp", keys: "amplifier lna pa gain driver buffer", name: "Amplifier", group: "Gain / Loss", w: 80, h: 80,
+  ports: [{ id: "in", side: "left", kind: "in", dx: 0, dy: 40 }, { id: "out", side: "right", kind: "out", dx: 80, dy: 40 }],
   params: { label: "AMP", gain: 15, nf: 2, p1db: 20, oip3: 30 },
   fields: [{ key: "gain", label: "Gain", unit: "dB", step: 0.5 }, { key: "nf", label: "Noise figure", unit: "dB", step: 0.1 },
            { key: "p1db", label: "Output P1dB", unit: "dBm", step: 0.5 }, { key: "oip3", label: "Output IP3", unit: "dBm", step: 0.5 }],
-  out: p => ({ out: +p.gain }), val: p => gsign(p.gain), nf: p => Math.abs(p.nf || 0),
+  out: p => ({ out: +p.gain }), val: p => { const nfv = Math.abs(p.nf || 0); return gsign(p.gain) + (nfv > 0 ? ' · NF ' + fmt(nfv) + ' dB' : ''); }, nf: p => Math.abs(p.nf || 0),
   p1db: p => num(p.p1db), oip3: p => num(p.oip3),
-  sym() { return `<path class="blk-shape" d="M0 2L40 20L0 38Z"/>`; }
+  sym() { return `<path class="blk-shape" d="M0 4L80 40L0 76Z"/>`; }
 });
 
 def({
-  type: "bamp", keys: "bypass amplifier lna amp tsy-83ln+ switch bypass mode active passive by_amp", name: "Bypass Amplifier", group: "Gain / Loss", w: 40, h: 40,
-  ports: [{ id: "in", side: "left", kind: "inout", dx: 0, dy: 20 }, { id: "out", side: "right", kind: "inout", dx: 40, dy: 20 }],
+  type: "bamp", keys: "bypass amplifier lna amp tsy-83ln+ switch bypass mode active passive by_amp", name: "Bypass Amplifier", group: "Gain / Loss", w: 80, h: 80,
+  ports: [{ id: "in", side: "left", kind: "inout", dx: 0, dy: 40 }, { id: "out", side: "right", kind: "inout", dx: 80, dy: 40 }],
   params: { label: "By_Amp", mode: "Amp Mode", gain: 18, nf: 1.2, bypLoss: 1.8, p1db: 20, oip3: 32 },
   fields: [{ key: "mode", label: "Mode", type: "select", options: ["Amp Mode", "Bypass Mode"] },
            { key: "gain", label: "Amp Gain", unit: "dB", step: 0.5 },
@@ -65,73 +67,71 @@ def({
   nf: p => (p.mode === "Bypass Mode" ? Math.abs(+p.bypLoss || 0) : Math.abs(+p.nf || 0)),
   p1db: p => (p.mode === "Bypass Mode" ? undefined : num(p.p1db)),
   oip3: p => (p.mode === "Bypass Mode" ? undefined : num(p.oip3)),
-  val: p => (p.mode === "Bypass Mode" ? ("BYP \u2212" + fmt(Math.abs(+p.bypLoss || 0)) + " dB") : gsign(p.gain)),
+  val: p => { const isByp = p.mode === 'Bypass Mode'; const gainStr = isByp ? ('BYP \u2212' + fmt(Math.abs(+p.bypLoss||0)) + ' dB') : gsign(p.gain); const nfv = isByp ? Math.abs(+p.bypLoss||0) : Math.abs(+p.nf||0); return gainStr + (nfv > 0 ? ' · NF ' + fmt(nfv) + ' dB' : ''); },
   sym(p) {
     const isByp = (p && p.mode === "Bypass Mode");
-    const topSw = isByp ? `<path class="blk-line" d="M12 10H26"/>` : `<path class="blk-line" d="M12 10L24 4"/>`;
-    const botSw = isByp ? `<path class="blk-line" d="M24 28L30 22"/>` : `<path class="blk-line" d="M24 28H32"/>`;
-    return `<rect class="blk-shape" x="0" y="2" width="40" height="36" rx="4"/>` +
-           `<path class="blk-line" d="M0 20H6V10H12M26 10H34V28M34 20H40"/>` +
-           `<path class="blk-line" d="M6 20V28H10M22 28H24M32 28H34"/>` +
-           `<path class="blk-glyph" d="M10 22L22 28L10 34Z"/>` +
+    const topSw = isByp ? `<path class="blk-line" d="M24 20H52"/>` : `<path class="blk-line" d="M24 20L48 8"/>`;
+    const botSw = isByp ? `<path class="blk-line" d="M48 56L60 44"/>` : `<path class="blk-line" d="M48 56H64"/>`;
+    return `<rect class="blk-shape" x="0" y="4" width="80" height="72" rx="8"/>` +
+           `<path class="blk-line" d="M0 40H12V20H24M52 20H68V56M68 40H80"/>` +
+           `<path class="blk-line" d="M12 40V56H20M44 56H48M64 56H68"/>` +
+           `<path class="blk-glyph" d="M20 44L44 56L20 68Z"/>` +
            topSw +
            botSw;
   }
 });
 
 def({
-  type: "atten", keys: "pad attenuation loss fixed step", name: "Attenuator", group: "Gain / Loss", w: 40, h: 40,
-  ports: [{ id: "in", side: "left", kind: "inout", dx: 0, dy: 20 }, { id: "out", side: "right", kind: "inout", dx: 40, dy: 20 }],
+  type: "atten", keys: "pad attenuation loss fixed step", name: "Attenuator", group: "Gain / Loss", w: 80, h: 80,
+  ports: [{ id: "in", side: "left", kind: "inout", dx: 0, dy: 40 }, { id: "out", side: "right", kind: "inout", dx: 80, dy: 40 }],
   params: { label: "ATT", loss: 10 },
   fields: [{ key: "loss", label: "Attenuation", unit: "dB", step: 0.5, min: 0 }], nf: p => Math.abs(p.loss),
   out: p => ({ out: -Math.abs(p.loss) }), val: p => "\u2212" + fmt(Math.abs(p.loss)) + " dB",
   bidi: (m, p) => rl(m, Math.abs(p.loss)),
   sym() {
-    return `<rect class="blk-shape" x="0" y="4" width="40" height="32" rx="4"/>` +
-           `<path class="blk-glyph" d="M20 8v3l-6 2.25 12 4.5-12 4.5 12 4.5-6 2.25v3"/>`;
+    return `<rect class="blk-shape" x="0" y="8" width="80" height="64" rx="8"/>` +
+           `<path class="blk-glyph" d="M40 16v6l-12 4.5 24 9-24 9 24 9-12 4.5v6"/>`;
   }
 });
 
 def({
-  type: "dsa", keys: "dsa dat digital attenuator step variable control pad dca", name: "Digital Attenuator", group: "Gain / Loss", w: 40, h: 40,
-  ports: [{ id: "in", side: "left", kind: "inout", dx: 0, dy: 20 }, { id: "out", side: "right", kind: "inout", dx: 40, dy: 20 }],
+  type: "dsa", keys: "dsa dat digital attenuator step variable control pad dca", name: "Digital Attenuator", group: "Gain / Loss", w: 80, h: 80,
+  ports: [{ id: "in", side: "left", kind: "inout", dx: 0, dy: 40 }, { id: "out", side: "right", kind: "inout", dx: 80, dy: 40 }],
   params: { label: "DSA", loss: 10 },
   fields: [{ key: "loss", label: "Attenuation", unit: "dB", step: 0.5, min: 0 }], nf: p => Math.abs(p.loss),
   out: p => ({ out: -Math.abs(p.loss) }), val: p => "\u2212" + fmt(Math.abs(p.loss)) + " dB",
   bidi: (m, p) => rl(m, Math.abs(p.loss)),
   sym() {
-    return `<rect class="blk-shape" x="0" y="4" width="40" height="32" rx="4"/>` +
-           `<path class="blk-glyph" d="M20 8v3l-6 2.25 12 4.5-12 4.5 12 4.5-6 2.25v3"/>` +
-           `<path class="blk-glyph" d="M9 31L31 9"/>` +
-           `<path class="blk-fillg" d="M31 9L23 13L27 17Z"/>`;
+    return `<rect class="blk-shape" x="0" y="8" width="80" height="64" rx="8"/>` +
+           `<path class="blk-glyph" d="M40 16v6l-12 4.5 24 9-24 9 24 9-12 4.5v6"/>` +
+           `<path class="blk-glyph" d="M18 62L62 18"/>` +
+           `<path class="blk-fillg" d="M62 18L46 26L54 34Z"/>`;
   }
 });
 
 def({
-  type: "eq", keys: "equalizer equaliser slope cable compensation gain loss tilt pad", name: "Equalizer", group: "Gain / Loss", w: 40, h: 40,
-  ports: [{ id: "in", side: "left", kind: "inout", dx: 0, dy: 20 }, { id: "out", side: "right", kind: "inout", dx: 40, dy: 20 }],
+  type: "eq", keys: "equalizer equaliser slope cable compensation gain loss tilt pad", name: "Equalizer", group: "Gain / Loss", w: 80, h: 80,
+  ports: [{ id: "in", side: "left", kind: "inout", dx: 0, dy: 40 }, { id: "out", side: "right", kind: "inout", dx: 80, dy: 40 }],
   params: { label: "EQ", slope: 3, minLoss: 1 },
   fields: [{ key: "slope", label: "Slope compensation", unit: "dB", step: 0.5, min: 0 },
            { key: "minLoss", label: "Min insertion loss", unit: "dB", step: 0.1, min: 0 }],
   nf: p => Math.abs(+p.minLoss || 0) + Math.abs(+p.slope || 0) / 2,
   out: p => ({ out: -(Math.abs(+p.minLoss || 0) + Math.abs(+p.slope || 0) / 2) }),
-  val: p => {
-    const sl = fmt(Math.abs(+p.slope || 0)), ml = fmt(Math.abs(+p.minLoss || 0));
-    return "Slope " + sl + " dB · IL " + ml + " dB";
-  },
+  val: p => "IL \u2212" + fmt(Math.abs(+p.minLoss || 0) + Math.abs(+p.slope || 0) / 2) + " dB",
+  info: p => "Slope " + fmt(Math.abs(+p.slope || 0)) + " dB",
   bidi: (m, p) => rl(m, Math.abs(+p.minLoss || 0) + Math.abs(+p.slope || 0) / 2),
   sym() {
-    return `<rect class="blk-shape" x="0" y="4" width="40" height="32" rx="4"/>` +
-           `<path class="blk-glyph" d="M8 28L32 12"/>` +
-           `<path class="blk-fillg" d="M32 12L24 14L28 18Z"/>` +
-           `<path class="blk-glyph" d="M10 14Q14 20 18 14"/>` +
-           `<path class="blk-glyph" d="M22 26Q26 20 30 26"/>`;
+    return `<rect class="blk-shape" x="0" y="8" width="80" height="64" rx="8"/>` +
+           `<path class="blk-glyph" d="M16 56L64 24"/>` +
+           `<path class="blk-fillg" d="M64 24L48 28L56 36Z"/>` +
+           `<path class="blk-glyph" d="M20 28Q28 40 36 28"/>` +
+           `<path class="blk-glyph" d="M44 52Q52 40 60 52"/>`;
   }
 });
 
 def({
-  type: "limiter", keys: "clip clamp protection limit", name: "Limiter", group: "Gain / Loss", w: 40, h: 40,
-  ports: [{ id: "in", side: "left", kind: "inout", dx: 0, dy: 20 }, { id: "out", side: "right", kind: "inout", dx: 40, dy: 20 }],
+  type: "limiter", keys: "clip clamp protection limit", name: "Limiter", group: "Gain / Loss", w: 80, h: 80,
+  ports: [{ id: "in", side: "left", kind: "inout", dx: 0, dy: 40 }, { id: "out", side: "right", kind: "inout", dx: 80, dy: 40 }],
   params: { label: "LIM", thresh: 10, il: 0.5 },
   fields: [{ key: "thresh", label: "Limit threshold", unit: "dBm", step: 0.5 }, { key: "il", label: "Insertion loss", unit: "dB", step: 0.1, min: 0 }], nf: p => Math.abs(p.il),
   out: p => ({ out: -Math.abs(p.il) }),
@@ -143,38 +143,39 @@ def({
     return o;
   },
   sym() {
-    return `<rect class="blk-shape" x="0" y="4" width="40" height="32" rx="4"/>` +
-           `<path class="blk-line" d="M0 20H40"/>` +
-           `<path class="blk-fillg" d="M14 13L26 13L20 22Z"/>` +
-           `<path class="blk-glyph" d="M14 22H26"/>` +
-           `<path class="blk-glyph" d="M15 28H25M17 31H23"/>`;
+    return `<rect class="blk-shape" x="0" y="8" width="80" height="64" rx="8"/>` +
+           `<path class="blk-line" d="M0 40H80"/>` +
+           `<path class="blk-fillg" d="M28 26L52 26L40 44Z"/>` +
+           `<path class="blk-glyph" d="M28 44H52"/>` +
+           `<path class="blk-glyph" d="M30 56H50M34 62H46"/>`;
   }
 });
 
 def({
-  type: "trace", keys: "line cable coax microstrip length loss", name: "Line / Trace", group: "Gain / Loss", w: 40, h: 40,
-  ports: [{ id: "in", side: "left", kind: "inout", dx: 0, dy: 20 }, { id: "out", side: "right", kind: "inout", dx: 40, dy: 20 }],
+  type: "trace", keys: "line cable coax microstrip length loss", name: "Line / Trace", group: "Gain / Loss", w: 80, h: 80,
+  ports: [{ id: "in", side: "left", kind: "inout", dx: 0, dy: 40 }, { id: "out", side: "right", kind: "inout", dx: 80, dy: 40 }],
   params: { label: "LINE", loss: 1 },
   fields: [{ key: "loss", label: "Trace loss", unit: "dB", step: 0.1, min: 0 }], nf: p => Math.abs(p.loss),
   out: p => ({ out: -Math.abs(p.loss) }), val: p => "\u2212" + fmt(Math.abs(p.loss)) + " dB",
   bidi: (m, p) => rl(m, Math.abs(p.loss)),
-  sym() { return `<rect class="blk-shape" x="0" y="13" width="40" height="14" rx="7"/><path class="blk-glyph" d="M6 20H34" stroke-dasharray="2 3"/>`; }
+  sym() { return `<rect class="blk-shape" x="0" y="26" width="80" height="28" rx="14"/><path class="blk-glyph" d="M12 40H68" stroke-dasharray="2 3"/>`; }
 });
 
 /* --- Filtering ---------------------------------------------------- */
 def({
-  type: "filter", keys: "bpf lpf hpf bsf notch band pass reject cavity saw", name: "Filter", group: "Filtering", w: 40, h: 40,
-  ports: [{ id: "in", side: "left", kind: "inout", dx: 0, dy: 20 }, { id: "out", side: "right", kind: "inout", dx: 40, dy: 20 }],
+  type: "filter", keys: "bpf lpf hpf bsf notch band pass reject cavity saw", name: "Filter", group: "Filtering", w: 80, h: 80,
+  ports: [{ id: "in", side: "left", kind: "inout", dx: 0, dy: 40 }, { id: "out", side: "right", kind: "inout", dx: 80, dy: 40 }],
   params: { label: "BPF", ftype: "BPF", il: 1.5, rej: 40, band: "passband", fc: "" },
   fields: [{ key: "ftype", label: "Response", type: "select", options: ["LPF", "HPF", "BPF", "BSF"] },
            { key: "band", label: "Signal is in", type: "select", options: ["passband", "stopband"] },
            { key: "il", label: "Passband IL", unit: "dB", step: 0.1, min: 0 },
            { key: "rej", label: "Stopband rejection", unit: "dB", step: 1, min: 0 },
            { key: "fc", label: "Corner / center", type: "text" }], nf: p => fLoss(p),
-  out: p => ({ out: -fLoss(p) }), val: p => (p.fc ? (p.fc + " · " + ((p.band === "stopband") ? ("REJ " + fmt(fLoss(p)) + " dB") : ("IL " + fmt(Math.abs(p.il)) + " dB"))) : ((p.band === "stopband") ? ("REJ " + fmt(fLoss(p)) + " dB") : ("IL " + fmt(Math.abs(p.il)) + " dB"))),
+  out: p => ({ out: -fLoss(p) }), val: p => { const loss = fLoss(p); return (p.band === 'stopband') ? ('REJ \u2212' + fmt(loss) + ' dB') : ('\u2212' + fmt(Math.abs(p.il)) + ' dB'); },
+  info: p => p.ftype ? (p.ftype + (p.fc ? ' · ' + p.fc : '')) : (p.fc || ''),
   bidi: (m, p) => rl(m, fLoss(p)),
   sym(p) {
-    const ix = 8, iw = 24, iy = 10, ih = 17, yB = iy + ih, yT = iy + 3, m = f => ix + iw * f;
+    const ix = 16, iw = 48, iy = 20, ih = 34, yB = iy + ih, yT = iy + 6, m = f => ix + iw * f;
     const cv = {
       LPF: [[ix, yT], [m(.42), yT], [m(.7), yB], [ix + iw, yB]],
       HPF: [[ix, yB], [m(.3), yB], [m(.58), yT], [ix + iw, yT]],
@@ -182,23 +183,24 @@ def({
       BSF: [[ix, yT], [m(.3), yT], [m(.45), yB], [m(.55), yB], [m(.7), yT], [ix + iw, yT]]
     };
     const pts = (cv[p.ftype] || cv.BPF).map(a => a.join(" ")).join("L");
-    return `<rect class="blk-shape" x="0" y="4" width="40" height="32" rx="4"/><path class="blk-glyph" d="M${pts}"/>${p.band === "stopband" ? `<path class="blk-glyph" d="M7 33L33 7" stroke-dasharray="3 2"/>` : ""}`;
+    return `<rect class="blk-shape" x="0" y="8" width="80" height="64" rx="8"/><path class="blk-glyph" d="M${pts}"/>${p.band === "stopband" ? `<path class="blk-glyph" d="M14 66L66 14" stroke-dasharray="3 2"/>` : ""}`;
   }
 });
 
 def({
-  type: "tfilter", keys: "tunable filter bpf lpf hpf bsf varactor tracking agile band pass reject", name: "Tunable Filter", group: "Filtering", w: 40, h: 40,
-  ports: [{ id: "in", side: "left", kind: "inout", dx: 0, dy: 20 }, { id: "out", side: "right", kind: "inout", dx: 40, dy: 20 }],
+  type: "tfilter", keys: "tunable filter bpf lpf hpf bsf varactor tracking agile band pass reject", name: "Tunable Filter", group: "Filtering", w: 80, h: 80,
+  ports: [{ id: "in", side: "left", kind: "inout", dx: 0, dy: 40 }, { id: "out", side: "right", kind: "inout", dx: 80, dy: 40 }],
   params: { label: "TFIL", ftype: "BPF", il: 2.0, rej: 40, band: "passband", fc: "1-2 GHz" },
   fields: [{ key: "ftype", label: "Response", type: "select", options: ["LPF", "HPF", "BPF", "BSF"] },
            { key: "band", label: "Signal is in", type: "select", options: ["passband", "stopband"] },
            { key: "il", label: "Passband IL", unit: "dB", step: 0.1, min: 0 },
            { key: "rej", label: "Stopband rejection", unit: "dB", step: 1, min: 0 },
            { key: "fc", label: "Tuning range / fc", type: "text" }], nf: p => fLoss(p),
-  out: p => ({ out: -fLoss(p) }), val: p => (p.fc ? (p.fc + " · " + ((p.band === "stopband") ? ("REJ " + fmt(fLoss(p)) + " dB") : ("IL " + fmt(Math.abs(p.il)) + " dB"))) : ((p.band === "stopband") ? ("REJ " + fmt(fLoss(p)) + " dB") : ("IL " + fmt(Math.abs(p.il)) + " dB"))),
+  out: p => ({ out: -fLoss(p) }), val: p => { const loss = fLoss(p); return (p.band === 'stopband') ? ('REJ \u2212' + fmt(loss) + ' dB') : ('\u2212' + fmt(Math.abs(p.il)) + ' dB'); },
+  info: p => p.ftype ? (p.ftype + (p.fc ? ' · ' + p.fc : '')) : (p.fc || ''),
   bidi: (m, p) => rl(m, fLoss(p)),
   sym(p) {
-    const ix = 8, iw = 24, iy = 10, ih = 17, yB = iy + ih, yT = iy + 3, m = f => ix + iw * f;
+    const ix = 16, iw = 48, iy = 20, ih = 34, yB = iy + ih, yT = iy + 6, m = f => ix + iw * f;
     const cv = {
       LPF: [[ix, yT], [m(.42), yT], [m(.7), yB], [ix + iw, yB]],
       HPF: [[ix, yB], [m(.3), yB], [m(.58), yT], [ix + iw, yT]],
@@ -206,28 +208,28 @@ def({
       BSF: [[ix, yT], [m(.3), yT], [m(.45), yB], [m(.55), yB], [m(.7), yT], [ix + iw, yT]]
     };
     const pts = (cv[p.ftype] || cv.BPF).map(a => a.join(" ")).join("L");
-    return `<rect class="blk-shape" x="0" y="4" width="40" height="32" rx="4"/>` +
+    return `<rect class="blk-shape" x="0" y="8" width="80" height="64" rx="8"/>` +
            `<path class="blk-glyph" d="M${pts}"/>` +
-           `<path class="blk-glyph" d="M8 32L32 8"/>` +
-           `<path class="blk-fillg" d="M32 8L24 12L28 16Z"/>`;
+           `<path class="blk-glyph" d="M16 64L64 16"/>` +
+           `<path class="blk-fillg" d="M64 16L48 24L56 32Z"/>`;
   }
 });
 
 /* --- Frequency ---------------------------------------------------- */
 def({
-  type: "mixer", keys: "downconvert upconvert conversion image if rf lo", name: "Mixer", group: "Frequency", w: 40, h: 40, topLabel: true,
-  ports: [{ id: "rf", side: "left", kind: "in", dx: 0, dy: 20 }, { id: "if", side: "right", kind: "out", dx: 40, dy: 20 }, { id: "lo", side: "bottom", kind: "in", dx: 20, dy: 40 }],
+  type: "mixer", keys: "downconvert upconvert conversion image if rf lo", name: "Mixer", group: "Frequency", w: 80, h: 80, topLabel: true,
+  ports: [{ id: "rf", side: "left", kind: "in", dx: 0, dy: 40 }, { id: "if", side: "right", kind: "out", dx: 80, dy: 40 }, { id: "lo", side: "bottom", kind: "in", dx: 40, dy: 80 }],
   params: { label: "MIX", cl: 7, p1db: 5, oip3: 15 },
   fields: [{ key: "cl", label: "Conversion loss", unit: "dB", step: 0.5, min: 0 },
            { key: "p1db", label: "Output P1dB", unit: "dBm", step: 0.5 }, { key: "oip3", label: "Output IP3", unit: "dBm", step: 0.5 }], nf: p => Math.abs(p.cl),
   p1db: p => num(p.p1db), oip3: p => num(p.oip3),
   ref: m => m.rf, refIn: "rf", out: p => ({ if: -Math.abs(p.cl) }), val: p => "CL " + fmt(Math.abs(p.cl)) + " dB",
-  sym() { return `<circle class="blk-shape" cx="20" cy="20" r="19"/><path class="blk-glyph" d="M9 9L31 31M9 31L31 9"/>`; }
+  sym() { return `<circle class="blk-shape" cx="40" cy="40" r="38"/><path class="blk-glyph" d="M18 18L62 62M18 62L62 18"/>`; }
 });
 
 def({
-  type: "multiplier", keys: "frequency multiplier doubler tripler quadrupler x2 x3 x4 comb xn", name: "Multiplier", group: "Frequency", w: 40, h: 40,
-  ports: [{ id: "in", side: "left", kind: "inout", dx: 0, dy: 20 }, { id: "out", side: "right", kind: "inout", dx: 40, dy: 20 }],
+  type: "multiplier", keys: "frequency multiplier doubler tripler quadrupler x2 x3 x4 comb xn", name: "Multiplier", group: "Frequency", w: 80, h: 80,
+  ports: [{ id: "in", side: "left", kind: "inout", dx: 0, dy: 40 }, { id: "out", side: "right", kind: "inout", dx: 80, dy: 40 }],
   params: { label: "MULT", factor: "2", il: 0 },
   fields: [{ key: "factor", label: "Factor (\u00d7N)", type: "text" },
            { key: "il", label: "Loss / Gain", unit: "dB", step: 0.5 }], nf: p => Math.max(0, +p.il || 0),
@@ -235,14 +237,14 @@ def({
   bidi: (m, p) => rl(m, +p.il || 0),
   sym(p) {
     const f = (p && p.factor) ? p.factor : "2";
-    return `<rect class="blk-shape" x="0" y="4" width="40" height="32" rx="4"/>` +
-           `<text class="ic-tag" x="20" y="24" text-anchor="middle">\u00d7${f}</text>`;
+    return `<rect class="blk-shape" x="0" y="8" width="80" height="64" rx="8"/>` +
+           `<text class="ic-tag" x="40" y="48" text-anchor="middle">\u00d7${f}</text>`;
   }
 });
 
 def({
-  type: "divider", keys: "frequency divider prescaler /2 /4 /8 div divide digital counter", name: "Divider", group: "Frequency", w: 40, h: 40,
-  ports: [{ id: "in", side: "left", kind: "inout", dx: 0, dy: 20 }, { id: "out", side: "right", kind: "inout", dx: 40, dy: 20 }],
+  type: "divider", keys: "frequency divider prescaler /2 /4 /8 div divide digital counter", name: "Divider", group: "Frequency", w: 80, h: 80,
+  ports: [{ id: "in", side: "left", kind: "inout", dx: 0, dy: 40 }, { id: "out", side: "right", kind: "inout", dx: 80, dy: 40 }],
   params: { label: "DIV", factor: "2", il: 1.0 },
   fields: [{ key: "factor", label: "Factor (\u00f7N)", type: "text" },
            { key: "il", label: "Insertion loss", unit: "dB", step: 0.1, min: 0 }], nf: p => Math.abs(p.il || 0),
@@ -250,33 +252,33 @@ def({
   bidi: (m, p) => rl(m, Math.abs(p.il || 0)),
   sym(p) {
     const f = (p && p.factor) ? p.factor : "2";
-    return `<rect class="blk-shape" x="0" y="4" width="40" height="32" rx="4"/>` +
-           `<text class="ic-tag" x="20" y="24" text-anchor="middle">\u00f7${f}</text>`;
+    return `<rect class="blk-shape" x="0" y="8" width="80" height="64" rx="8"/>` +
+           `<text class="ic-tag" x="40" y="48" text-anchor="middle">\u00f7${f}</text>`;
   }
 });
 
 def({
-  type: "pll", keys: "pll synthesizer phase locked loop frequency synth vco lo generator source reference ref", name: "PLL Synthesizer", group: "Frequency", w: 40, h: 40,
-  ports: [{ id: "ref", side: "left", kind: "in", dx: 0, dy: 20 }, { id: "out", side: "right", kind: "out", dx: 40, dy: 20 }],
+  type: "pll", keys: "pll synthesizer phase locked loop frequency synth vco lo generator source reference ref", name: "PLL Synthesizer", group: "Frequency", w: 80, h: 80,
+  ports: [{ id: "ref", side: "left", kind: "in", dx: 0, dy: 40 }, { id: "out", side: "right", kind: "out", dx: 80, dy: 40 }],
   params: { label: "PLL", power: 10, freq: "2.4 GHz", refFreq: "10 MHz" },
   fields: [{ key: "power", label: "Output level", unit: "dBm", step: 0.5 },
            { key: "freq", label: "RF Frequency", type: "text" },
            { key: "refFreq", label: "Ref Frequency", type: "text" }],
   isSource: () => true, srcOut: () => "out", srcPower: p => p.power, val: p => p.freq || "",
   sym() {
-    return `<rect class="blk-shape" x="0" y="4" width="40" height="32" rx="4"/>` +
-           `<text class="ic-tag" x="20" y="24" text-anchor="middle">PLL</text>`;
+    return `<rect class="blk-shape" x="0" y="8" width="80" height="64" rx="8"/>` +
+           `<text class="ic-tag" x="40" y="48" text-anchor="middle">PLL</text>`;
   }
 });
 
 /* --- Routing ------------------------------------------------------ */
 def({
-  type: "splitter", keys: "divider power divider wilkinson split fan-out 1:n way", name: "Splitter", group: "Routing", w: 80, h: 80,
-  dynSize: p => ({ w: 40, h: 40 * cint(p.ways, 2, 8) }),
+  type: "splitter", keys: "divider power divider wilkinson split fan-out 1:n way", name: "Splitter", group: "Routing", w: 160, h: 160,
+  dynSize: p => ({ w: 80, h: 80 * cint(p.ways, 2, 8) }),
   dynPorts: p => {
-    const n = cint(p.ways, 2, 8), h = 40 * n;
+    const n = cint(p.ways, 2, 8), h = 80 * n;
     const pts = [{ id: "in", side: "left", kind: "inout", dx: 0, dy: h / 2 }];
-    for (let i = 1; i <= n; i++) pts.push({ id: "o" + i, side: "right", kind: "inout", dx: 40, dy: 40 * i - 20 });
+    for (let i = 1; i <= n; i++) pts.push({ id: "o" + i, side: "right", kind: "inout", dx: 80, dy: 80 * i - 40 });
     return pts;
   },
   params: { label: "SPLIT", ways: "2", exloss: 0.3 }, nf: p => 10 * Math.log10(cint(p.ways, 2, 8)) + Math.abs(p.exloss),
@@ -305,23 +307,24 @@ def({
     }
     return o;
   },
-  val: p => { const n = cint(p.ways, 2, 8), loss = dsp(10 * Math.log10(n) + Math.abs(p.exloss || 0)); return "1:" + n + " · IL " + loss + " dB ea"; },
+  val: p => { const n = cint(p.ways, 2, 8), loss = dsp(10 * Math.log10(n) + Math.abs(p.exloss || 0)); return "IL \u2212" + loss + " dB ea"; },
+  info: p => "1:" + cint(p.ways, 2, 8),
   sym(p) {
-    const n = cint(p.ways, 2, 8), h = 40 * n;
-    let s = `<rect class="blk-shape" x="0" y="2" width="40" height="${h - 4}" rx="6"/>`;
-    s += L(0, h / 2, 16, h / 2) + `<path class="blk-line" d="M16 20V${h - 20}"/>`;
-    for (let i = 1; i <= n; i++) s += L(16, 40 * i - 20, 40, 40 * i - 20);
-    return s + `<circle class="blk-fillg" cx="16" cy="${h / 2}" r="3"/>`;
+    const n = cint(p.ways, 2, 8), h = 80 * n;
+    let s = `<rect class="blk-shape" x="0" y="4" width="80" height="${h - 8}" rx="12"/>`;
+    s += L(0, h / 2, 32, h / 2) + `<path class="blk-line" d="M32 40V${h - 40}"/>`;
+    for (let i = 1; i <= n; i++) s += L(32, 80 * i - 40, 80, 80 * i - 40);
+    return s + `<circle class="blk-fillg" cx="32" cy="${h / 2}" r="6"/>`;
   }
 });
 
 def({
-  type: "combiner", keys: "sum adder power combiner n:1 merge", name: "Combiner", group: "Routing", w: 80, h: 80,
-  dynSize: p => ({ w: 40, h: 40 * cint(p.ways, 2, 8) }),
+  type: "combiner", keys: "sum adder power combiner n:1 merge", name: "Combiner", group: "Routing", w: 160, h: 160,
+  dynSize: p => ({ w: 80, h: 80 * cint(p.ways, 2, 8) }),
   dynPorts: p => {
-    const n = cint(p.ways, 2, 8), h = 40 * n, pts = [];
-    for (let i = 1; i <= n; i++) pts.push({ id: "i" + i, side: "left", kind: "inout", dx: 0, dy: 40 * i - 20 });
-    pts.push({ id: "out", side: "right", kind: "inout", dx: 40, dy: h / 2 }); return pts;
+    const n = cint(p.ways, 2, 8), h = 80 * n, pts = [];
+    for (let i = 1; i <= n; i++) pts.push({ id: "i" + i, side: "left", kind: "inout", dx: 0, dy: 80 * i - 40 });
+    pts.push({ id: "out", side: "right", kind: "inout", dx: 80, dy: h / 2 }); return pts;
   },
   params: { label: "COMB", ways: "2", exloss: 0.3 }, nf: p => 10 * Math.log10(cint(p.ways, 2, 8)) + Math.abs(p.exloss),
   fields: [{ key: "ways", label: "Ways (n : 1)", type: "select", options: ["2", "3", "4", "5", "6", "7", "8"] },
@@ -339,7 +342,9 @@ def({
     if (!count || vSum <= 0) return undefined;
     return 10 * Math.log10((vSum * vSum / n) * Math.pow(10, -ex / 10));
   },
-  out: p => ({ out: -(10 * Math.log10(cint(p.ways, 2, 8)) + Math.abs(p.exloss || 0)) }), val: p => { const n = cint(p.ways, 2, 8), loss = dsp(10 * Math.log10(n) + Math.abs(p.exloss || 0)); return n + ":1 · IL " + loss + " dB"; },
+  out: p => ({ out: -(10 * Math.log10(cint(p.ways, 2, 8)) + Math.abs(p.exloss || 0)) }),
+  val: p => { const n = cint(p.ways, 2, 8), loss = dsp(10 * Math.log10(n) + Math.abs(p.exloss || 0)); return "IL \u2212" + loss + " dB"; },
+  info: p => cint(p.ways, 2, 8) + ":1",
   bidi: (m, p) => {
     const n = cint(p.ways, 2, 8), ex = Math.abs(p.exloss || 0), d = 10 * Math.log10(n) + ex, o = {};
     let vSum = 0, count = 0;
@@ -360,11 +365,11 @@ def({
     return o;
   },
   sym(p) {
-    const n = cint(p.ways, 2, 8), h = 40 * n;
-    let s = `<rect class="blk-shape" x="0" y="2" width="40" height="${h - 4}" rx="6"/>`;
-    s += `<path class="blk-line" d="M24 20V${h - 20}"/>`;
-    for (let i = 1; i <= n; i++) s += L(0, 40 * i - 20, 24, 40 * i - 20);
-    return s + L(24, h / 2, 40, h / 2) + `<circle class="blk-fillg" cx="24" cy="${h / 2}" r="3"/>`;
+    const n = cint(p.ways, 2, 8), h = 80 * n;
+    let s = `<rect class="blk-shape" x="0" y="4" width="80" height="${h - 8}" rx="12"/>`;
+    s += `<path class="blk-line" d="M48 40V${h - 40}"/>`;
+    for (let i = 1; i <= n; i++) s += L(0, 80 * i - 40, 48, 80 * i - 40);
+    return s + L(48, h / 2, 80, h / 2) + `<circle class="blk-fillg" cx="48" cy="${h / 2}" r="6"/>`;
   }
 });
 
@@ -374,13 +379,13 @@ const tapThruLoss = C => -10 * Math.log10(Math.max(1e-9, 1 - Math.pow(10, -Math.
 
 function cplPorts(p) {
   const k = p.ctype || "Directional";
-  const P = (id, side, dy) => ({ id, side, kind: "inout", dx: side === "left" ? 0 : 80, dy });
-  if (k === "Power tap") return [P("in", "left", 20), P("thru", "right", 20), P("tap", "right", 60)];
-  if (k === "Resistive") return [P("in", "left", 40), P("o1", "right", 20), P("o2", "right", 60)];
-  if (k === "Bi-directional") return [P("in", "left", 20), P("fwd", "left", 60), P("thru", "right", 20), P("rev", "right", 60)];
-  if (k === "90\u00b0 hybrid") return [P("in", "left", 20), P("iso", "left", 60), P("out0", "right", 20), P("out90", "right", 60)];
-  if (k === "180\u00b0 hybrid") return [P("sum", "left", 20), P("dif", "left", 60), P("o1", "right", 20), P("o2", "right", 60)];
-  return [P("in", "left", 20), P("cpl", "left", 60), P("thru", "right", 20), P("iso", "right", 60)];
+  const P = (id, side, dy) => ({ id, side, kind: "inout", dx: side === "left" ? 0 : 160, dy });
+  if (k === "Power tap") return [P("in", "left", 40), P("thru", "right", 40), P("tap", "right", 120)];
+  if (k === "Resistive") return [P("in", "left", 80), P("o1", "right", 40), P("o2", "right", 120)];
+  if (k === "Bi-directional") return [P("in", "left", 40), P("fwd", "left", 120), P("thru", "right", 40), P("rev", "right", 120)];
+  if (k === "90\u00b0 hybrid") return [P("in", "left", 40), P("iso", "left", 120), P("out0", "right", 40), P("out90", "right", 120)];
+  if (k === "180\u00b0 hybrid") return [P("sum", "left", 40), P("dif", "left", 120), P("o1", "right", 40), P("o2", "right", 120)];
+  return [P("in", "left", 40), P("cpl", "left", 120), P("thru", "right", 40), P("iso", "right", 120)];
 }
 
 function cplMatrix(p) {
@@ -409,7 +414,7 @@ function cplMatrix(p) {
 }
 
 def({
-  type: "coupler", keys: "tap power tap directional bidirectional resistive hybrid quadrature branch-line rat-race magic-tee monitor sample coupling", name: "Coupler", group: "Routing", w: 80, h: 80,
+  type: "coupler", keys: "tap power tap directional bidirectional resistive hybrid quadrature branch-line rat-race magic-tee monitor sample coupling", name: "Coupler", group: "Routing", w: 160, h: 160,
   dynPorts: cplPorts,
   params: { label: "CPLR", ctype: "Directional", coupling: 10, il: 0.5, iso: 30, exloss: 0 },
   fields: [{ key: "ctype", label: "Type", type: "select", options: CPL_KIND },
@@ -450,43 +455,43 @@ def({
   },
   sym(p) {
     const k = p.ctype || "Directional";
-    let s = `<rect class="blk-shape" x="0" y="2" width="80" height="76" rx="6"/>`;
+    let s = `<rect class="blk-shape" x="0" y="4" width="160" height="152" rx="12"/>`;
     if (k === "Power tap")
-      return s + L(0, 20, 80, 20) + `<path class="blk-line" d="M40 20V60H80"/>`
-        + `<circle class="blk-fillg" cx="40" cy="20" r="3"/>`
-        + `<path class="blk-glyph" d="M48 44V54M44 50l4 5l4-5"/>`;
+      return s + L(0, 40, 160, 40) + `<path class="blk-line" d="M80 40V120H160"/>`
+          + `<circle class="blk-fillg" cx="80" cy="40" r="6"/>`
+          + `<path class="blk-glyph" d="M96 88V108M88 100l8 10l8-10"/>`;
     if (k === "Resistive")
-      return s + `<path class="blk-line" d="M0 40H18M38 40H40V24M40 56V40"/>`
-        + `<path class="blk-glyph" d="M18 40h3l2-4 4 8 4-8 4 8 2-4h3"/>`
-        + `<path class="blk-glyph" d="M40 24v-3l-4-2 8-4-8-4 8-4-4-2v-3"/>`
-        + `<path class="blk-glyph" d="M40 56v3l-4 2 8 4-8 4 8 4-4 2v3"/>`
-        + `<path class="blk-line" d="M40 20H80M40 60H80"/>`
-        + `<circle class="blk-fillg" cx="40" cy="40" r="2.5"/>`;
+      return s + `<path class="blk-line" d="M0 80H36M76 80H80V48M80 112V80"/>`
+          + `<path class="blk-glyph" d="M36 80h6l4-8 8 16 8-16 8 16 4-8h6"/>` 
+          + `<path class="blk-glyph" d="M80 48v-6l-8-4 16-8-16-8 16-8-8-4v-6"/>` 
+          + `<path class="blk-glyph" d="M80 112v6l-8 4 16 8-16 8 16 8-8 4v6"/>` 
+          + `<path class="blk-line" d="M80 40H160M80 120H160"/>`
+          + `<circle class="blk-fillg" cx="80" cy="80" r="5"/>`;
     if (k === "90\u00b0 hybrid")
-      return s + L(0, 20, 80, 20) + L(0, 60, 80, 60) + `<path class="blk-line" d="M26 20V60M54 20V60"/>`
-        + `<text class="ic-tag" x="40" y="44" text-anchor="middle" font-size="11">90°</text>`;
+      return s + L(0, 40, 160, 40) + L(0, 120, 160, 120) + `<path class="blk-line" d="M52 40V120M108 40V120"/>`
+          + `<text class="ic-tag" x="80" y="88" text-anchor="middle" font-size="11">90°</text>`;
     if (k === "180\u00b0 hybrid")
-      return s + L(0, 20, 23, 20) + L(0, 60, 23, 60) + L(57, 20, 80, 20) + L(57, 60, 80, 60)
-        + `<circle class="blk-line" cx="40" cy="40" r="17"/>`
-        + `<text class="ic-tag" x="28" y="32" font-size="10">Σ</text>`
-        + `<text class="ic-tag" x="28" y="55" font-size="10">Δ</text>`
-        + `<text class="ic-tag" x="50" y="44" font-size="9">180°</text>`;
+      return s + L(0, 40, 46, 40) + L(0, 120, 46, 120) + L(114, 40, 160, 40) + L(114, 120, 160, 120)
+          + `<circle class="blk-line" cx="80" cy="80" r="34"/>`
+          + `<text class="ic-tag" x="56" y="64" font-size="10">Σ</text>`
+          + `<text class="ic-tag" x="56" y="110" font-size="10">Δ</text>`
+          + `<text class="ic-tag" x="100" y="88" font-size="9">180°</text>`;
     if (k === "Bi-directional")
-      return s + L(0, 20, 80, 20) + L(0, 60, 80, 60)
-        + `<path class="blk-glyph" d="M34 28L46 52M46 28L34 52"/>`;
-    return s + L(0, 20, 80, 20) + L(0, 60, 80, 60)
-      + `<path class="blk-glyph" d="M46 28L34 52"/>`;
+      return s + L(0, 40, 160, 40) + L(0, 120, 160, 120)
+          + `<path class="blk-glyph" d="M68 56L92 104M92 56L68 104"/>`;
+    return s + L(0, 40, 160, 40) + L(0, 120, 160, 120)
+      + `<path class="blk-glyph" d="M92 56L68 104"/>`;
   }
 });
 
 /* Switch definition with SP1T..SP8T and Open position state support */
 def({
-  type: "switch", keys: "spdt sp3t sp4t spnt select transfer path", name: "Switch", group: "Routing", w: 80, h: 80,
-  dynSize: p => ({ w: 40, h: 40 * cint(p.throws, 1, 8) }),
+  type: "switch", keys: "spdt sp3t sp4t spnt select transfer path", name: "Switch", group: "Routing", w: 160, h: 160,
+  dynSize: p => ({ w: 80, h: 80 * cint(p.throws, 1, 8) }),
   dynPorts: p => {
-    const n = cint(p.throws, 1, 8), h = 40 * n;
+    const n = cint(p.throws, 1, 8), h = 80 * n;
     const pts = [{ id: "in", side: "left", kind: "inout", dx: 0, dy: h / 2 }];
-    for (let i = 1; i <= n; i++) pts.push({ id: "o" + i, side: "right", kind: "inout", dx: 40, dy: 40 * i - 20 });
+    for (let i = 1; i <= n; i++) pts.push({ id: "o" + i, side: "right", kind: "inout", dx: 80, dy: 80 * i - 40 });
     return pts;
   },
   params: { label: "SW", throws: "2", state: "1", il: 0.4, iso: 60 }, nf: p => Math.abs(p.il),
@@ -506,67 +511,67 @@ def({
   },
   val: p => "IL " + fmt(Math.abs(p.il)) + " dB",
   sym(p) {
-    const n = cint(p.throws, 1, 8), h = 40 * n, st = swState(p, n);
-    const nx = (st > 0 ? 28 : 24), ny = (st > 0 ? 40 * st - 20 : h / 2 - 8);
-    let s = `<rect class="blk-shape" x="0" y="2" width="40" height="${h - 4}" rx="6"/>`;
-    s += L(0, h / 2, 14, h / 2) + `<circle class="blk-fillg" cx="14" cy="${h / 2}" r="3"/>`;
-    s += `<path class="blk-line" d="M14 ${h / 2}L${nx} ${ny}"/>`;
-    for (let i = 1; i <= n; i++) { const y = 40 * i - 20; s += L(28, y, 40, y) + `<circle class="blk-shape" cx="28" cy="${y}" r="2.4"/>`; }
+    const n = cint(p.throws, 1, 8), h = 80 * n, st = swState(p, n);
+    const nx = (st > 0 ? 56 : 48), ny = (st > 0 ? 80 * st - 40 : h / 2 - 16);
+    let s = `<rect class="blk-shape" x="0" y="4" width="80" height="${h - 8}" rx="12"/>`;
+    s += L(0, h / 2, 28, h / 2) + `<circle class="blk-fillg" cx="28" cy="${h / 2}" r="6"/>`;
+    s += `<path class="blk-line" d="M28 ${h / 2}L${nx} ${ny}"/>`;
+    for (let i = 1; i <= n; i++) { const y = 80 * i - 40; s += L(56, y, 80, y) + `<circle class="blk-shape" cx="56" cy="${y}" r="4.8"/>`; }
     return s;
   }
 });
 
 def({
-  type: "interconnect", keys: "off-page link tag jump sheet cross-reference send receive leaves enters goes to comes from", name: "Interconnect", group: "Routing", w: 40, h: 40,
+  type: "interconnect", keys: "off-page link tag jump sheet cross-reference send receive leaves enters goes to comes from", name: "Interconnect", group: "Routing", w: 80, h: 80,
   params: { label: "", tag: "A", role: "receive" },
   fields: [{ key: "role", label: "This connector", type: "select", options: [
              { value: "send", label: "Sends the signal away \u2192" },
              { value: "receive", label: "Brings the signal in \u2190" }] },
            { key: "tag", label: "Tag (the pair must match)", type: "text", max: 6 }],
   isInterconnect: true,
-  dynPorts: p => icSend(p) ? [{ id: "p", side: "left", kind: "in", dx: 0, dy: 20 }]
-                         : [{ id: "p", side: "right", kind: "out", dx: 40, dy: 20 }],
+  dynPorts: p => icSend(p) ? [{ id: "p", side: "left", kind: "in", dx: 0, dy: 40 }]
+                         : [{ id: "p", side: "right", kind: "out", dx: 80, dy: 40 }],
   val: () => "",
   sym(p) {
     return icSend(p)
-      ? `<path class="blk-shape" d="M0 4H22L38 20L22 36H0Z"/>`
-      : `<path class="blk-shape" d="M2 4H24L40 20L24 36H2L12 20Z"/>`;
+      ? `<path class="blk-shape" d="M0 8H44L76 40L44 72H0Z"/>`
+      : `<path class="blk-shape" d="M4 8H48L80 40L48 72H4L24 40Z"/>`;
   }
 });
 
 /* --- Passive ------------------------------------------------------ */
 def({
-  type: "isolator", keys: "one-way non-reciprocal ferrite", name: "Isolator", group: "Passive", w: 40, h: 40,
-  ports: [{ id: "in", side: "left", kind: "in", dx: 0, dy: 20 }, { id: "out", side: "right", kind: "out", dx: 40, dy: 20 }],
+  type: "isolator", keys: "one-way non-reciprocal ferrite", name: "Isolator", group: "Passive", w: 80, h: 80,
+  ports: [{ id: "in", side: "left", kind: "in", dx: 0, dy: 40 }, { id: "out", side: "right", kind: "out", dx: 80, dy: 40 }],
   params: { label: "ISO", il: 0.6 },
   fields: [{ key: "il", label: "Insertion loss", unit: "dB", step: 0.1, min: 0 }], nf: p => Math.abs(p.il),
   out: p => ({ out: -Math.abs(p.il) }), val: p => "IL " + fmt(Math.abs(p.il)) + " dB",
-  sym() { return `<circle class="blk-shape" cx="20" cy="20" r="19"/><path class="blk-glyph" d="M9 20H29M23 14L30 20L23 26"/>`; }
+  sym() { return `<circle class="blk-shape" cx="40" cy="40" r="38"/><path class="blk-glyph" d="M18 40H58M46 28L60 40L46 52"/>`; }
 });
 
 def({
-  type: "circulator", keys: "ferrite three-port duplex", name: "Circulator", group: "Passive", w: 40, h: 40, topLabel: true,
-  ports: [{ id: "p1", side: "left", kind: "in", dx: 0, dy: 20 }, { id: "p2", side: "right", kind: "out", dx: 40, dy: 20 }, { id: "p3", side: "bottom", kind: "out", dx: 20, dy: 40 }],
+  type: "circulator", keys: "ferrite three-port duplex", name: "Circulator", group: "Passive", w: 80, h: 80, topLabel: true,
+  ports: [{ id: "p1", side: "left", kind: "in", dx: 0, dy: 40 }, { id: "p2", side: "right", kind: "out", dx: 80, dy: 40 }, { id: "p3", side: "bottom", kind: "out", dx: 40, dy: 80 }],
   params: { label: "CIRC", il: 0.5, iso: 20 },
   fields: [{ key: "il", label: "Insertion loss", unit: "dB", step: 0.1, min: 0 }, { key: "iso", label: "Isolation", unit: "dB", step: 1, min: 0 }], nf: p => Math.abs(p.il),
   ref: m => m.p1, refIn: "p1", out: p => ({ p2: -Math.abs(p.il), p3: -Math.abs(p.iso) }), val: p => "IL " + fmt(Math.abs(p.il)) + " dB",
-  sym() { return `<circle class="blk-shape" cx="20" cy="20" r="19"/><path class="blk-glyph" d="M20 12 A8 8 0 1 1 12 20"/><path class="blk-fillg" d="M12 13L15.5 20.5L8.5 20.5Z"/>`; }
+  sym() { return `<circle class="blk-shape" cx="40" cy="40" r="38"/><path class="blk-glyph" d="M40 24 A16 16 0 1 1 24 40"/><path class="blk-fillg" d="M24 26L31 41L17 41Z"/>`; }
 });
 
 def({
-  type: "phase", keys: "shifter delay trim degrees", name: "Phase shift", group: "Passive", w: 40, h: 40,
-  ports: [{ id: "in", side: "left", kind: "inout", dx: 0, dy: 20 }, { id: "out", side: "right", kind: "inout", dx: 40, dy: 20 }],
+  type: "phase", keys: "shifter delay trim degrees", name: "Phase shift", group: "Passive", w: 80, h: 80,
+  ports: [{ id: "in", side: "left", kind: "inout", dx: 0, dy: 40 }, { id: "out", side: "right", kind: "inout", dx: 80, dy: 40 }],
   params: { label: "\u03c6", phase: 0, il: 1 },
   fields: [{ key: "phase", label: "Phase", unit: "\u00b0", step: 5 }, { key: "il", label: "Insertion loss", unit: "dB", step: 0.1, min: 0 }], nf: p => Math.abs(p.il),
   out: p => ({ out: -Math.abs(p.il) }), val: p => fmt(p.phase) + "\u00b0",
   bidi: (m, p) => rl(m, Math.abs(p.il)),
-  sym() { return `<rect class="blk-shape" x="0" y="4" width="40" height="32" rx="4"/><circle class="blk-glyph" cx="20" cy="20" r="9"/><path class="blk-glyph" d="M20 8V32"/>`; }
+  sym() { return `<rect class="blk-shape" x="0" y="8" width="80" height="64" rx="8"/><circle class="blk-glyph" cx="40" cy="40" r="18"/><path class="blk-glyph" d="M40 16V64"/>`; }
 });
 
 /* --- Terminals ---------------------------------------------------- */
 def({
-  type: "rfin", keys: "connector input port sma source", name: "In connector", group: "Terminals", w: 40, h: 40,
-  ports: [{ id: "out", side: "right", kind: "out", dx: 40, dy: 20 }],
+  type: "rfin", keys: "connector input port sma source", name: "In connector", group: "Terminals", w: 80, h: 80,
+  ports: [{ id: "out", side: "right", kind: "out", dx: 80, dy: 40 }],
   params: { label: "RF IN", power: 0, primaryPower: 0, secondaryPower: 0, freq: "", anaPort: "P1" },
   fields: [{ key: "anaPort", label: "Analysis Port", type: "select", options: ["None", "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8"] },
            { key: "primaryPower", label: "Primary input level", unit: "dBm", step: 0.5 },
@@ -574,61 +579,61 @@ def({
            { key: "power", label: "Legacy input level", unit: "dBm", step: 0.5 },
            { key: "freq", label: "Frequency", type: "text" }],
   isSource: () => true, srcOut: () => "out", srcPower: (p, mode) => getSelectedSourcePower(p, mode), val: p => p.freq || dbm(getSelectedSourcePower(p)),
-  sym() { return `<path class="blk-line" d="M22 20H40"/><circle class="blk-shape" cx="13" cy="20" r="9"/><circle class="blk-fillg" cx="13" cy="20" r="3"/>`; }
+  sym() { return `<path class="blk-line" d="M44 40H80"/><circle class="blk-shape" cx="26" cy="40" r="18"/><circle class="blk-fillg" cx="26" cy="40" r="6"/>`; }
 });
 
 def({
-  type: "rfout", keys: "connector output port sma sink", name: "Out connector", group: "Terminals", w: 40, h: 40,
-  ports: [{ id: "in", side: "left", kind: "in", dx: 0, dy: 20 }],
+  type: "rfout", keys: "connector output port sma sink", name: "Out connector", group: "Terminals", w: 80, h: 80,
+  ports: [{ id: "in", side: "left", kind: "in", dx: 0, dy: 40 }],
   params: { label: "RF OUT", anaPort: "P2" },
   fields: [{ key: "anaPort", label: "Analysis Port", type: "select", options: ["None", "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8"] }],
   val: () => "output",
-  sym() { return `<path class="blk-line" d="M0 20H18"/><circle class="blk-shape" cx="27" cy="20" r="9"/><circle class="blk-fillg" cx="27" cy="20" r="3"/>`; }
+  sym() { return `<path class="blk-line" d="M0 40H36"/><circle class="blk-shape" cx="54" cy="40" r="18"/><circle class="blk-fillg" cx="54" cy="40" r="6"/>`; }
 });
 
 def({
-  type: "detector", keys: "diode video log power meter", name: "Detector", group: "Terminals", w: 40, h: 40,
-  ports: [{ id: "in", side: "left", kind: "in", dx: 0, dy: 20 }],
+  type: "detector", keys: "diode video log power meter", name: "Detector", group: "Terminals", w: 80, h: 80,
+  ports: [{ id: "in", side: "left", kind: "in", dx: 0, dy: 40 }],
   params: { label: "DET", anaPort: "None" },
   fields: [{ key: "anaPort", label: "Analysis Port", type: "select", options: ["None", "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8"] }],
   val: () => "video",
-  sym() { return `<rect class="blk-shape" x="0" y="6" width="40" height="28" rx="4"/><path class="blk-line" d="M4 20H12"/><path class="blk-fillg" d="M12 12L28 20L12 28Z"/><path class="blk-glyph" d="M28 12V28"/>`; }
+  sym() { return `<rect class="blk-shape" x="0" y="12" width="80" height="56" rx="8"/><path class="blk-line" d="M8 40H24"/><path class="blk-fillg" d="M24 24L56 40L24 56Z"/><path class="blk-glyph" d="M56 24V56"/>`; }
 });
 
 def({
-  type: "antenna", keys: "aerial radiator tx rx", name: "Antenna", group: "Terminals", w: 40, h: 40,
+  type: "antenna", keys: "aerial radiator tx rx", name: "Antenna", group: "Terminals", w: 80, h: 80,
   params: { label: "ANT", role: "Tx", power: -80, primaryPower: -80, secondaryPower: -80, anaPort: "None" },
   fields: [{ key: "anaPort", label: "Analysis Port", type: "select", options: ["None", "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8"] },
            { key: "role", label: "Role", type: "select", options: ["Tx", "Rx"] },
            { key: "primaryPower", label: "Primary received level", unit: "dBm", step: 1, showIf: p => p.role === "Rx" },
            { key: "secondaryPower", label: "Secondary received level", unit: "dBm", step: 1, showIf: p => p.role === "Rx" },
            { key: "power", label: "Legacy received level", unit: "dBm", step: 1, showIf: p => p.role === "Rx" }],
-  dynPorts: p => p.role === "Rx" ? [{ id: "ant", side: "right", kind: "out", dx: 40, dy: 20 }] : [{ id: "ant", side: "left", kind: "in", dx: 0, dy: 20 }],
+  dynPorts: p => p.role === "Rx" ? [{ id: "ant", side: "right", kind: "out", dx: 80, dy: 40 }] : [{ id: "ant", side: "left", kind: "in", dx: 0, dy: 40 }],
   isSource: p => p.role === "Rx", srcOut: () => "ant", srcPower: (p, mode) => getSelectedSourcePower(p, mode), val: p => p.role === "Rx" ? "Rx" : "Tx",
   sym(p) {
-    const feed = p.role === "Rx" ? L(40, 20, 20, 20) : L(0, 20, 20, 20);
-    return feed + `<path class="blk-line" d="M20 20V5"/><path class="blk-line" d="M20 5L9 -3M20 5L31 -3"/><circle class="blk-fillg" cx="20" cy="20" r="2.6"/>`;
+    const feed = p.role === "Rx" ? L(80, 40, 40, 40) : L(0, 40, 40, 40);
+    return feed + `<path class="blk-line" d="M40 40V10"/><path class="blk-line" d="M40 10L18 -6M40 10L62 -6"/><circle class="blk-fillg" cx="40" cy="40" r="5"/>`;
   }
 });
 
 def({
-  type: "termination", keys: "load dummy 50 ohm match terminator", name: "Load 50\u03a9", group: "Terminals", w: 40, h: 40,
-  ports: [{ id: "in", side: "left", kind: "in", dx: 0, dy: 20 }],
+  type: "termination", keys: "load dummy 50 ohm match terminator", name: "Load 50\u03a9", group: "Terminals", w: 80, h: 80,
+  ports: [{ id: "in", side: "left", kind: "in", dx: 0, dy: 40 }],
   params: { label: "LOAD", anaPort: "None" },
   fields: [{ key: "anaPort", label: "Analysis Port", type: "select", options: ["None", "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8"] }],
   val: () => "50 \u03a9",
-  sym() { return `<path class="blk-glyph" d="M0 20l3 -6 6 12 6 -12 6 12 3 -6H30"/><path class="blk-line" d="M30 12V28"/><path class="blk-line" d="M34 15V25"/><path class="blk-line" d="M38 18V22"/>`; }
+  sym() { return `<path class="blk-glyph" d="M0 40l6 -12 12 24 12 -24 12 24 6 -12H60"/><path class="blk-line" d="M60 24V56"/><path class="blk-line" d="M68 30V50"/><path class="blk-line" d="M76 36V44"/>`; }
 });
 
 /* --- Hierarchy ----------------------------------------------------- */
 def({
-  type: "subsystem", keys: "subsystem group hierarchy module section sub-circuit page drill down fold", name: "Subsystem", group: "Hierarchy", w: 120, h: 80,
-  dynSize: p => ({ w: 120, h: 40 * Math.max(2, cint(p.ins, 1, 6), cint(p.outs, 1, 6)) }),
+  type: "subsystem", keys: "subsystem group hierarchy module section sub-circuit page drill down fold", name: "Subsystem", group: "Hierarchy", w: 240, h: 160,
+  dynSize: p => ({ w: 240, h: 80 * Math.max(2, cint(p.ins, 1, 6), cint(p.outs, 1, 6)) }),
   dynPorts: p => {
-    const ni = cint(p.ins, 1, 6), no = cint(p.outs, 1, 6), m = Math.max(2, ni, no), h = 40 * m, pts = [];
-    const pos = (k, i) => h / 2 + 40 * (i - (k - 1) / 2);
+    const ni = cint(p.ins, 1, 6), no = cint(p.outs, 1, 6), m = Math.max(2, ni, no), h = 80 * m, pts = [];
+    const pos = (k, i) => h / 2 + 80 * (i - (k - 1) / 2);
     for (let i = 0; i < ni; i++) pts.push({ id: "i" + (i + 1), side: "left", kind: "in", dx: 0, dy: pos(ni, i) });
-    for (let i = 0; i < no; i++) pts.push({ id: "o" + (i + 1), side: "right", kind: "out", dx: 120, dy: pos(no, i) });
+    for (let i = 0; i < no; i++) pts.push({ id: "o" + (i + 1), side: "right", kind: "out", dx: 240, dy: pos(no, i) });
     return pts;
   },
   params: { label: "SECTION", ins: "1", outs: "1", sheet: "" },
@@ -637,24 +642,24 @@ def({
   isSubsystem: true, portLabels: true,
   val: () => "double-click to open",
   sym(p) {
-    const h = 40 * Math.max(2, cint(p.ins, 1, 6), cint(p.outs, 1, 6)), cy = h / 2;
-    return `<rect class="blk-shape" x="0" y="2" width="120" height="${h - 4}" rx="8"/>`
-      + `<rect class="blk-glyph" x="28" y="12" width="64" height="${h - 24}" rx="5" stroke-dasharray="4 3"/>`
-      + `<rect class="blk-glyph" x="50" y="${cy - 9}" width="20" height="18" rx="3"/>`
-      + `<path class="blk-glyph" d="M60 ${cy - 5}v8M56 ${cy - 1}h8"/>`;
+    const h = 80 * Math.max(2, cint(p.ins, 1, 6), cint(p.outs, 1, 6)), cy = h / 2;
+    return `<rect class="blk-shape" x="0" y="4" width="240" height="${h - 8}" rx="16"/>`
+      + `<rect class="blk-glyph" x="56" y="24" width="128" height="${h - 48}" rx="10" stroke-dasharray="4 3"/>`
+      + `<rect class="blk-glyph" x="100" y="${cy - 18}" width="40" height="36" rx="6"/>`
+      + `<path class="blk-glyph" d="M120 ${cy - 10}v16M112 ${cy - 2}h16"/>`;
   }
 });
 
 /* --- Custom ------------------------------------------------------- */
 const cIn = p => cint(p.ins, 0, 4), cOut = p => cint(p.outs, 0, 4);
 def({
-  type: "custom", keys: "user block generic arbitrary source load sink terminator generator", name: "Custom block", group: "Custom", w: 80, h: 40,
-  dynSize: p => ({ w: 80, h: 40 * Math.max(1, cIn(p), cOut(p)) }),
+  type: "custom", keys: "user block generic arbitrary source load sink terminator generator", name: "Custom block", group: "Custom", w: 160, h: 80,
+  dynSize: p => ({ w: 160, h: 80 * Math.max(1, cIn(p), cOut(p)) }),
   dynPorts: p => {
-    const ni = cIn(p), no = cOut(p), m = Math.max(1, ni, no), h = 40 * m, pts = [];
-    const posn = (k, i) => h / 2 + 40 * (i - (k - 1) / 2);
+    const ni = cIn(p), no = cOut(p), m = Math.max(1, ni, no), h = 80 * m, pts = [];
+    const posn = (k, i) => h / 2 + 80 * (i - (k - 1) / 2);
     for (let i = 0; i < ni; i++) pts.push({ id: "i" + (i + 1), side: "left", kind: "in", dx: 0, dy: posn(ni, i) });
-    for (let i = 0; i < no; i++) pts.push({ id: "o" + (i + 1), side: "right", kind: "out", dx: 80, dy: posn(no, i) });
+    for (let i = 0; i < no; i++) pts.push({ id: "o" + (i + 1), side: "right", kind: "out", dx: 160, dy: posn(no, i) });
     return pts;
   },
   params: { label: "CUSTOM", text: "FX", shape: "Box", ins: "1", outs: "1", gain: 0, power: 0, primaryPower: 0, secondaryPower: 0, nf: 0, p1db: "", oip3: "", path: "" },
@@ -684,12 +689,12 @@ def({
   },
   upText: p => sanPath(p.path) ? "" : (p.text || ""),
   sym(p) {
-    const h = 40 * Math.max(1, cIn(p), cOut(p));
+    const h = 80 * Math.max(1, cIn(p), cOut(p));
     const shapes = {
-      Box: `<rect class="blk-shape" x="0" y="2" width="80" height="${h - 4}" rx="6"/>`,
-      Circle: `<ellipse class="blk-shape" cx="40" cy="${h / 2}" rx="40" ry="${h / 2 - 2}"/>`,
-      Diamond: `<path class="blk-shape" d="M40 2L80 ${h / 2}L40 ${h - 2}L0 ${h / 2}Z"/>`,
-      Triangle: `<path class="blk-shape" d="M0 2L80 ${h / 2}L0 ${h - 2}Z"/>`
+      Box: `<rect class="blk-shape" x="0" y="4" width="160" height="${h - 8}" rx="12"/>`,
+      Circle: `<ellipse class="blk-shape" cx="80" cy="${h / 2}" rx="80" ry="${h / 2 - 4}"/>`,
+      Diamond: `<path class="blk-shape" d="M80 4L160 ${h / 2}L80 ${h - 4}L0 ${h / 2}Z"/>`,
+      Triangle: `<path class="blk-shape" d="M0 4L160 ${h / 2}L0 ${h - 4}Z"/>`
     };
     let s = shapes[p.shape] || shapes.Box;
     const d = sanPath(p.path); if (d) s += `<path class="blk-glyph" d="${d}"/>`;
@@ -699,7 +704,7 @@ def({
 
 /* --- Annotation --------------------------------------------------- */
 def({
-  type: "label", name: "Text note", group: "Annotate", w: 120, h: 22,
+  type: "label", name: "Text note", group: "Annotate", w: 240, h: 22,
   params: { label: "", text: "Label" }, fields: [{ key: "text", label: "Text", type: "text" }], isLabel: true, val: () => ""
 });
 

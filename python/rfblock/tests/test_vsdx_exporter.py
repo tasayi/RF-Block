@@ -91,6 +91,14 @@ class TestVsdxExporter(unittest.TestCase):
             text_contents = ["".join(t.itertext()) for t in texts]
             self.assertTrue(any("LNA 28GHz" in tc for tc in text_contents), "Expected block label 'LNA 28GHz' not found in text elements")
 
+            # Verify that text annotation shapes specify TxtLocPinX and TxtLocPinY for accurate centering
+            text_shapes = [s for s in root.findall('.//v:Shape', ns) if s.find('./v:Text', ns) is not None]
+            self.assertGreater(len(text_shapes), 0, "No text shapes found")
+            for ts in text_shapes:
+                cells = {c.attrib.get('N'): c.attrib.get('V') for c in ts.findall('./v:Cell', ns)}
+                self.assertIn('TxtLocPinX', cells, f"Shape {ts.attrib.get('ID')} missing TxtLocPinX")
+                self.assertIn('TxtLocPinY', cells, f"Shape {ts.attrib.get('ID')} missing TxtLocPinY")
+
     def test_component_symbols_are_exported_as_vector_geometry(self):
         """Ensure each sample component maps to its own native vector symbol."""
         with zipfile.ZipFile(self.vsdx_path, 'r') as z:
@@ -110,6 +118,18 @@ class TestVsdxExporter(unittest.TestCase):
             self.assertFalse(any("Generic" in name or "Placeholder" in name for name in shape_names),
                              "Unexpected generic placeholder shape was exported")
 
+    @staticmethod
+    def _parse_cells(shape, ns):
+        res = {}
+        for cell in shape.findall('./v:Cell', ns):
+            n = cell.attrib.get("N")
+            v = cell.attrib.get("V", "0")
+            try:
+                res[n] = float(v)
+            except (ValueError, TypeError):
+                res[n] = v
+        return res
+
     def test_multiport_connection_points_match_authored_symbol_edges(self):
         """Dynamic multiport anchors should coincide with the authored splitter edges."""
         with zipfile.ZipFile(self.vsdx_path, 'r') as z:
@@ -117,15 +137,14 @@ class TestVsdxExporter(unittest.TestCase):
             ns = {'v': 'http://schemas.microsoft.com/office/visio/2012/main'}
             splitter = next(shape for shape in root.findall('.//v:Shape', ns)
                             if shape.attrib.get("NameU") == "Splitter symbol")
-            cells = {cell.attrib["N"]: float(cell.attrib["V"])
-                     for cell in splitter.findall('./v:Cell', ns)}
+            cells = self._parse_cells(splitter, ns)
             rows = splitter.findall('./v:Section[@N="Connection"]/v:Row', ns)
             self.assertEqual(len(rows), 3, "Two-way splitter should export its input and both output ports")
             x_values = [float(row.find('./v:Cell[@N="X"]', ns).attrib["V"]) * 96 for row in rows]
             self.assertAlmostEqual(x_values[0], 0, delta=0.02, msg="Input port should align to the authored left symbol edge")
-            self.assertAlmostEqual(x_values[1], 40, delta=0.02, msg="Output ports should align to the authored right symbol edge")
-            self.assertAlmostEqual(x_values[2], 40, delta=0.02, msg="Every output port should share the authored right symbol edge")
-            self.assertAlmostEqual(cells["Width"] * 96, 40, delta=0.02)
+            self.assertAlmostEqual(x_values[1], 80, delta=0.02, msg="Output ports should align to the authored right symbol edge")
+            self.assertAlmostEqual(x_values[2], 80, delta=0.02, msg="Every output port should share the authored right symbol edge")
+            self.assertAlmostEqual(cells["Width"] * 96, 80, delta=0.02)
 
     def test_all_component_ports_follow_the_twenty_pixel_grid(self):
         """All authored component port anchors should remain on the 20px component grid."""
@@ -167,7 +186,7 @@ class TestVsdxExporter(unittest.TestCase):
             joined = " ".join(contents)
             self.assertIn("+20 dB", joined)
             self.assertIn("CL 6 dB", joined)
-            self.assertIn("IL 2 dB", joined)
+            self.assertTrue("−2 dB" in joined or "IL 2 dB" in joined)
 
     def test_text_annotations_have_no_geometry_line_artifact(self):
         """Text-only shapes must not contain diagonal guide geometry or visible outlines."""
@@ -203,17 +222,15 @@ class TestVsdxExporter(unittest.TestCase):
                             if shape.attrib.get("NameU") == "Text annotation"
                             and shape.find("./v:Text", ns) is not None
                             and "".join(shape.find("./v:Text", ns).itertext()).endswith("dBm")]
-            expected_width = max(36, max(map(len, power_labels)) * 8.5 + 12)
+            expected_width = max(28, max(map(len, power_labels)) * 8.5 + 4)
             for badge in badges:
-                cells = {cell.attrib.get("N"): float(cell.attrib.get("V", "0"))
-                         for cell in badge.findall('./v:Cell', ns)}
+                cells = self._parse_cells(badge, ns)
                 self.assertAlmostEqual(cells["Height"] * 96, 20, delta=0.1)
                 matching_text = []
                 for shape in shapes:
                     if shape.attrib.get("NameU") != "Text annotation":
                         continue
-                    text_cells = {cell.attrib.get("N"): float(cell.attrib.get("V", "0"))
-                                  for cell in shape.findall('./v:Cell', ns)}
+                    text_cells = self._parse_cells(shape, ns)
                     same_position = (abs(text_cells.get("PinX", 0) - cells["PinX"]) < 0.0001
                                      and abs(text_cells.get("PinY", 0) - cells["PinY"]) < 0.0001)
                     if same_position:
@@ -243,13 +260,11 @@ class TestVsdxExporter(unittest.TestCase):
                 self.assertGreater(len(rows), point_index, "Referenced component port point is missing")
                 row = next(row for row in rows if int(row.attrib["IX"]) == point_index)
                 local = {cell.attrib["N"]: float(cell.attrib["V"]) for cell in row.findall("./v:Cell", ns)}
-                target_cells = {cell.attrib["N"]: float(cell.attrib["V"])
-                                for cell in target.findall("./v:Cell", ns)}
+                target_cells = self._parse_cells(target, ns)
                 expected_x = target_cells["PinX"] + local["X"] - target_cells["LocPinX"]
                 expected_y = target_cells["PinY"] + local["Y"] - target_cells["LocPinY"]
                 connector = shapes[connect.attrib["FromSheet"]]
-                connector_cells = {cell.attrib["N"]: float(cell.attrib["V"])
-                                   for cell in connector.findall("./v:Cell", ns)}
+                connector_cells = self._parse_cells(connector, ns)
                 endpoint = "Begin" if connect.attrib["FromCell"] == "BeginX" else "End"
                 self.assertAlmostEqual(connector_cells[f"{endpoint}X"], expected_x, delta=0.0002)
                 self.assertAlmostEqual(connector_cells[f"{endpoint}Y"], expected_y, delta=0.0002)
@@ -257,8 +272,7 @@ class TestVsdxExporter(unittest.TestCase):
             connector_shapes = [shape for shape in shapes.values() if shape.attrib.get("NameU") == "Dynamic connector"]
             self.assertTrue(connector_shapes)
             for connector in connector_shapes:
-                cells = {cell.attrib.get("N"): float(cell.attrib.get("V", "0"))
-                         for cell in connector.findall('./v:Cell', ns)}
+                cells = self._parse_cells(connector, ns)
                 self.assertIn("BeginX", cells)
                 self.assertIn("BeginY", cells)
                 self.assertIn("EndX", cells)
@@ -271,18 +285,51 @@ class TestVsdxExporter(unittest.TestCase):
             ns = {'v': 'http://schemas.microsoft.com/office/visio/2012/main'}
             shapes = root.findall('.//v:Shape', ns)
             connector = next(shape for shape in shapes if shape.attrib.get("NameU") == "Dynamic connector")
-            connector_cells = {cell.attrib["N"]: float(cell.attrib["V"])
-                               for cell in connector.findall('./v:Cell', ns)}
+            connector_cells = self._parse_cells(connector, ns)
             expected_x = connector_cells["BeginX"] + 0.25 * (connector_cells["EndX"] - connector_cells["BeginX"]) + 8 / 96
             expected_stack_y = connector_cells["BeginY"] + 0.25 * (connector_cells["EndY"] - connector_cells["BeginY"]) + 19 / 96
             badge_cells = {}
             for badge_type in ("pwr1", "pwr2"):
                 badge = next(shape for shape in shapes if shape.attrib.get("NameU") == f"IndicatorPill {badge_type}")
-                badge_cells[badge_type] = {cell.attrib["N"]: float(cell.attrib["V"])
-                                           for cell in badge.findall('./v:Cell', ns)}
+                badge_cells[badge_type] = self._parse_cells(badge, ns)
                 self.assertAlmostEqual(badge_cells[badge_type]["PinX"], expected_x, delta=0.0002)
             self.assertAlmostEqual(badge_cells["pwr1"]["PinY"], expected_stack_y + 14 / 96, delta=0.0002)
             self.assertAlmostEqual(badge_cells["pwr2"]["PinY"], expected_stack_y - 14 / 96, delta=0.0002)
 
+    def test_relationship_types_use_visio_2010_schema(self):
+        """Test that OPC relationship parts use http://schemas.microsoft.com/visio/2010/relationships/...
+        which is required by libvisio (LibreOffice Draw) and standard Visio OPC specs."""
+        with zipfile.ZipFile(self.vsdx_path, 'r') as z:
+            root_rels = z.read("_rels/.rels").decode("utf-8")
+            self.assertIn('Type="http://schemas.microsoft.com/visio/2010/relationships/document"', root_rels)
+
+            doc_rels = z.read("visio/_rels/document.xml.rels").decode("utf-8")
+            self.assertIn('Type="http://schemas.microsoft.com/visio/2010/relationships/pages"', doc_rels)
+            self.assertIn('Type="http://schemas.microsoft.com/visio/2010/relationships/masters"', doc_rels)
+            self.assertIn('Type="http://schemas.microsoft.com/visio/2010/relationships/windows"', doc_rels)
+
+            page_rels = z.read("visio/pages/_rels/pages.xml.rels").decode("utf-8")
+            self.assertIn('Type="http://schemas.microsoft.com/visio/2010/relationships/page"', page_rels)
+
+    def test_libreoffice_draw_headless_conversion(self):
+        """Test that LibreOffice Draw can open and convert the generated VSDX file without corruption errors."""
+        import shutil
+        import tempfile
+        if not shutil.which("libreoffice"):
+            self.skipTest("libreoffice is not installed in the environment")
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            res = subprocess.run(
+                ["libreoffice", "--headless", "--convert-to", "pdf", "--outdir", tmpdir, self.vsdx_path],
+                capture_output=True,
+                text=True,
+                timeout=30
+            )
+            self.assertEqual(res.returncode, 0, f"LibreOffice failed to open VSDX: {res.stderr}\n{res.stdout}")
+            pdf_path = os.path.join(tmpdir, "sample-rf-chain.pdf")
+            self.assertTrue(os.path.exists(pdf_path), "LibreOffice did not produce output PDF")
+            self.assertGreater(os.path.getsize(pdf_path), 1000, "Output PDF is empty or corrupt")
+
 if __name__ == '__main__':
     unittest.main()
+

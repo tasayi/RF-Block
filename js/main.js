@@ -7,14 +7,14 @@ function seedDemo() {
     blocks.push(b);
     return b;
   };
-  const ant = mk("antenna", 60, 140, { label: "ANT", role: "Rx", power: -70 });
-  const lna = mk("amp", 220, 140, { label: "LNA", gain: 18, nf: 1.2 });
-  const bpf = mk("filter", 380, 140, { label: "RF BPF", ftype: "BPF", il: 1.5, fc: "2.4 GHz" });
-  const mix = mk("mixer", 540, 140, { label: "MIX", cl: 7 });
-  const lo = mk("lo", 540, 280, { label: "LO", power: 8, freq: "2.0 GHz" });
-  const ifa = mk("amp", 700, 140, { label: "IF AMP", gain: 20, nf: 3 });
-  const ifl = mk("filter", 860, 140, { label: "IF BPF", ftype: "BPF", il: 2, fc: "400 MHz" });
-  const det = mk("detector", 1020, 140, { label: "DET" });
+  const ant = mk("antenna", 80, 160, { label: "ANT", role: "Rx", power: -70 });
+  const lna = mk("amp", 240, 160, { label: "LNA", gain: 18, nf: 1.2 });
+  const bpf = mk("filter", 400, 160, { label: "RF BPF", ftype: "BPF", il: 1.5, fc: "2.4 GHz" });
+  const mix = mk("mixer", 560, 160, { label: "MIX", cl: 7 });
+  const lo = mk("lo", 560, 320, { label: "LO", power: 8, freq: "2.0 GHz" });
+  const ifa = mk("amp", 720, 160, { label: "IF AMP", gain: 20, nf: 3 });
+  const ifl = mk("filter", 880, 160, { label: "IF BPF", ftype: "BPF", il: 2, fc: "400 MHz" });
+  const det = mk("detector", 1040, 160, { label: "DET" });
 
   const C = (fb, fp, tb, tp) => conns.push({ id: uid("c"), from: { block: fb.id, port: fp }, to: { block: tb.id, port: tp } });
   C(ant, "ant", lna, "in"); C(lna, "out", bpf, "in"); C(bpf, "out", mix, "rf");
@@ -76,6 +76,35 @@ function initEvents() {
       }
       attachDrag(); return;
     }
+
+    const lblEl = e.target.closest(".lbl-name, .lbl-val, .lbl-info");
+    if (lblEl && lblEl.getAttribute("data-block")) {
+      e.preventDefault();
+      const bid = lblEl.getAttribute("data-block");
+      const lblType = lblEl.getAttribute("data-lbl") || "name";
+      const b = findBlock(bid);
+      if (b) {
+        selectOnly(bid);
+        renderAll();
+        const w0 = screenToWorld(e.clientX, e.clientY);
+        const startOffX = Number(b.params[`_${lblType}OffX`] != null ? b.params[`_${lblType}OffX`] : b.params._lblOffX) || 0;
+        const startOffY = Number(b.params[`_${lblType}OffY`] != null ? b.params[`_${lblType}OffY`] : b.params._lblOffY) || 0;
+        drag = {
+          mode: "blocklabel",
+          blockId: bid,
+          lblType,
+          startOffX,
+          startOffY,
+          startMouseX: w0.x,
+          startMouseY: w0.y,
+          moved: false,
+          pre: snapState()
+        };
+        attachDrag();
+        return;
+      }
+    }
+
     if (portEl) {
       e.preventDefault();
       const from = { block: portEl.getAttribute("data-block"), port: portEl.getAttribute("data-port") };
@@ -139,6 +168,22 @@ function initEvents() {
         hint("Waypoint node removed.");
       }
       return;
+    }
+    const lblEl = e.target.closest(".lbl-name, .lbl-val, .lbl-info");
+    if (lblEl && lblEl.getAttribute("data-block")) {
+      const b = findBlock(lblEl.getAttribute("data-block"));
+      const lblType = lblEl.getAttribute("data-lbl") || "name";
+      if (b) {
+        pushHistory();
+        delete b.params[`_${lblType}OffX`];
+        delete b.params[`_${lblType}OffY`];
+        delete b.params._lblOffX;
+        delete b.params._lblOffY;
+        renderAll();
+        const lblDesc = lblType === "val" ? "Gain/loss" : lblType === "info" ? "Info" : "Name";
+        hint(`${lblDesc} label reset to default position.`);
+        return;
+      }
     }
     const blkEl = e.target.closest(".block");
     if (blkEl) {

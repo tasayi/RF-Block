@@ -145,19 +145,20 @@ function renderCanvas() {
         if (psh && psh !== sheets[cur]) nm = (icRecv(b.params) ? "\u2190 " : "\u2192 ") + psh.name;
       }
       const v = c.val ? c.val(b.params) : "";
-      if (c.topLabel || c.lblPos === "top") {
-        if (nm && v) {
-          bh += `<text class="lbl-name" x="${f.w / 2}" y="-28">${esc(nm)}</text>`;
-          bh += `<text class="lbl-val" x="${f.w / 2}" y="-13">${esc(v)}</text>`;
-        } else if (nm) {
-          bh += `<text class="lbl-name" x="${f.w / 2}" y="-14">${esc(nm)}</text>`;
-        } else if (v) {
-          bh += `<text class="lbl-val" x="${f.w / 2}" y="-14">${esc(v)}</text>`;
-        }
-      } else {
-        if (nm) bh += `<text class="lbl-name" x="${f.w / 2}" y="${f.h + 18}">${esc(nm)}</text>`;
-        if (v) bh += `<text class="lbl-val" x="${f.w / 2}" y="${f.h + (nm ? 33 : 18)}">${esc(v)}</text>`;
-      }
+      /* Universal label layout with independent floating offsets:
+         val  (gain/loss)         → ABOVE symbol at y = -13
+         nm   (name/label)        → BELOW symbol at y = f.h + 18
+         info (extra metadata)    → BELOW name at y = f.h + 33 (only if defined)  */
+      const valOffX = Number(b.params._valOffX != null ? b.params._valOffX : b.params._lblOffX) || 0;
+      const valOffY = Number(b.params._valOffY != null ? b.params._valOffY : b.params._lblOffY) || 0;
+      const nameOffX = Number(b.params._nameOffX != null ? b.params._nameOffX : b.params._lblOffX) || 0;
+      const nameOffY = Number(b.params._nameOffY != null ? b.params._nameOffY : b.params._lblOffY) || 0;
+      const infoOffX = Number(b.params._infoOffX != null ? b.params._infoOffX : b.params._lblOffX) || 0;
+      const infoOffY = Number(b.params._infoOffY != null ? b.params._infoOffY : b.params._lblOffY) || 0;
+      const info = c.info ? c.info(b.params) : "";
+      if (v)    bh += `<text class="lbl-val"  x="${f.w / 2 + valOffX}" y="${-13 + valOffY}" data-block="${b.id}" data-lbl="val">${esc(v)}</text>`;
+      if (nm)   bh += `<text class="lbl-name" x="${f.w / 2 + nameOffX}" y="${f.h + 18 + nameOffY}" data-block="${b.id}" data-lbl="name">${esc(nm)}</text>`;
+      if (info) bh += `<text class="lbl-info" x="${f.w / 2 + infoOffX}" y="${f.h + 33 + infoOffY}" data-block="${b.id}" data-lbl="info">${esc(info)}</text>`;
       for (const p of getPorts(b)) {
         const m = markInside(p, f.w, f.h);
         bh += `<g class="port ${p.kind}" data-block="${b.id}" data-port="${p.id}" data-kind="${p.kind}"><circle class="port-hit" cx="${p.dx}" cy="${p.dy}" r="10"/><circle class="port-mark" cx="${m.x}" cy="${m.y}" r="3"/></g>`;

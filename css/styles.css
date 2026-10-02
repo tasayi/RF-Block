@@ -636,8 +636,10 @@ select.tb-select-sm:hover, select.tb-select-sm:focus {
 .port-lbl { fill: var(--blk-stroke); opacity: 0.9; font-family: var(--sans); font-size: 13px; font-weight: 600; }
 .block.hot .blk-shape { stroke: #ef4444; stroke-width: 2.5; }
 .block.hot .lbl-name { fill: #f87171; }
-.lbl-name { fill: var(--lbl-ink); font-family: var(--sans); font-size: 16px; font-weight: 700; text-anchor: middle; letter-spacing: 0.02em; }
-.lbl-val { fill: var(--lbl-val-ink); font-family: var(--sans); font-size: 14px; font-weight: 600; text-anchor: middle; letter-spacing: 0.01em; opacity: 0.95; }
+.lbl-name { fill: var(--lbl-ink); font-family: var(--sans); font-size: 16px; font-weight: 700; text-anchor: middle; letter-spacing: 0.02em; cursor: grab; }
+.lbl-val  { fill: var(--lbl-val-ink); font-family: var(--sans); font-size: 16px; font-weight: 600; text-anchor: middle; letter-spacing: 0.01em; opacity: 0.95; cursor: grab; }
+.lbl-info { fill: var(--ink-dim2); font-family: var(--sans); font-size: 14px; font-weight: 500; text-anchor: middle; letter-spacing: 0.01em; opacity: 0.8; cursor: grab; }
+.lbl-name:active, .lbl-val:active, .lbl-info:active { cursor: grabbing; }
 .free-label { fill: var(--lbl-ink); font-family: var(--sans); font-size: 18px; font-weight: 600; }
 .block .sel-ring { fill: none; stroke: var(--accent); stroke-width: 2.2; stroke-dasharray: 6 4; opacity: 0; transition: opacity 0.15s; }
 .block.sel .sel-ring { opacity: 1; }
@@ -664,12 +666,39 @@ select.tb-select-sm:hover, select.tb-select-sm:focus {
 /* Level Readout Pills on Wires */
 .pill { pointer-events: all; cursor: grab; }
 .pill:active { cursor: grabbing; }
-.pill .pbg { fill: var(--pill-bg); stroke: var(--pill-bd); stroke-width: 1.2; filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2)); rx: 5; }
-.pill .ptx { fill: var(--pill-ink); font-family: var(--sans); font-size: 13px; font-weight: 600; text-anchor: middle; letter-spacing: 0.01em; }
-.pill .pun { fill: var(--pill-unk); font-family: var(--sans); font-size: 13px; font-weight: 600; text-anchor: middle; letter-spacing: 0.04em; }
+/* base (unknown / fallback) */
+.pill .pbg { fill: var(--pill-bg); stroke: var(--pill-bd); stroke-width: 1.2; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2)); rx: 5; }
+.pill .ptx { fill: var(--pill-ink); font-family: var(--sans); font-size: 15px; font-weight: 600; text-anchor: middle; letter-spacing: 0.01em; }
+.pill .pun { fill: var(--pill-unk); font-family: var(--sans); font-size: 15px; font-weight: 600; text-anchor: middle; letter-spacing: 0.04em; }
 .pill.unk .pbg { stroke: #334155; fill: #0f172a; filter: none; }
 .pill.unk .ptx { fill: #64748b; font-weight: 500; }
 .pill.unk .pun { fill: #64748b; }
+
+/* Pwr1 — Amber: primary signal power */
+.pill-pwr1 .pbg { fill: #1c1408; stroke: #f59e0b; }
+.pill-pwr1 .ptx { fill: #f59e0b; }
+
+/* Pwr2 — Sky Blue: secondary signal power */
+.pill-pwr2 .pbg { fill: #071828; stroke: #38bdf8; }
+.pill-pwr2 .ptx { fill: #38bdf8; }
+
+/* NF — Emerald: cascade noise figure */
+.pill-nf .pbg  { fill: #051810; stroke: #10b981; }
+.pill-nf .ptx  { fill: #10b981; }
+
+/* N.Floor — Purple: thermal noise floor */
+.pill-nfloor .pbg { fill: #120c22; stroke: #a78bfa; }
+.pill-nfloor .ptx { fill: #a78bfa; }
+
+/* Light theme overrides */
+html[data-theme="light"] .pill-pwr1 .pbg  { fill: #fef3c7; stroke: #d97706; }
+html[data-theme="light"] .pill-pwr1 .ptx  { fill: #92400e; }
+html[data-theme="light"] .pill-pwr2 .pbg  { fill: #e0f2fe; stroke: #0284c7; }
+html[data-theme="light"] .pill-pwr2 .ptx  { fill: #0c4a6e; }
+html[data-theme="light"] .pill-nf .pbg    { fill: #d1fae5; stroke: #059669; }
+html[data-theme="light"] .pill-nf .ptx    { fill: #064e3b; }
+html[data-theme="light"] .pill-nfloor .pbg { fill: #ede9fe; stroke: #7c3aed; }
+html[data-theme="light"] .pill-nfloor .ptx { fill: #4c1d95; }
 
 .rubber { fill: none; stroke: var(--accent); stroke-width: 2; stroke-dasharray: 6 4; pointer-events: none; }
 .guide { stroke: var(--accent); stroke-width: 1; stroke-dasharray: 4 4; opacity: 0.7; pointer-events: none; }

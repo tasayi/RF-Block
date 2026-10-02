@@ -86,10 +86,41 @@ function bboxOf(b) {
   const symbolScale = (typeof DESIGN_TOKENS !== "undefined" && DESIGN_TOKENS.symbolScale) || 1;
   const extraX = Math.max(0, s.w * (symbolScale - 1) / 2);
   const extraY = Math.max(0, s.h * (symbolScale - 1) / 2);
-  if (c.topLabel || c.lblPos === "top") {
-    return { x: b.x - extraX, y: b.y - extraY - 32, w: s.w + extraX * 2, h: s.h + extraY * 2 + 32 };
+
+  const p = b.params || {};
+  const valOffX = Number(p._valOffX != null ? p._valOffX : p._lblOffX) || 0;
+  const valOffY = Number(p._valOffY != null ? p._valOffY : p._lblOffY) || 0;
+  const nameOffX = Number(p._nameOffX != null ? p._nameOffX : p._lblOffX) || 0;
+  const nameOffY = Number(p._nameOffY != null ? p._nameOffY : p._lblOffY) || 0;
+  const infoOffX = Number(p._infoOffX != null ? p._infoOffX : p._lblOffX) || 0;
+  const infoOffY = Number(p._infoOffY != null ? p._infoOffY : p._lblOffY) || 0;
+
+  const hasInfo = c.info && c.info(p);
+  let minX = b.x - extraX;
+  let maxX = b.x + s.w + extraX;
+  let minY = b.y - extraY;
+  let maxY = b.y + s.h + extraY;
+
+  // Include top label (val)
+  minX = Math.min(minX, b.x + s.w / 2 + valOffX - 40);
+  maxX = Math.max(maxX, b.x + s.w / 2 + valOffX + 40);
+  minY = Math.min(minY, b.y - 13 + valOffY - 12);
+
+  // Include name label
+  minX = Math.min(minX, b.x + s.w / 2 + nameOffX - 40);
+  maxX = Math.max(maxX, b.x + s.w / 2 + nameOffX + 40);
+  maxY = Math.max(maxY, b.y + s.h + 18 + nameOffY + 12);
+
+  // Include info label if present
+  if (hasInfo) {
+    minX = Math.min(minX, b.x + s.w / 2 + infoOffX - 40);
+    maxX = Math.max(maxX, b.x + s.w / 2 + infoOffX + 40);
+    maxY = Math.max(maxY, b.y + s.h + 33 + infoOffY + 12);
+  } else {
+    maxY = Math.max(maxY, b.y + s.h + 38);
   }
-  return { x: b.x - extraX, y: b.y - extraY, w: s.w + extraX * 2, h: s.h + extraY * 2 + 40 };
+
+  return { x: minX, y: minY, w: maxX - minX, h: maxY - minY };
 }
 
 function screenToWorld(cx, cy) {

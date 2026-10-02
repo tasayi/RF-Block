@@ -4,8 +4,8 @@
 const DESIGN_TOKENS = {
   fontMin: 13,
   fontSizes: {
-    small: 13,      // port-lbl, pun (units)
-    normal: 14,     // lbl-val (parameters)
+    small: 15,      // port-lbl, pun (units)
+    normal: 16,     // lbl-val (parameters)
     large: 16,      // lbl-name, cust-tx, ic-tag
     heading: 18,    // free-label (annotations)
     title: 20       // header titles
@@ -98,7 +98,7 @@ const LAYOUT_PRESETS = {
 const DEFAULT_SETTINGS = {
   snap: true,
   grid: true,
-  gridSize: 20,
+  gridSize: 40,
   showPwr1: true,
   showPwr2: false,
   powerBudget: "primary",

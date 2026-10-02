@@ -15,7 +15,7 @@ const PICK = {
 function docText() {
   commitSheet();
   return JSON.stringify({
-    format: "rf-block-diagram", version: 3, settings: { ...settings }, typeColor: { ...typeColor }, cur,
+    format: "rf-block-diagram", version: 4, settings: { ...settings }, typeColor: { ...typeColor }, cur,
     sheets: sheets.map(sh => ({ id: sh.id, name: sh.name, view: sh.view, layoutPreset: sh.layoutPreset || "free", parent: sh.parent || null, blocks: sh.blocks, connections: sh.conns }))
   }, null, 2);
 }
@@ -101,7 +101,21 @@ function loadDoc(text, name, handle) {
     return;
   }
   pushHistory();
-  const fix = b => ({ rot: 0, flip: false, ...b });
+  const fileVer = Number(d.version) || 1;
+  const fix = b => {
+    let nb = { rot: 0, flip: false, ...b };
+    if (fileVer < 4) {
+      nb.x = (nb.x || 0) * 2;
+      nb.y = (nb.y || 0) * 2;
+    }
+    return nb;
+  };
+  const fixConn = cn => {
+    if (fileVer < 4 && cn && cn.waypoints && Array.isArray(cn.waypoints)) {
+      return { ...cn, waypoints: cn.waypoints.map(w => ({ x: w.x * 2, y: w.y * 2 })) };
+    }
+    return cn;
+  };
 
   /* Security Sanitizer Fix: Validate typeColor values against normHex */
   typeColor = {};
@@ -117,14 +131,14 @@ function loadDoc(text, name, handle) {
       id: sh.id || ("s" + (i + 1)),
       name: sh.name || ("Sheet " + (i + 1)),
       blocks: (sh.blocks || []).map(fix),
-      conns: sh.connections || sh.conns || [],
+      conns: (sh.connections || sh.conns || []).map(fixConn),
       view: sh.view || { tx: 60, ty: 56, scale: 1 },
       parent: sh.parent || undefined
     }));
     if (!sheets.length) sheets = [{ id: "s1", name: "Sheet 1", blocks: [], conns: [], view: { tx: 60, ty: 56, scale: 1 } }];
     cur = Math.min(d.cur || 0, sheets.length - 1);
   } else {
-    sheets = [{ id: "s1", name: "Sheet 1", blocks: d.blocks.map(fix), conns: d.connections || [], view: d.view || { tx: 60, ty: 56, scale: 1 } }];
+    sheets = [{ id: "s1", name: "Sheet 1", blocks: d.blocks.map(fix), conns: (d.connections || []).map(fixConn), view: d.view || { tx: 60, ty: 56, scale: 1 } }];
     cur = 0;
   }
   settings = { ...settings, ...(d.settings || {}) };
@@ -221,6 +235,11 @@ function buildExportSVG(scale = 1) {
 
   const W = Math.max(200, maxx - minx), H = Math.max(150, maxy - miny);
   const fontSans = DESIGN_TOKENS.fontFamily;
+  const isLight = (settings && settings.theme === "light");
+  const pwr1Bg = isLight ? "#fef3c7" : "#1c1408", pwr1Bd = isLight ? "#d97706" : "#f59e0b", pwr1Tx = isLight ? "#92400e" : "#f59e0b";
+  const pwr2Bg = isLight ? "#e0f2fe" : "#071828", pwr2Bd = isLight ? "#0284c7" : "#38bdf8", pwr2Tx = isLight ? "#0c4a6e" : "#38bdf8";
+  const nfBg   = isLight ? "#d1fae5" : "#051810", nfBd   = isLight ? "#059669" : "#10b981", nfTx   = isLight ? "#064e3b" : "#10b981";
+  const nflBg  = isLight ? "#ede9fe" : "#120c22", nflBd  = isLight ? "#7c3aed" : "#a78bfa", nflTx  = isLight ? "#4c1d95" : "#a78bfa";
   const css = `
     svg{font-family:${fontSans};background:#ffffff;text-rendering:geometricPrecision}
     .block-hit,.sel-ring,.port-hit,.port-mark{display:none}
@@ -228,16 +247,21 @@ function buildExportSVG(scale = 1) {
     .blk-line{fill:none;stroke:var(--blk-stroke,#0f172a);stroke-width:2;stroke-linecap:round}
     .blk-glyph{fill:none;stroke:var(--blk-stroke,#0f172a);stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
     .blk-fillg{fill:var(--blk-stroke,#0f172a);stroke:none}
-    .lbl-name{fill:#000000;font-family:${fontSans};font-size:${DESIGN_TOKENS.fontSizes.large}px;font-weight:700;text-anchor:middle}
-    .lbl-val{fill:#1e293b;font-family:${fontSans};font-size:${DESIGN_TOKENS.fontSizes.normal}px;font-weight:600;text-anchor:middle}
+    .lbl-name{fill:#000000;font-family:${fontSans};font-size:16px;font-weight:700;text-anchor:middle}
+    .lbl-val{fill:#1e293b;font-family:${fontSans};font-size:16px;font-weight:600;text-anchor:middle}
+    .lbl-info{fill:#64748b;font-family:${fontSans};font-size:14px;font-weight:500;text-anchor:middle}
     .ic-tag{fill:#000000;font-family:${fontSans};font-size:${DESIGN_TOKENS.fontSizes.large}px;font-weight:700}
     .cust-tx{fill:#000000;font-family:${fontSans};font-size:${DESIGN_TOKENS.fontSizes.large}px;font-weight:600}
     .port-lbl{fill:#000000;opacity:.9;font-family:${fontSans};font-size:${DESIGN_TOKENS.fontSizes.small}px;font-weight:600}
     .free-label{fill:#000000;font-family:${fontSans};font-size:${DESIGN_TOKENS.fontSizes.heading}px;font-weight:600}
     .wire{fill:none;stroke:#0f172a;stroke-width:2.2}
-    .pbg{fill:#ffffff;stroke:#efd3a0;stroke-width:1.2}
-    .ptx{fill:#b45309;font-family:${fontSans};font-size:15px;font-weight:700;text-anchor:middle}
-    .pun{fill:#b45309;opacity:.9;font-family:${fontSans};font-size:${DESIGN_TOKENS.fontSizes.small}px;font-weight:600;text-anchor:middle}
+    .pill .pbg{fill:#ffffff;stroke:#efd3a0;stroke-width:1.2;rx:5}
+    .pill .ptx{fill:#b45309;font-family:${fontSans};font-size:15px;font-weight:600;text-anchor:middle}
+    .pill .pun{fill:#b45309;opacity:.9;font-family:${fontSans};font-size:15px;font-weight:600;text-anchor:middle}
+    .pill-pwr1 .pbg{fill:${pwr1Bg};stroke:${pwr1Bd}} .pill-pwr1 .ptx{fill:${pwr1Tx}}
+    .pill-pwr2 .pbg{fill:${pwr2Bg};stroke:${pwr2Bd}} .pill-pwr2 .ptx{fill:${pwr2Tx}}
+    .pill-nf .pbg{fill:${nfBg};stroke:${nfBd}} .pill-nf .ptx{fill:${nfTx}}
+    .pill-nfloor .pbg{fill:${nflBg};stroke:${nflBd}} .pill-nfloor .ptx{fill:${nflTx}}
     .unk .pbg{fill:#f4f6f8;stroke:#d7dde3}.unk .ptx{fill:#64748b}.unk .pun{fill:#64748b}`;
 
   const P = computePowers("primary");
@@ -306,19 +330,17 @@ function buildExportSVG(scale = 1) {
       }
       const nm = c.isInterconnect ? "" : (b.params.label || c.name);
       const v = c.val ? c.val(b.params) : "";
-      if (c.topLabel || c.lblPos === "top") {
-        if (nm && v) {
-          body += `<text class="lbl-name" x="${f.w / 2}" y="-28">${esc(nm)}</text>`;
-          body += `<text class="lbl-val" x="${f.w / 2}" y="-13">${esc(v)}</text>`;
-        } else if (nm) {
-          body += `<text class="lbl-name" x="${f.w / 2}" y="-14">${esc(nm)}</text>`;
-        } else if (v) {
-          body += `<text class="lbl-val" x="${f.w / 2}" y="-14">${esc(v)}</text>`;
-        }
-      } else {
-        if (nm) body += `<text class="lbl-name" x="${f.w / 2}" y="${f.h + 18}">${esc(nm)}</text>`;
-        if (v) body += `<text class="lbl-val" x="${f.w / 2}" y="${f.h + (nm ? 33 : 18)}">${esc(v)}</text>`;
-      }
+      /* Universal label layout with independent floating offsets: val above at y=-13, name below at y=f.h+18, info at y=f.h+33 */
+      const valOffX = Number(b.params._valOffX != null ? b.params._valOffX : b.params._lblOffX) || 0;
+      const valOffY = Number(b.params._valOffY != null ? b.params._valOffY : b.params._lblOffY) || 0;
+      const nameOffX = Number(b.params._nameOffX != null ? b.params._nameOffX : b.params._lblOffX) || 0;
+      const nameOffY = Number(b.params._nameOffY != null ? b.params._nameOffY : b.params._lblOffY) || 0;
+      const infoOffX = Number(b.params._infoOffX != null ? b.params._infoOffX : b.params._lblOffX) || 0;
+      const infoOffY = Number(b.params._infoOffY != null ? b.params._infoOffY : b.params._lblOffY) || 0;
+      const info = c.info ? c.info(b.params) : "";
+      if (v)    body += `<text class="lbl-val"  x="${f.w / 2 + valOffX}" y="${-13 + valOffY}">${esc(v)}</text>`;
+      if (nm)   body += `<text class="lbl-name" x="${f.w / 2 + nameOffX}" y="${f.h + 18 + nameOffY}">${esc(nm)}</text>`;
+      if (info) body += `<text class="lbl-info" x="${f.w / 2 + infoOffX}" y="${f.h + 33 + infoOffY}">${esc(info)}</text>`;
     }
     body += `</g>`;
   }
