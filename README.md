@@ -24,13 +24,17 @@ Built with modular JavaScript (ES6+), SVG rendering, embedded physics solvers, `
   - **Topological Graph Path Discovery**: Directed graph solver $G=(V, E)$ automatically discovers all valid signal paths from Sources to Sinks across multi-throw switches, splitters, and parallel channels.
   - **`scikit-rf` Multi-Path Engine**: Full frequency-domain $S$-parameter matrix cascade ($S_{11}, S_{21}, S_{12}, S_{22}$), Group Delay ($\tau_g$), Rollett stability factor ($K$), and Touchstone `.s2p` export.
 
-- **Clean UI & Single-Line Wire Badges**:
-  - **Single-Line Power Pills**: Signal level badges format power and units on a clean single line (e.g. `+10.0 dBm`).
+- **Clean UI, 10 px Grid & Smart Pill Stacks**:
+  - **4-Indicator Wire Stack System**: Symmetrically renders Primary Power ($P_{wr1}$), Secondary Power ($P_{wr2}$), Cascaded Noise Figure ($\text{NF}$), and Thermal Noise Floor ($N_{floor}$) badges directly on signal paths.
+  - **10 px Fine Grid Snapping**: Canvas grid features $10\times 10\text{ px}$ minor divisions and $100\times 100\text{ px}$ major divisions, providing fine $10\text{ px}$ snap resolution for components, wire routing, and keyboard nudges.
+  - **Dynamic Symbol Label Clearance**: Smart positioning engine (`blockLabelY`) dynamically adjusts vertical placement of symbol labels (`val`, `name`, `info`) above and below blocks to prevent collisions with multi-indicator pill stacks, while preserving tight spacing when single pills are shown. Supports independent floating drag offsets.
   - **Universal Labels Toggle**: Toolbar `Labels` toggle button to instantly turn ON or OFF all wire signal level badges across the canvas and exported graphics.
   - **Distinct Color System**: Category-based soft tints optimized for clean white canvas backgrounds.
   - **Multi-Sheet Hierarchy**: Multi-page subsystem folding and drill-down navigation.
 
 - **Export & Single-File Distribution**:
+  - **Native Microsoft Visio VSDX Export**: Directly generates fully editable native `.vsdx` drawing packages conforming to OpenXML drawing standards with vector shapes, connection points, and 10 pt typography without third-party dependencies.
+  - **Always Tightly Cropped Exports**: SVG, PNG, and Visio VSDX exports always tightly crop to the authored diagram bounding box with clean padding margins ($24\text{ px}$ at 96 DPI), keeping graphics unclipped, distortion-free, and ready for Word or publication embedding, while canvas layout presets (e.g. A4 Portrait) serve as on-screen design guidelines.
   - **Single-File Executable Binary**: Packaged into a zero-setup single-file desktop application (`RFBlock-Engine`) that auto-launches local `scikit-rf` physics engine and web UI.
   - **Excel BOM Export**: Generates binary `.xlsx` Bill of Materials workbooks directly in-browser using a built-in Uint8Array ZIP/XLSX generator.
   - **Vector Graphics & Touchstone Export**: Export high-resolution SVG, PNG, and `.s2p` Touchstone files.

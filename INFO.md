@@ -91,6 +91,25 @@ This document provides a comprehensive specification of all supported RF compone
   $$P_{out} = \min(P_{in} + \text{Gain}, P_{1\text{dB}})$$
 - **Cascaded Friis Noise Figure**:
   $$F_{total} = F_1 + \frac{F_2 - 1}{G_1} + \frac{F_3 - 1}{G_1 G_2} + \dots$$
+- **Thermal Noise Floor ($N_{floor}$)**:
+  $$N_{floor} = -174\text{ dBm/Hz} + 10 \log_{10}(BW_{\text{Hz}}) + NF_{total} + G_{cumulative}$$
+  Calculated per port across the cascade based on configured bandwidth (default $1\text{ MHz}$).
+
+---
+
+## 🏷️ Wire Indicator Badge Stacks (Signal Path Badges)
+
+The editor renders symmetric multi-indicator pill stacks along connection wires:
+
+| Indicator Key | Badge Name | Stack Location | Theme Tint | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| `nf` | **Noise Figure** | Above wire (top) | Light Emerald / Green (`#d1fae5`, text `#064e3b`) | Cascaded Friis Noise Figure stage value (e.g. `NF 1.2 dB`). |
+| `pwr1` | **Primary Power** | Above wire (lower) | Warm Amber / Orange (`#fef3c7`, text `#92400e`) | Primary CW signal power level (e.g. `+10.0 dBm`). |
+| `pwr2` | **Secondary Power** | Below wire (upper) | Azure Blue / Cyan (`#e0f2fe`, text `#0c4a6e`) | Secondary signal/budget power level (e.g. `-6.0 dBm`). |
+| `nfloor` | **Noise Floor** | Below wire (bottom) | Lavender Purple (`#ede9fe`, text `#4c1d95`) | Integrated thermal noise floor level (e.g. `-114 dBm`). |
+
+- **Dimensions**: Fixed height $18\text{ px}$, $3\text{ px}$ stack gap, $5\text{ px}$ horizontal padding, single-line text formatting.
+- **Dynamic Symbol Clearance**: Symbol labels (`val`, `name`, `info`) automatically adjust vertical distance to avoid colliding with stacked pills.
 
 ---
 

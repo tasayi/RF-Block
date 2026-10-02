@@ -204,6 +204,31 @@ $$\tau_g(f) = -\frac{d\phi_{S21}}{2\pi df} \quad [\text{ns}]$$
 - **Rollett Stability Factor $K$**:
 $$K = \frac{1 - |S_{11}|^2 - |S_{22}|^2 + |\Delta|^2}{2 |S_{12} S_{21}|}, \quad \Delta = S_{11}S_{22} - S_{12}S_{21}$$
 
+### 5. Canvas Grid & 10 px Snapping Subsystem (`js/config.js`, `index.html`, `js/geometry.js`)
+- **Resolution**: $10\text{ px}$ fine grid resolution (`DEFAULT_SETTINGS.gridSize = 10`).
+- **Visual Grid**: Minor SVG pattern `#gridm` at $10\times 10\text{ px}$ with major grid `#grid` at $100\times 100\text{ px}$ (10 subdivisions per major line).
+- **Uniform Snapping**: Evaluated dynamically across block drag movements, connection waypoint jogs, and keyboard arrow nudges (`snap(val) = Math.round(val / gridSize) * gridSize`).
+
+### 6. Dynamic Symbol Label & Indicator Stack Clearance Engine (`js/geometry.js`)
+Calculates dynamic vertical clearance (`blockLabelY`) to prevent collisions between symbol labels (`val`, `name`, `info`) and multi-pill indicator stacks:
+- **Above Symbol (`val` Gain/Loss)**:
+  $$\text{defaultValY} = \min(-13, \;(f.h / 2 - 21 \times N_{above}) - 10)$$
+  - $N_{above} \le 1$: Evaluates to standard tight $-13\text{ px}$.
+  - $N_{above} = 2$ ($P_{wr1} + \text{NF}$): Automatically shifts to $-22\text{ px}$, maintaining $8\text{ px}$ clearance above the green NF pill.
+- **Below Symbol (`name` & `info`)**:
+  $$\text{defaultNameY} = \max(f.h + 18, \;(f.h / 2 + 21 \times N_{below}) + 18), \quad \text{defaultInfoY} = \text{defaultNameY} + 15$$
+  - $N_{below} \le 1$: Evaluates to standard $f.h + 18\text{ px}$ and $f.h + 33\text{ px}$.
+  - $N_{below} = 2$ ($P_{wr2} + \text{Noise Floor}$): Automatically shifts to $f.h + 30\text{ px}$ and $f.h + 45\text{ px}$.
+- **Decoupled User Offsets**: Preserves independent user drag offsets (`_valOffY`, `_nameOffY`, `_infoOffY`) on top of the calculated dynamic baseline.
+
+### 7. Tightly Cropped Vector & Microsoft Visio Export Architecture (`js/io/vsdx-exporter.js`, `js/io/file-io.js`)
+- **Visual Canvas Guidelines vs Export Bounding**: The on-screen canvas frame (e.g., A4 Portrait $990\times 1400\text{ px}$) provides visual boundaries during layout design. All exports (SVG, PNG, and Visio VSDX) **always tightly crop to the authored diagram bounding box** plus a clean $24\text{ px}$ padding margin.
+- **Native Visio VSDX Exporter**:
+  - Direct in-memory OpenXML OPC ZIP package generation without external libraries.
+  - Page dimensions sized tightly to the diagram at native 96 DPI:
+    $$\text{PageWidth} = \text{ceil}\left(\frac{W_{px} + 48}{96} \times 100\right) / 100, \quad \text{PageHeight} = \text{ceil}\left(\frac{H_{px} + 48}{96} \times 100\right) / 100$$
+  - Generates native 1D dynamic connectors (`OneD="1"`), connection points (`Connections.X`), vector geometry sections, and standard 10 pt typography, preventing text overspill across indicator pills and avoiding oversized white borders when embedded in Word documents.
+
 ---
 
 ## 📦 Single-File Executable Packaging

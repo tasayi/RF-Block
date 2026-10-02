@@ -1,3 +1,42 @@
+# Release Notes — RF Chain v2.1.0
+
+**Release Date**: October 2, 2026  
+**Version**: `v2.1.0`  
+**Repository**: `RFBlock`
+
+---
+
+## 🚀 Overview
+
+`RF Chain v2.1.0` introduces **10 px fine grid snapping**, **always tightly cropped exports** across SVG, PNG, and native Microsoft Visio (`.vsdx`), a **dynamic symbol label clearance engine** for multi-indicator stacks, and the **4-indicator wire pill stack system** ($P_{wr1}$, $P_{wr2}$, $\text{NF}$, $N_{floor}$).
+
+---
+
+## 🌟 Key Features & Improvements
+
+### 1. 📏 10 px Fine Grid Snapping & Visual Alignment
+- **Fine Placement Resolution**: Updated `DEFAULT_SETTINGS.gridSize` from $40\text{ px}$ to **$10\text{ px}$**, allowing precise alignment and adjustment of components, wire jogs, and keyboard nudges.
+- **Visual Canvas Grid**: Updated minor SVG grid pattern `#gridm` to $10\times 10\text{ px}$ with $100\times 100\text{ px}$ major divisions, providing 10 visual subdivisions per major grid line.
+
+### 2. 🖼️ Always Tightly Cropped Exports (SVG, PNG, Visio VSDX)
+- **Faithful Diagram Bounding**: All export formats (SVG, PNG, and Microsoft Visio `.vsdx`) now **always tightly crop to the authored diagram bounding box** plus a clean $24\text{ px}$ padding margin.
+- **Decoupled Visual Guidelines**: Canvas layout presets (e.g. A4 Portrait, A3 Landscape) serve as on-screen design boundaries for layout organization, while exported figures remain unclipped, distortion-free, and margin-free for seamless insertion into Microsoft Word, PowerPoint, LibreOffice, and scientific publications.
+- **Native 96 DPI Visio Packaging**: Visio VSDX pages are generated at native 96 DPI with exact 10 pt typography and matching pill dimensions, preventing text overspill across badges.
+
+### 3. 🏷️ Dynamic Symbol Label Clearance Engine (`blockLabelY`)
+- **Collision Avoidance**: Automatically calculates vertical clearance for symbol labels (`val`, `name`, `info`) above and below blocks based on the active indicator stack height:
+  - **Above Symbol (`val`)**: Dynamically shifts to $y = -22\text{ px}$ when both $P_{wr1}$ and $\text{NF}$ are active, maintaining an $8\text{ px}$ visual clearance completely above the green NF pill. Remains at standard tight $y = -13\text{ px}$ when single indicators are shown.
+  - **Below Symbol (`name` & `info`)**: Dynamically shifts to $y = f.h + 30\text{ px}$ and $f.h + 45\text{ px}$ when both $P_{wr2}$ and $N_{floor}$ are active, clearing the purple Noise Floor pill.
+- **Independent Floating Offsets**: Preserves custom drag offsets (`_valOffY`, `_nameOffY`, `_infoOffY`) on top of the calculated dynamic baseline.
+
+### 4. 📊 4-Indicator Wire Stack System
+- **Symmetric Stacking**: Supports simultaneous cascading analysis and display of:
+  - Above wire: **Noise Figure** (`nf`) and **Primary Power** (`pwr1`).
+  - Below wire: **Secondary Power** (`pwr2`) and **Thermal Noise Floor** (`nfloor`).
+- **Single-Line Pill Badges**: Clean single-line badges with $5\text{ px}$ horizontal padding and high-contrast color-coded themes.
+
+---
+
 # Release Notes — RF Chain v2.0.0
 
 **Release Date**: September 20, 2026  
