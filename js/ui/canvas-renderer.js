@@ -149,6 +149,7 @@ function renderCanvas() {
          val  (gain/loss)         → ABOVE symbol at y = -13
          nm   (name/label)        → BELOW symbol at y = f.h + 18
          info (extra metadata)    → BELOW name at y = f.h + 33 (only if defined)  */
+      const lblY = (typeof blockLabelY === "function") ? blockLabelY(b, f, settings) : { valY: -13, nameY: f.h + 18, infoY: f.h + 33 };
       const valOffX = Number(b.params._valOffX != null ? b.params._valOffX : b.params._lblOffX) || 0;
       const valOffY = Number(b.params._valOffY != null ? b.params._valOffY : b.params._lblOffY) || 0;
       const nameOffX = Number(b.params._nameOffX != null ? b.params._nameOffX : b.params._lblOffX) || 0;
@@ -156,9 +157,9 @@ function renderCanvas() {
       const infoOffX = Number(b.params._infoOffX != null ? b.params._infoOffX : b.params._lblOffX) || 0;
       const infoOffY = Number(b.params._infoOffY != null ? b.params._infoOffY : b.params._lblOffY) || 0;
       const info = c.info ? c.info(b.params) : "";
-      if (v)    bh += `<text class="lbl-val"  x="${f.w / 2 + valOffX}" y="${-13 + valOffY}" data-block="${b.id}" data-lbl="val">${esc(v)}</text>`;
-      if (nm)   bh += `<text class="lbl-name" x="${f.w / 2 + nameOffX}" y="${f.h + 18 + nameOffY}" data-block="${b.id}" data-lbl="name">${esc(nm)}</text>`;
-      if (info) bh += `<text class="lbl-info" x="${f.w / 2 + infoOffX}" y="${f.h + 33 + infoOffY}" data-block="${b.id}" data-lbl="info">${esc(info)}</text>`;
+      if (v)    bh += `<text class="lbl-val"  x="${f.w / 2 + valOffX}" y="${lblY.valY + valOffY}" data-block="${b.id}" data-lbl="val">${esc(v)}</text>`;
+      if (nm)   bh += `<text class="lbl-name" x="${f.w / 2 + nameOffX}" y="${lblY.nameY + nameOffY}" data-block="${b.id}" data-lbl="name">${esc(nm)}</text>`;
+      if (info) bh += `<text class="lbl-info" x="${f.w / 2 + infoOffX}" y="${lblY.infoY + infoOffY}" data-block="${b.id}" data-lbl="info">${esc(info)}</text>`;
       for (const p of getPorts(b)) {
         const m = markInside(p, f.w, f.h);
         bh += `<g class="port ${p.kind}" data-block="${b.id}" data-port="${p.id}" data-kind="${p.kind}"><circle class="port-hit" cx="${p.dx}" cy="${p.dy}" r="10"/><circle class="port-mark" cx="${m.x}" cy="${m.y}" r="3"/></g>`;

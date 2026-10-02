@@ -291,6 +291,22 @@ function resolveExportPort(block, component, portId, footprintSize) {
   return { x: block.x + dx, y: block.y + dy, dx, dy, side, kind: port.kind };
 }
 
+function blockLabelY(b, f, appSettings) {
+  const cfg = appSettings || (typeof settings !== "undefined" ? settings : {});
+  const nAbove = (cfg.showNF ? 1 : 0) + (cfg.showPwr1 !== false ? 1 : 0);
+  const nBelow = (cfg.showPwr2 ? 1 : 0) + (cfg.showNoiseFloor ? 1 : 0);
+
+  const wireDy = (f && f.h != null) ? f.h / 2 : 30;
+  const stackTopRel = wireDy - 21 * nAbove;
+  const stackBtmRel = wireDy + 21 * nBelow;
+
+  const defaultValY = Math.min(-13, stackTopRel - 10);
+  const defaultNameY = Math.max((f && f.h != null ? f.h : 60) + 18, stackBtmRel + 18);
+  const defaultInfoY = defaultNameY + 15;
+
+  return { valY: defaultValY, nameY: defaultNameY, infoY: defaultInfoY };
+}
+
 function buildTextShapeXml(id, text, centerX, centerY, widthPx, heightPx, fontPx, color, bold, align, dpi, toInX, toInY, angleRadians = 0) {
   const widthIn = Math.max(0.01, widthPx / dpi), heightIn = Math.max(0.01, heightPx / dpi);
   const x = toInX(centerX), y = toInY(centerY);
@@ -411,13 +427,14 @@ function validateVsdxPackage(entries) {
   return true;
 }
 
-function buildVsdxBlob(blocksList, connsList, Pdict, NFdict, PSecondaryDict, componentRegistryOverride) {
+function buildVsdxBlob(blocksList, connsList, Pdict, NFdict, PSecondaryDict, componentRegistryOverride, settingsOverride) {
   const blks = blocksList || [];
   const cns = connsList || [];
   const componentRegistry = componentRegistryOverride || ((typeof COMP !== "undefined") ? COMP : {});
   const P = Pdict || (typeof computePowers === "function" ? computePowers("primary") : {});
   const PSecondary = PSecondaryDict || (typeof computePowers === "function" ? computePowers("secondary") : {});
-  const needNoise = (typeof settings !== "undefined" && (settings.showNF || settings.showNoiseFloor));
+  const effectiveSettings = settingsOverride || (typeof settings !== "undefined" ? settings : {});
+  const needNoise = !!(effectiveSettings.showNF || effectiveSettings.showNoiseFloor);
   const NFm = NFdict || (needNoise && typeof computeNoise === "function" ? computeNoise(P) : null);
 
   /* Calculate canvas bounding box in pixels */
@@ -468,15 +485,14 @@ function buildVsdxBlob(blocksList, connsList, Pdict, NFdict, PSecondaryDict, com
     }
   }
 
-  const pxW = Math.max(400, maxx - minx);
-  const pxH = Math.max(300, maxy - miny);
+  const pxW = Math.max(300, maxx - minx);
+  const pxH = Math.max(200, maxy - miny);
   const dpi = 96;
-  const pageWin = Math.max(8.5, Math.ceil((pxW / dpi) * 10) / 10 + 1.0);
-  const pageHin = Math.max(11.0, Math.ceil((pxH / dpi) * 10) / 10 + 1.0);
-
-  /* Conversion helper: canvas px to Visio inches */
-  const toInX = px => Math.round(((px - minx + 48) / dpi) * 10000) / 10000;
-  const toInY = py => Math.round((pageHin - ((py - miny + 48) / dpi)) * 10000) / 10000;
+  const marginPx = 24;
+  const pageWin = Math.ceil(((pxW + marginPx * 2) / dpi) * 100) / 100;
+  const pageHin = Math.ceil(((pxH + marginPx * 2) / dpi) * 100) / 100;
+  const toInX = px => Math.round(((px - minx + marginPx) / dpi) * 10000) / 10000;
+  const toInY = py => Math.round((pageHin - ((py - miny + marginPx) / dpi)) * 10000) / 10000;
   const toInLen = len => Math.round((len / dpi) * 10000) / 10000;
 
   /* XML Headers */
@@ -661,7 +677,7 @@ function buildVsdxBlob(blocksList, connsList, Pdict, NFdict, PSecondaryDict, com
       }
       const value = typeof c.val === "function" ? c.val(b.params || {}) : "";
       const info = typeof c.info === "function" ? c.info(b.params || {}) : "";
-      const fontSizes = (typeof DESIGN_TOKENS !== "undefined" && DESIGN_TOKENS.fontSizes) || { normal: 14, large: 16 };
+      const fontSizes = (typeof DESIGN_TOKENS !== "undefined" && DESIGN_TOKENS.fontSizes) || { normal: 13.33, large: 14, small: 12 };
 
       const p = b.params || {};
       const valOffX = Number(p._valOffX != null ? p._valOffX : p._lblOffX) || 0;
@@ -671,14 +687,15 @@ function buildVsdxBlob(blocksList, connsList, Pdict, NFdict, PSecondaryDict, com
       const infoOffX = Number(p._infoOffX != null ? p._infoOffX : p._lblOffX) || 0;
       const infoOffY = Number(p._infoOffY != null ? p._infoOffY : p._lblOffY) || 0;
 
+      const lblY = (typeof blockLabelY === "function") ? blockLabelY(b, f, effectiveSettings) : { valY: -13, nameY: f.h + 18, infoY: f.h + 33 };
       if (value) {
-        addText(value, b.x + f.w / 2 + valOffX, b.y - 13 + valOffY, Math.max(f.w + 32, value.length * 11 + 16), 18, fontSizes.large || 16, "#1e293b", true, "middle");
+        addText(value, b.x + f.w / 2 + valOffX, b.y + lblY.valY + valOffY, Math.max(f.w + 32, value.length * 9.5 + 16), 18, fontSizes.normal || 13.33, "#1e293b", true, "middle");
       }
       if (name) {
-        addText(name, b.x + f.w / 2 + nameOffX, b.y + f.h + 18 + nameOffY, Math.max(f.w + 32, name.length * 11 + 16), 20, fontSizes.large || 16, "#000000", true, "middle");
+        addText(name, b.x + f.w / 2 + nameOffX, b.y + lblY.nameY + nameOffY, Math.max(f.w + 32, name.length * 10 + 16), 20, fontSizes.large || 14, "#000000", true, "middle");
       }
       if (info) {
-        addText(info, b.x + f.w / 2 + infoOffX, b.y + f.h + 33 + infoOffY, Math.max(f.w + 32, info.length * 11 + 16), 18, fontSizes.normal || 14, "#64748b", true, "middle");
+        addText(info, b.x + f.w / 2 + infoOffX, b.y + lblY.infoY + infoOffY, Math.max(f.w + 32, info.length * 8.5 + 16), 18, fontSizes.small || 12, "#64748b", true, "middle");
       }
     }
     if (!blockAnchorId) throw new Error(`Component "${b.type}" did not produce an exportable shape.`);
@@ -792,7 +809,7 @@ function buildVsdxBlob(blocksList, connsList, Pdict, NFdict, PSecondaryDict, com
       if (settings.showNoiseFloor === true && nflVal !== undefined && isFinite(nflVal)) indicators.push({ type: "nfloor", text: dbm(nflVal) });
 
       if (indicators.length > 0) {
-        const fallbackWidth = Math.max(28, ...indicators.map(ind => String(ind.text).length * 8.5 + 4));
+        const fallbackWidth = Math.max(32, ...indicators.map(ind => String(ind.text).length * 7.6 + 10));
         const fallbackAnchorX = R.mx ?? (a.x + z.x) / 2;
         const fallbackAnchorY = R.my ?? (a.y + z.y) / 2;
         const layout = typeof indicatorPillLayout === "function"
@@ -835,8 +852,9 @@ function buildVsdxBlob(blocksList, connsList, Pdict, NFdict, PSecondaryDict, com
           };
           shapesXml += buildShapeXml(pillShapeId, `IndicatorPill ${ind.type}`, pinX, pinY, pillWIn, pillHIn, geometry, pillStyle);
           const textShapeId = nextShapeId++;
-          const safeTextWidth = Math.max(colWidth, String(ind.text).length * 9.5 + 8);
-          shapesXml += buildTextShapeXml(textShapeId, ind.text, centerX, centerY, safeTextWidth, pillHeight, 15, theme.text, true, "middle", dpi, toInX, toInY);
+          const safeTextWidth = Math.max(colWidth, String(ind.text).length * 7.8 + 10);
+          const pillFontSize = (typeof DESIGN_TOKENS !== "undefined" && DESIGN_TOKENS.fontSizes && DESIGN_TOKENS.fontSizes.normal) || 13.33;
+          shapesXml += buildTextShapeXml(textShapeId, ind.text, centerX, centerY, safeTextWidth, pillHeight, pillFontSize, theme.text, true, "middle", dpi, toInX, toInY);
         };
         const savedPosition = cn.pillPosition || Object.values(cn.pillPositions || {})[0];
         let stackShiftX = 0, stackShiftY = 0;
@@ -864,6 +882,9 @@ function buildVsdxBlob(blocksList, connsList, Pdict, NFdict, PSecondaryDict, com
     + `  <PageSheet LineStyle="0" FillStyle="0" TextStyle="0">\n`
     + `    <Cell N="PageWidth" V="${pageWin}"/>\n`
     + `    <Cell N="PageHeight" V="${pageHin}"/>\n`
+    + `    <Cell N="DrawingScale" V="1" U="IN_F"/>\n`
+    + `    <Cell N="PageScale" V="1" U="IN_F"/>\n`
+    + `    <Cell N="DrawingSizeType" V="3"/>\n`
     + `  </PageSheet>\n`
     + `  <Shapes>\n`
     + shapesXml

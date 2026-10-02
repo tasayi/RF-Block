@@ -211,21 +211,21 @@ function route(a, z, cn) {
 }
 
 function measurePillText(text) {
-  if (!text) return { text: "", w: 28, h: 20 };
-  const charWidth = 8.8;
-  const paddingH = 2; // Reduced to 2px on each side
-  const w = Math.max(text.length * charWidth + paddingH * 2, 28);
+  if (!text) return { text: "", w: 32, h: 20 };
+  const charWidth = 7.6;
+  const paddingH = 5; // 5px padding on each side
+  const w = Math.max(text.length * charWidth + paddingH * 2, 32);
   return { text, w, h: 20 };
 }
 
 function pillDims(lvl, nf) {
   const full = dbm(lvl);
   const nrow = (nf === undefined || !isFinite(nf)) ? null : ("NF " + fmt(nf) + " dB");
-  const charWidthMain = 8.8;
-  const paddingH = 2;
+  const charWidthMain = 7.6;
+  const paddingH = 5;
   const wMain = full.length * charWidthMain + paddingH * 2;
   const wSub = nrow ? (nrow.length * charWidthMain + paddingH * 2) : 0;
-  const w = Math.max(wMain, wSub, 28);
+  const w = Math.max(wMain, wSub, 32);
   const h = nrow ? 36 : 20;
   return { full, nrow, w, h };
 }
@@ -377,8 +377,8 @@ function indicatorPillLayout(R, indicators) {
     }
   }
 
-  const pillH = 20;
-  const gap = 4;
+  const pillH = 18;
+  const gap = 3;
   const entries = [];
 
   /* Render Above-Wire Stack (stacked upwards starting directly above wire) */

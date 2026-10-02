@@ -54,7 +54,7 @@ global.footprint = block => {
 global.DESIGN_TOKENS = { symbolScale: 1, exportPadding: 24, fontSizes: { normal: 14, large: 16 } };
 global.blockFill = () => "#e9f3ea";
 global.blockInk = () => "#0f172a";
-global.settings = { showLabels: true, showNF: false, showPwr1: true, showPwr2: true, showNoiseFloor: false, gridSize: 10 };
+global.settings = { showLabels: true, showNF: false, showPwr1: true, showPwr2: true, showNoiseFloor: false, gridSize: 10, layoutPreset: "free" };
 global.key = (blockId, portId) => `${blockId}\u00b7${portId}`;
 global.dbm = value => `${Number(value).toFixed(1)} dBm`;
 global.fmt = value => String(Number(value));

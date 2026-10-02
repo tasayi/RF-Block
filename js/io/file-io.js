@@ -247,17 +247,17 @@ function buildExportSVG(scale = 1) {
     .blk-line{fill:none;stroke:var(--blk-stroke,#0f172a);stroke-width:2;stroke-linecap:round}
     .blk-glyph{fill:none;stroke:var(--blk-stroke,#0f172a);stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
     .blk-fillg{fill:var(--blk-stroke,#0f172a);stroke:none}
-    .lbl-name{fill:#000000;font-family:${fontSans};font-size:16px;font-weight:700;text-anchor:middle}
-    .lbl-val{fill:#1e293b;font-family:${fontSans};font-size:16px;font-weight:600;text-anchor:middle}
-    .lbl-info{fill:#64748b;font-family:${fontSans};font-size:14px;font-weight:500;text-anchor:middle}
+    .lbl-name{fill:#000000;font-family:${fontSans};font-size:${DESIGN_TOKENS.fontSizes.large}px;font-weight:700;text-anchor:middle}
+    .lbl-val{fill:#1e293b;font-family:${fontSans};font-size:${DESIGN_TOKENS.fontSizes.normal}px;font-weight:600;text-anchor:middle}
+    .lbl-info{fill:#64748b;font-family:${fontSans};font-size:${DESIGN_TOKENS.fontSizes.small}px;font-weight:500;text-anchor:middle}
     .ic-tag{fill:#000000;font-family:${fontSans};font-size:${DESIGN_TOKENS.fontSizes.large}px;font-weight:700}
     .cust-tx{fill:#000000;font-family:${fontSans};font-size:${DESIGN_TOKENS.fontSizes.large}px;font-weight:600}
     .port-lbl{fill:#000000;opacity:.9;font-family:${fontSans};font-size:${DESIGN_TOKENS.fontSizes.small}px;font-weight:600}
     .free-label{fill:#000000;font-family:${fontSans};font-size:${DESIGN_TOKENS.fontSizes.heading}px;font-weight:600}
     .wire{fill:none;stroke:#0f172a;stroke-width:2.2}
     .pill .pbg{fill:#ffffff;stroke:#efd3a0;stroke-width:1.2;rx:5}
-    .pill .ptx{fill:#b45309;font-family:${fontSans};font-size:15px;font-weight:600;text-anchor:middle}
-    .pill .pun{fill:#b45309;opacity:.9;font-family:${fontSans};font-size:15px;font-weight:600;text-anchor:middle}
+    .pill .ptx{fill:#b45309;font-family:${fontSans};font-size:${DESIGN_TOKENS.fontSizes.normal}px;font-weight:600;text-anchor:middle}
+    .pill .pun{fill:#b45309;opacity:.9;font-family:${fontSans};font-size:${DESIGN_TOKENS.fontSizes.normal}px;font-weight:600;text-anchor:middle}
     .pill-pwr1 .pbg{fill:${pwr1Bg};stroke:${pwr1Bd}} .pill-pwr1 .ptx{fill:${pwr1Tx}}
     .pill-pwr2 .pbg{fill:${pwr2Bg};stroke:${pwr2Bd}} .pill-pwr2 .ptx{fill:${pwr2Tx}}
     .pill-nf .pbg{fill:${nfBg};stroke:${nfBd}} .pill-nf .ptx{fill:${nfTx}}
@@ -331,6 +331,7 @@ function buildExportSVG(scale = 1) {
       const nm = c.isInterconnect ? "" : (b.params.label || c.name);
       const v = c.val ? c.val(b.params) : "";
       /* Universal label layout with independent floating offsets: val above at y=-13, name below at y=f.h+18, info at y=f.h+33 */
+      const lblY = (typeof blockLabelY === "function") ? blockLabelY(b, f, settings) : { valY: -13, nameY: f.h + 18, infoY: f.h + 33 };
       const valOffX = Number(b.params._valOffX != null ? b.params._valOffX : b.params._lblOffX) || 0;
       const valOffY = Number(b.params._valOffY != null ? b.params._valOffY : b.params._lblOffY) || 0;
       const nameOffX = Number(b.params._nameOffX != null ? b.params._nameOffX : b.params._lblOffX) || 0;
@@ -338,9 +339,9 @@ function buildExportSVG(scale = 1) {
       const infoOffX = Number(b.params._infoOffX != null ? b.params._infoOffX : b.params._lblOffX) || 0;
       const infoOffY = Number(b.params._infoOffY != null ? b.params._infoOffY : b.params._lblOffY) || 0;
       const info = c.info ? c.info(b.params) : "";
-      if (v)    body += `<text class="lbl-val"  x="${f.w / 2 + valOffX}" y="${-13 + valOffY}">${esc(v)}</text>`;
-      if (nm)   body += `<text class="lbl-name" x="${f.w / 2 + nameOffX}" y="${f.h + 18 + nameOffY}">${esc(nm)}</text>`;
-      if (info) body += `<text class="lbl-info" x="${f.w / 2 + infoOffX}" y="${f.h + 33 + infoOffY}">${esc(info)}</text>`;
+      if (v)    body += `<text class="lbl-val"  x="${f.w / 2 + valOffX}" y="${lblY.valY + valOffY}">${esc(v)}</text>`;
+      if (nm)   body += `<text class="lbl-name" x="${f.w / 2 + nameOffX}" y="${lblY.nameY + nameOffY}">${esc(nm)}</text>`;
+      if (info) body += `<text class="lbl-info" x="${f.w / 2 + infoOffX}" y="${lblY.infoY + infoOffY}">${esc(info)}</text>`;
     }
     body += `</g>`;
   }
@@ -365,7 +366,7 @@ function exportVsdx() {
     const PSecondary = computePowers("secondary");
     const needNoise = !!(settings.showNF || settings.showNoiseFloor);
     const NFm = needNoise ? computeNoise(P) : null;
-    const blob = buildVsdxBlob(blocks, conns, P, NFm, PSecondary);
+    const blob = buildVsdxBlob(blocks, conns, P, NFm, PSecondary, null, settings);
     const base = (fileName || "rf-chain").replace(/\.(rfbd|json|vsdx|png|svg)$/i, "");
     const name = `${base}.vsdx`;
     const url = URL.createObjectURL(blob), a = document.createElement("a");

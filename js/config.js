@@ -2,13 +2,13 @@
 
 /* Centralized Design System Tokens */
 const DESIGN_TOKENS = {
-  fontMin: 13,
+  fontMin: 12,
   fontSizes: {
-    small: 15,      // port-lbl, pun (units)
-    normal: 16,     // lbl-val (parameters)
-    large: 16,      // lbl-name, cust-tx, ic-tag
-    heading: 18,    // free-label (annotations)
-    title: 20       // header titles
+    small: 12,      // port-lbl, pun (units), lbl-info
+    normal: 13,     // lbl-val (parameters), indicator pills
+    large: 14,      // lbl-name, cust-tx, ic-tag
+    heading: 16,    // free-label (annotations)
+    title: 18       // header titles
   },
   fontFamily: 'Calibri, "Calibri Light", "Segoe UI", Arial, sans-serif',
   fontFamilyMono: 'Calibri, "Calibri Light", "Segoe UI", Arial, sans-serif',
@@ -98,7 +98,7 @@ const LAYOUT_PRESETS = {
 const DEFAULT_SETTINGS = {
   snap: true,
   grid: true,
-  gridSize: 40,
+  gridSize: 10,
   showPwr1: true,
   showPwr2: false,
   powerBudget: "primary",
@@ -111,7 +111,7 @@ const DEFAULT_SETTINGS = {
   enableJumpers: true,
   color: true,
   theme: "dark",
-  layoutPreset: "free",
+  layoutPreset: "a4_portrait",
   analysisBand: { startFreq: 1, startUnit: "GHz", stopFreq: 10, stopUnit: "GHz", points: 101, sweepType: "lin" }
 };
 

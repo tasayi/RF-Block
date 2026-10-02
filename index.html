@@ -100,7 +100,7 @@
     <select id="selLayout" class="tb-select" title="Canvas page layout preset">
       <option value="free">Layout: Free</option>
       <option value="a4_landscape">A4 Landscape</option>
-      <option value="a4_portrait">A4 Portrait</option>
+      <option value="a4_portrait" selected>A4 Portrait</option>
       <option value="a3_landscape">A3 Landscape</option>
       <option value="a3_portrait">A3 Portrait</option>
     </select>
@@ -139,7 +139,7 @@
     <div class="stage">
       <svg id="svg" xmlns="http://www.w3.org/2000/svg">
         <defs>
-          <pattern id="gridm" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M20 0H0V20" fill="none" stroke="var(--grid-min)" stroke-width="1"/></pattern>
+          <pattern id="gridm" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M10 0H0V10" fill="none" stroke="var(--grid-min)" stroke-width="1"/></pattern>
           <pattern id="grid" width="100" height="100" patternUnits="userSpaceOnUse"><rect width="100" height="100" fill="url(#gridm)"/><path d="M100 0H0V100" fill="none" stroke="var(--grid-maj)" stroke-width="1.2"/></pattern>
           <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z"/></marker>
           <marker id="arrowSel" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z"/></marker>

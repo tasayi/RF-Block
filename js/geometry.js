@@ -79,6 +79,22 @@ function markInside(p, w, h) {
   return { x: p.dx, y: p.dy - o };
 }
 
+function blockLabelY(b, f, appSettings) {
+  const cfg = appSettings || (typeof settings !== "undefined" ? settings : {});
+  const nAbove = (cfg.showNF ? 1 : 0) + (cfg.showPwr1 !== false ? 1 : 0);
+  const nBelow = (cfg.showPwr2 ? 1 : 0) + (cfg.showNoiseFloor ? 1 : 0);
+
+  const wireDy = (f && f.h != null) ? f.h / 2 : 30;
+  const stackTopRel = wireDy - 21 * nAbove;
+  const stackBtmRel = wireDy + 21 * nBelow;
+
+  const defaultValY = Math.min(-13, stackTopRel - 10);
+  const defaultNameY = Math.max((f && f.h != null ? f.h : 60) + 18, stackBtmRel + 18);
+  const defaultInfoY = defaultNameY + 15;
+
+  return { valY: defaultValY, nameY: defaultNameY, infoY: defaultInfoY };
+}
+
 function bboxOf(b) {
   const c = COMP[b.type];
   if (c.isLabel) { return { x: b.x - 4, y: b.y - 18, w: measureLabel(b), h: 28 }; }
@@ -96,6 +112,7 @@ function bboxOf(b) {
   const infoOffY = Number(p._infoOffY != null ? p._infoOffY : p._lblOffY) || 0;
 
   const hasInfo = c.info && c.info(p);
+  const lblY = blockLabelY(b, s);
   let minX = b.x - extraX;
   let maxX = b.x + s.w + extraX;
   let minY = b.y - extraY;
@@ -104,20 +121,20 @@ function bboxOf(b) {
   // Include top label (val)
   minX = Math.min(minX, b.x + s.w / 2 + valOffX - 40);
   maxX = Math.max(maxX, b.x + s.w / 2 + valOffX + 40);
-  minY = Math.min(minY, b.y - 13 + valOffY - 12);
+  minY = Math.min(minY, b.y + lblY.valY + valOffY - 12);
 
   // Include name label
   minX = Math.min(minX, b.x + s.w / 2 + nameOffX - 40);
   maxX = Math.max(maxX, b.x + s.w / 2 + nameOffX + 40);
-  maxY = Math.max(maxY, b.y + s.h + 18 + nameOffY + 12);
+  maxY = Math.max(maxY, b.y + lblY.nameY + nameOffY + 12);
 
   // Include info label if present
   if (hasInfo) {
     minX = Math.min(minX, b.x + s.w / 2 + infoOffX - 40);
     maxX = Math.max(maxX, b.x + s.w / 2 + infoOffX + 40);
-    maxY = Math.max(maxY, b.y + s.h + 33 + infoOffY + 12);
+    maxY = Math.max(maxY, b.y + lblY.infoY + infoOffY + 12);
   } else {
-    maxY = Math.max(maxY, b.y + s.h + 38);
+    maxY = Math.max(maxY, b.y + lblY.nameY + nameOffY + 20);
   }
 
   return { x: minX, y: minY, w: maxX - minX, h: maxY - minY };

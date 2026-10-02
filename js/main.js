@@ -7,14 +7,14 @@ function seedDemo() {
     blocks.push(b);
     return b;
   };
-  const ant = mk("antenna", 80, 160, { label: "ANT", role: "Rx", power: -70 });
-  const lna = mk("amp", 240, 160, { label: "LNA", gain: 18, nf: 1.2 });
-  const bpf = mk("filter", 400, 160, { label: "RF BPF", ftype: "BPF", il: 1.5, fc: "2.4 GHz" });
-  const mix = mk("mixer", 560, 160, { label: "MIX", cl: 7 });
-  const lo = mk("lo", 560, 320, { label: "LO", power: 8, freq: "2.0 GHz" });
-  const ifa = mk("amp", 720, 160, { label: "IF AMP", gain: 20, nf: 3 });
-  const ifl = mk("filter", 880, 160, { label: "IF BPF", ftype: "BPF", il: 2, fc: "400 MHz" });
-  const det = mk("detector", 1040, 160, { label: "DET" });
+  const ant = mk("antenna", 80, 220, { label: "ANT", role: "Rx", power: -70 });
+  const lna = mk("amp", 220, 220, { label: "LNA", gain: 18, nf: 1.2 });
+  const bpf = mk("filter", 360, 220, { label: "RF BPF", ftype: "BPF", il: 1.5, fc: "2.4 GHz" });
+  const mix = mk("mixer", 500, 220, { label: "MIX", cl: 7 });
+  const lo = mk("lo", 500, 390, { label: "LO", power: 8, freq: "2.0 GHz" });
+  const ifa = mk("amp", 640, 220, { label: "IF AMP", gain: 20, nf: 3 });
+  const ifl = mk("filter", 780, 220, { label: "IF BPF", ftype: "BPF", il: 2, fc: "400 MHz" });
+  const det = mk("detector", 920, 220, { label: "DET" });
 
   const C = (fb, fp, tb, tp) => conns.push({ id: uid("c"), from: { block: fb.id, port: fp }, to: { block: tb.id, port: tp } });
   C(ant, "ant", lna, "in"); C(lna, "out", bpf, "in"); C(bpf, "out", mix, "rf");

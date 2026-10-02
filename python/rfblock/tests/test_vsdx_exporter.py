@@ -142,12 +142,12 @@ class TestVsdxExporter(unittest.TestCase):
             self.assertEqual(len(rows), 3, "Two-way splitter should export its input and both output ports")
             x_values = [float(row.find('./v:Cell[@N="X"]', ns).attrib["V"]) * 96 for row in rows]
             self.assertAlmostEqual(x_values[0], 0, delta=0.02, msg="Input port should align to the authored left symbol edge")
-            self.assertAlmostEqual(x_values[1], 80, delta=0.02, msg="Output ports should align to the authored right symbol edge")
-            self.assertAlmostEqual(x_values[2], 80, delta=0.02, msg="Every output port should share the authored right symbol edge")
-            self.assertAlmostEqual(cells["Width"] * 96, 80, delta=0.02)
+            self.assertAlmostEqual(x_values[1], 60, delta=0.02, msg="Output ports should align to the authored right symbol edge")
+            self.assertAlmostEqual(x_values[2], 60, delta=0.02, msg="Every output port should share the authored right symbol edge")
+            self.assertAlmostEqual(cells["Width"] * 96, 60, delta=0.02)
 
     def test_all_component_ports_follow_the_twenty_pixel_grid(self):
-        """All authored component port anchors should remain on the 20px component grid."""
+        """All authored component port anchors should remain on the 10px component grid."""
         with zipfile.ZipFile(self.vsdx_path, 'r') as z:
             root = ET.fromstring(z.read("visio/pages/page1.xml"))
             ns = {'v': 'http://schemas.microsoft.com/office/visio/2012/main'}
@@ -158,7 +158,7 @@ class TestVsdxExporter(unittest.TestCase):
                 for row in shape.findall('./v:Section[@N="Connection"]/v:Row', ns):
                     for axis in ("X", "Y"):
                         value_px = float(row.find(f'./v:Cell[@N="{axis}"]', ns).attrib["V"]) * 96
-                        nearest_grid = round(value_px / 20) * 20
+                        nearest_grid = round(value_px / 10) * 10
                         self.assertAlmostEqual(value_px, nearest_grid, delta=0.02,
                                                msg=f"{shape.attrib.get('NameU')} {axis} port coordinate {value_px}px is off-grid")
 
@@ -206,7 +206,7 @@ class TestVsdxExporter(unittest.TestCase):
                 self.assertEqual(cells.get("TxtMarginRight"), "0")
                 size_cell = shape.find('./v:Section[@N="Character"]/v:Row/v:Cell[@N="Size"]', ns)
                 self.assertIsNotNone(size_cell, "Text should retain its design-system font size")
-                self.assertIn(round(float(size_cell.attrib["V"]) * 96), {8, 9, 10, 11, 13, 14, 15, 16, 18},
+                self.assertIn(round(float(size_cell.attrib["V"]) * 96), {8, 9, 10, 11, 12, 13, 14, 15, 16, 18},
                               "Font cells should convert source CSS pixels to Visio inches without scaling up")
 
     def test_power_badges_are_tightly_sized(self):
@@ -222,7 +222,7 @@ class TestVsdxExporter(unittest.TestCase):
                             if shape.attrib.get("NameU") == "Text annotation"
                             and shape.find("./v:Text", ns) is not None
                             and "".join(shape.find("./v:Text", ns).itertext()).endswith("dBm")]
-            expected_width = max(28, max(map(len, power_labels)) * 8.5 + 4)
+            expected_width = max(32, max(map(len, power_labels)) * 7.6 + 10)
             for badge in badges:
                 cells = self._parse_cells(badge, ns)
                 self.assertAlmostEqual(cells["Height"] * 96, 20, delta=0.1)
@@ -239,7 +239,7 @@ class TestVsdxExporter(unittest.TestCase):
                             matching_text.append(content)
                 self.assertTrue(matching_text, "Power badge is missing its matching text annotation")
                 self.assertAlmostEqual(cells["Width"] * 96, expected_width, delta=0.1,
-                                       msg="Uniform power stack width should match its widest text plus the original 6px padding per side")
+                                       msg="Uniform power stack width should match its widest text plus 5px padding per side")
 
     def test_connectors_attach_to_exact_component_ports(self):
         """The connector endpoint coordinates and ToCell references must agree with port connection rows."""
@@ -329,6 +329,48 @@ class TestVsdxExporter(unittest.TestCase):
             pdf_path = os.path.join(tmpdir, "sample-rf-chain.pdf")
             self.assertTrue(os.path.exists(pdf_path), "LibreOffice did not produce output PDF")
             self.assertGreater(os.path.getsize(pdf_path), 1000, "Output PDF is empty or corrupt")
+
+    def test_tightly_cropped_page_dimensions_and_dynamic_label_clearance(self):
+        """Test that VSDX export tightly crops to the drawing bounds and dynamically positions labels."""
+        import tempfile
+        repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../"))
+        node_script = """
+        const fs = require('fs');
+        const vm = require('vm');
+        const path = require('path');
+        const xlsxCode = fs.readFileSync(path.join(__dirname, 'js/io/xlsx-exporter.js'), 'utf8');
+        const context = vm.createContext({ global, TextEncoder: require('util').TextEncoder, Uint32Array, Uint8Array, DataView, Blob, Buffer, console });
+        vm.runInContext(xlsxCode, context);
+        global.zipStore = context.zipStore;
+        const { buildVsdxBlob } = require('./js/io/vsdx-exporter.js');
+        const dummyComp = { amp: { name: 'Amplifier', w: 60, h: 60, val: () => '+20 dB', ports: [{ id: 'in', dx: 0, dy: 30 }, { id: 'out', dx: 60, dy: 30 }], sym: () => '<path d="M0 4L60 30L0 56Z"/>' } };
+        const blocks = [{ id: 'b1', type: 'amp', x: 80, y: 140, params: {} }];
+        (async () => {
+            const vsdx = buildVsdxBlob(blocks, [], {}, null, {}, dummyComp, { showNF: true, showPwr1: true });
+            const buf = vsdx.arrayBuffer ? Buffer.from(await vsdx.arrayBuffer()) : Buffer.from(vsdx);
+            fs.writeFileSync(process.argv[1], buf);
+        })().catch(e => { console.error(e); process.exit(1); });
+        """
+        with tempfile.NamedTemporaryFile(suffix=".vsdx", delete=False) as tf:
+            out_vsdx = tf.name
+        try:
+            res = subprocess.run(["node", "-e", node_script, out_vsdx], cwd=repo_root, capture_output=True, text=True)
+            self.assertEqual(res.returncode, 0, f"Node script failed: {res.stderr}")
+            with zipfile.ZipFile(out_vsdx, 'r') as z:
+                root = ET.fromstring(z.read("visio/pages/page1.xml"))
+                ns = {'v': 'http://schemas.microsoft.com/office/visio/2012/main'}
+                page_sheet = root.find('./v:PageSheet', ns)
+                self.assertIsNotNone(page_sheet, "PageSheet element missing")
+                cells = {c.attrib.get('N'): c.attrib.get('V') for c in page_sheet.findall('./v:Cell', ns)}
+                # Tightly cropped dimensions with 24px margins at 96 DPI
+                self.assertEqual(cells.get('PageWidth'), '3.63', "PageWidth should tightly crop drawing bounds")
+                self.assertEqual(cells.get('PageHeight'), '2.59', "PageHeight should tightly crop drawing bounds")
+                self.assertEqual(cells.get('DrawingScale'), '1')
+                self.assertEqual(cells.get('PageScale'), '1')
+                self.assertEqual(cells.get('DrawingSizeType'), '3')
+        finally:
+            if os.path.exists(out_vsdx):
+                os.remove(out_vsdx)
 
 if __name__ == '__main__':
     unittest.main()
