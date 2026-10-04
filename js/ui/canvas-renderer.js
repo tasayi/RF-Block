@@ -19,15 +19,19 @@ function renderCanvas() {
 
   if (layerPage) {
     if (layoutObj && !layoutObj.isFree) {
-      const margin = 40;
+      const pageOffset = 40;
       const pxW = layoutObj.w, pxH = layoutObj.h;
-      const x0 = margin, y0 = margin;
+      const x0 = pageOffset, y0 = pageOffset;
       const badgeText = `${layoutObj.name} · ${layoutObj.mmW} × ${layoutObj.mmH} mm`;
       const badgeWidth = badgeText.length * 8 + 24;
+      const pMargin = layoutObj.margin || 40;
+      const mx0 = x0 + pMargin, my0 = y0 + pMargin;
+      const mw = Math.max(0, pxW - pMargin * 2), mh = Math.max(0, pxH - pMargin * 2);
 
       layerPage.innerHTML = `<g class="page-frame-group">`
         + `<rect class="page-bg-frame" x="${x0}" y="${y0}" width="${pxW}" height="${pxH}" rx="6"/>`
         + `<rect class="page-boundary" x="${x0}" y="${y0}" width="${pxW}" height="${pxH}" rx="6"/>`
+        + `<rect class="page-margin-guide" x="${mx0}" y="${my0}" width="${mw}" height="${mh}" rx="4"/>`
         + `<g transform="translate(${x0 + 16}, ${y0 + 26})">`
         + `<rect class="page-badge-bg" x="-8" y="-16" width="${badgeWidth}" height="24" rx="4"/>`
         + `<text class="page-badge" x="0" y="0" dominant-baseline="middle">${esc(badgeText)}</text>`
