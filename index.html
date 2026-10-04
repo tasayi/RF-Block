@@ -63,6 +63,14 @@
           <label class="toggle" title="Tint blocks by category"><input type="checkbox" id="tglColor" checked/> Colour</label>
           <label class="toggle" title="Toggle Light / Dark background theme"><input type="checkbox" id="tglTheme"/> Theme</label>
         </div>
+        <div class="vdp-inline-row" style="margin-top:6px;gap:8px">
+          <label class="toggle" title="Canvas grid snapping step size in pixels" style="font-size:11px">
+            Grid&nbsp;<input id="tbGridSize" type="number" value="10" min="2" max="200" step="1" class="tb-num-input" style="width:48px"/>&nbsp;px
+          </label>
+          <label class="toggle" title="Auto-space label clearance padding in pixels" style="font-size:11px">
+            Pad&nbsp;<input id="tbAutoPadding" type="number" value="20" min="0" max="500" step="5" class="tb-num-input" style="width:48px"/>&nbsp;px
+          </label>
+        </div>
 
         <div class="vdp-divider"></div>
         <div class="vdp-section">Signals &amp; Labels</div>
@@ -250,6 +258,7 @@
 <script src="js/solvers/sparams-solver.js"></script>
 <script src="js/layout/manhattan-router.js"></script>
 <script src="js/layout/pill-layout.js"></script>
+<script src="js/layout/auto-space.js"></script>
 <script src="js/subsystems.js"></script>
 <script src="js/io/xlsx-exporter.js"></script>
 <script src="js/io/vsdx/templates.js"></script>

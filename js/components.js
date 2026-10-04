@@ -18,14 +18,18 @@
 if (typeof require !== "undefined" && typeof module !== "undefined" && module.exports) {
   const fs = require("fs");
   const path = require("path");
+  global.COMP = global.COMP || {};
+  global.ORDER = global.ORDER || [];
+  global.GROUPS = global.GROUPS || [];
+  global.def = global.def || function(o) { global.COMP[o.type] = o; global.ORDER.push(o.type); };
   const compFiles = [
     "helpers.js", "sources.js", "gain-loss.js", "filters.js",
     "converters.js", "routing.js", "passives.js", "terminals.js", "containers.js"
   ];
   compFiles.forEach(file => {
     const code = fs.readFileSync(path.join(__dirname, "components", file), "utf8");
-    (new Function("COMP", "ORDER", "def", "swState", code))(
-      global.COMP || {}, global.ORDER || [], global.def, global.swState
+    (new Function("COMP", "ORDER", "def", code))(
+      global.COMP, global.ORDER, global.def
     );
   });
   module.exports = { COMP: global.COMP, ORDER: global.ORDER, GROUPS: global.GROUPS };

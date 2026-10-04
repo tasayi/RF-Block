@@ -36,6 +36,84 @@ class TestPhysicsEngine(unittest.TestCase):
         self.assertIn(["src", "sw1", "amp1", "out1"], path_ids)
         self.assertIn(["src", "sw1", "amp2", "out2"], path_ids)
 
+    def test_switch_bank_bidirectional_paths(self):
+        """Test discovering multiple paths through a switch bank (demux SW1 -> branches -> mux SW2 -> OUT)."""
+        schematic = {
+            "blocks": [
+                {"id": "src", "type": "source", "params": {"label": "RF Source"}},
+                {"id": "sw1", "type": "switch", "params": {"label": "SW1", "throws": 2, "state": "1"}},
+                {"id": "amp", "type": "amp", "params": {"label": "CH1 AMP", "gain": 15.0}},
+                {"id": "att", "type": "attenuator", "params": {"label": "CH2 ATT", "atten": 6.0}},
+                {"id": "sw2", "type": "switch", "params": {"label": "SW2", "throws": 2, "state": "1"}},
+                {"id": "out", "type": "rfout", "params": {"label": "OUT"}},
+            ],
+            "conns": [
+                {"from": {"block": "src", "port": "out"}, "to": {"block": "sw1", "port": "in"}},
+                {"from": {"block": "sw1", "port": "o1"}, "to": {"block": "amp", "port": "in"}},
+                {"from": {"block": "amp", "port": "out"}, "to": {"block": "sw2", "port": "o1"}},
+                {"from": {"block": "sw1", "port": "o2"}, "to": {"block": "att", "port": "in"}},
+                {"from": {"block": "att", "port": "out"}, "to": {"block": "sw2", "port": "o2"}},
+                {"from": {"block": "sw2", "port": "in"}, "to": {"block": "out", "port": "in"}},
+            ]
+        }
+        paths = find_all_signal_paths(schematic)
+        self.assertEqual(len(paths), 2)
+        path_ids = [p["block_ids"] for p in paths]
+        self.assertIn(["src", "sw1", "amp", "sw2", "out"], path_ids)
+        self.assertIn(["src", "sw1", "att", "sw2", "out"], path_ids)
+
+        # Path 1 is active, Path 2 is inactive
+        self.assertTrue(paths[0]["is_active"])
+        self.assertFalse(paths[1]["is_active"])
+
+    def test_splitter_with_reversed_wiring(self):
+        """Test that signal path splitting finds all branches even if wires are dragged in reverse order."""
+        schematic = {
+            "blocks": [
+                {"id": "src", "type": "source", "params": {"label": "RF Source"}},
+                {"id": "sp", "type": "splitter", "params": {"label": "Splitter", "ways": 2}},
+                {"id": "amp1", "type": "amp", "params": {"label": "Branch 1 Amp", "gain": 12.0}},
+                {"id": "amp2", "type": "amp", "params": {"label": "Branch 2 Amp", "gain": 16.0}},
+                {"id": "out1", "type": "rfout", "params": {"label": "OUT 1"}},
+                {"id": "out2", "type": "rfout", "params": {"label": "OUT 2"}},
+            ],
+            "conns": [
+                {"from": {"block": "src", "port": "out"}, "to": {"block": "sp", "port": "in"}},
+                {"from": {"block": "sp", "port": "o1"}, "to": {"block": "amp1", "port": "in"}},
+                {"from": {"block": "amp2", "port": "in"}, "to": {"block": "sp", "port": "o2"}},  # Reverse wire
+                {"from": {"block": "amp1", "port": "out"}, "to": {"block": "out1", "port": "in"}},
+                {"from": {"block": "out2", "port": "in"}, "to": {"block": "amp2", "port": "out"}},  # Reverse wire
+            ]
+        }
+        paths = find_all_signal_paths(schematic)
+        self.assertEqual(len(paths), 2)
+        path_ids = [p["block_ids"] for p in paths]
+        self.assertIn(["src", "sp", "amp1", "out1"], path_ids)
+        self.assertIn(["src", "sp", "amp2", "out2"], path_ids)
+
+    def test_direct_wire_fanout_split(self):
+        """Test splitting paths directly via multiple wires leaving a single output port."""
+        schematic = {
+            "blocks": [
+                {"id": "src", "type": "source", "params": {"label": "RF Source"}},
+                {"id": "amp1", "type": "amp", "params": {"label": "Amp 1"}},
+                {"id": "amp2", "type": "amp", "params": {"label": "Amp 2"}},
+                {"id": "out1", "type": "rfout", "params": {"label": "OUT 1"}},
+                {"id": "out2", "type": "rfout", "params": {"label": "OUT 2"}},
+            ],
+            "conns": [
+                {"from": {"block": "src", "port": "out"}, "to": {"block": "amp1", "port": "in"}},
+                {"from": {"block": "src", "port": "out"}, "to": {"block": "amp2", "port": "in"}},
+                {"from": {"block": "amp1", "port": "out"}, "to": {"block": "out1", "port": "in"}},
+                {"from": {"block": "amp2", "port": "out"}, "to": {"block": "out2", "port": "in"}},
+            ]
+        }
+        paths = find_all_signal_paths(schematic)
+        self.assertEqual(len(paths), 2)
+        path_ids = [p["block_ids"] for p in paths]
+        self.assertIn(["src", "amp1", "out1"], path_ids)
+        self.assertIn(["src", "amp2", "out2"], path_ids)
+
     def test_cascade_analysis(self):
         """Test cascading calculations of S-parameters, Group Delay, and K-factor."""
         schematic = {

@@ -157,7 +157,7 @@ function onMove(e) {
     const w = screenToWorld(e.clientX, e.clientY);
     let dx = w.x - drag.sx, dy = w.y - drag.sy;
     if (settings.snap) { dx = Math.round(dx / settings.gridSize) * settings.gridSize; dy = Math.round(dy / settings.gridSize) * settings.gridSize; }
-    for (const it of drag.items) { const b = findBlock(it.id); b.x = it.ox + dx; b.y = it.oy + dy; }
+    for (const it of drag.items) { const b = findBlock(it.id); b.x = snap(it.ox + dx); b.y = snap(it.oy + dy); }
     for (const j of (drag.jogs || [])) {
       if (j.axis === null) continue;
       if (j.both) j.c.jog = j.jog + (j.axis === "x" ? dx : dy);
@@ -229,15 +229,12 @@ function onMove(e) {
   }
 }
 
-let rightPanMoved = false;
-
 function onUp(e) {
   window.removeEventListener("mousemove", onMove); window.removeEventListener("mouseup", onUp);
   svg.classList.remove("panning", "connecting");
   if (!drag) return;
   if (drag.mode === "pan") {
-    if (drag.right && drag.moved) rightPanMoved = true;
-    if (!drag.moved && !drag.right) { clearSel(); renderAll(); }
+    if (!drag.moved) { clearSel(); renderAll(); }
   }
   if (drag.mode === "blocklabel") {
     if (drag.moved) {
@@ -331,8 +328,8 @@ function alignGuides(b, nx, ny) {
   const { w, h } = footprint(b); const cx = nx + w / 2, cy = ny + h / 2, tol = 7; let gx = nx, gy = ny, lines = "";
   for (const o of blocks) {
     if (o.id === b.id) continue; const s = footprint(o); const ocx = o.x + s.w / 2, ocy = o.y + s.h / 2;
-    if (Math.abs(cy - ocy) <= tol) { gy = Math.round(ocy - h / 2); lines += `<path class="guide" d="M-4000 ${ocy}H5000"/>`; }
-    if (Math.abs(cx - ocx) <= tol) { gx = Math.round(ocx - w / 2); lines += `<path class="guide" d="M${ocx} -4000V5000"/>`; }
+    if (Math.abs(cy - ocy) <= tol) { gy = snap(ocy - h / 2); lines += `<path class="guide" d="M-4000 ${ocy}H5000"/>`; }
+    if (Math.abs(cx - ocx) <= tol) { gx = snap(ocx - w / 2); lines += `<path class="guide" d="M${ocx} -4000V5000"/>`; }
   }
   return { x: gx, y: gy, svg: lines };
 }

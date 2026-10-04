@@ -98,19 +98,41 @@ function loadDoc(text, name, handle) {
   }
   pushHistory();
   const fileVer = Number(d.version) || 1;
+
+  // Sanitize settings: legacy files often carried gridSize: 40 from 40x40 symbol era
+  const loadedSettings = d.settings || {};
+  let targetGrid = Number(loadedSettings.gridSize);
+  if (!targetGrid || targetGrid === 40 || targetGrid < 2) targetGrid = 10;
+  settings = { ...settings, ...loadedSettings, gridSize: targetGrid };
+  if (settings.autoSpacePadding === undefined) settings.autoSpacePadding = 20;
+
   const fix = b => {
     let nb = { rot: 0, flip: false, ...b };
     if (fileVer < 4) {
       nb.x = (nb.x || 0) * 2;
       nb.y = (nb.y || 0) * 2;
     }
+    // Snap block position to active grid
+    nb.x = Math.round((nb.x || 0) / targetGrid) * targetGrid;
+    nb.y = Math.round((nb.y || 0) / targetGrid) * targetGrid;
     return nb;
   };
   const fixConn = cn => {
-    if (fileVer < 4 && cn && cn.waypoints && Array.isArray(cn.waypoints)) {
-      return { ...cn, waypoints: cn.waypoints.map(w => ({ x: w.x * 2, y: w.y * 2 })) };
+    let ncn = { ...cn };
+    if (fileVer < 4 && ncn.waypoints && Array.isArray(ncn.waypoints)) {
+      ncn.waypoints = ncn.waypoints.map(w => ({ x: w.x * 2, y: w.y * 2 }));
     }
-    return cn;
+    if (ncn.waypoints && Array.isArray(ncn.waypoints)) {
+      ncn.waypoints = ncn.waypoints.map(w => ({
+        x: Math.round(w.x / targetGrid) * targetGrid,
+        y: Math.round(w.y / targetGrid) * targetGrid
+      }));
+    }
+    if (ncn.jog != null) {
+      if (fileVer < 4) ncn.jog = ncn.jog * 2;
+      ncn.jog = Math.round(ncn.jog / targetGrid) * targetGrid;
+    }
+    return ncn;
   };
 
   /* Security Sanitizer Fix: Validate typeColor values against normHex */
@@ -137,7 +159,6 @@ function loadDoc(text, name, handle) {
     sheets = [{ id: "s1", name: "Sheet 1", blocks: d.blocks.map(fix), conns: (d.connections || []).map(fixConn), view: d.view || { tx: 60, ty: 56, scale: 1 } }];
     cur = 0;
   }
-  settings = { ...settings, ...(d.settings || {}) };
   if ($("tglColor")) $("tglColor").checked = settings.color !== false;
   if ($("tglTheme")) {
     $("tglTheme").checked = (settings.theme === "light");
@@ -147,8 +168,8 @@ function loadDoc(text, name, handle) {
   renderSheets();
   clearSel();
   renderPalette();
-  $("tglSnap").checked = settings.snap;
-  $("tglGrid").checked = settings.grid;
+  if ($("tglSnap")) $("tglSnap").checked = settings.snap;
+  if ($("tglGrid")) $("tglGrid").checked = settings.grid;
   if ($("tglLabels")) $("tglLabels").checked = settings.showLabels !== false;
   if ($("tglPwr1")) $("tglPwr1").checked = settings.showPwr1 !== false;
   if ($("tglPwr2")) $("tglPwr2").checked = !!settings.showPwr2;
@@ -157,6 +178,9 @@ function loadDoc(text, name, handle) {
   if ($("tglNF")) $("tglNF").checked = !!settings.showNF;
   if ($("tbBw")) $("tbBw").value = settings.bandwidthVal !== undefined ? settings.bandwidthVal : 1;
   if ($("tbBwUnit")) $("tbBwUnit").value = settings.bandwidthUnit || "MHz";
+  if ($("tbGridSize")) $("tbGridSize").value = settings.gridSize !== undefined ? settings.gridSize : 10;
+  if ($("tbAutoPadding")) $("tbAutoPadding").value = settings.autoSpacePadding !== undefined ? settings.autoSpacePadding : 20;
+  if (typeof updateCanvasGridVisual === "function") updateCanvasGridVisual(settings.gridSize);
   if ($("selLayout")) $("selLayout").value = (sheets[cur] && sheets[cur].layoutPreset) || settings.layoutPreset || "free";
   applyView();
   renderAll();

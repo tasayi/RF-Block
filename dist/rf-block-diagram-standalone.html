@@ -928,6 +928,67 @@ table.bg tr:hover td { background: rgba(255, 255, 255, 0.04); cursor: pointer; }
 }
 .colorpop.open { display: block; }
 
+/* Right-Click Desktop / Windows-Style Floating Context Menu */
+.ctxmenu {
+  position: fixed;
+  z-index: 1000;
+  display: none;
+  min-width: 220px;
+  max-width: 320px;
+  background: var(--chrome-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: 6px;
+  box-shadow: var(--shadow-lg), 0 0 0 1px rgba(0, 0, 0, 0.15);
+  user-select: none;
+  font-family: var(--sans);
+  font-size: 13px;
+}
+.ctxmenu.open {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.ctxmenu button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 6px 10px;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.1s ease, color 0.1s ease;
+}
+.ctxmenu button:hover {
+  background: var(--chrome-3);
+  color: var(--ink);
+}
+.ctxmenu button.danger {
+  color: var(--danger);
+}
+.ctxmenu button.danger:hover {
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--danger);
+}
+.ctxmenu button .kbd {
+  font-size: 11px;
+  color: var(--ink-dim);
+  margin-left: 16px;
+  font-family: var(--mono);
+}
+.ctxmenu .divider {
+  height: 1px;
+  background: var(--line);
+  margin: 4px 2px;
+}
+
+
 </style>
 </head>
 <body>
@@ -986,6 +1047,14 @@ table.bg tr:hover td { background: rgba(255, 255, 255, 0.04); cursor: pointer; }
           <label class="toggle" title="Show the grid"><input type="checkbox" id="tglGrid" checked/> Grid</label>
           <label class="toggle" title="Tint blocks by category"><input type="checkbox" id="tglColor" checked/> Colour</label>
           <label class="toggle" title="Toggle Light / Dark background theme"><input type="checkbox" id="tglTheme"/> Theme</label>
+        </div>
+        <div class="vdp-inline-row" style="margin-top:6px;gap:8px">
+          <label class="toggle" title="Canvas grid snapping step size in pixels" style="font-size:11px">
+            Grid&nbsp;<input id="tbGridSize" type="number" value="10" min="2" max="200" step="1" class="tb-num-input" style="width:48px"/>&nbsp;px
+          </label>
+          <label class="toggle" title="Auto-space label clearance padding in pixels" style="font-size:11px">
+            Pad&nbsp;<input id="tbAutoPadding" type="number" value="20" min="0" max="500" step="5" class="tb-num-input" style="width:48px"/>&nbsp;px
+          </label>
         </div>
 
         <div class="vdp-divider"></div>
@@ -2036,7 +2105,7 @@ def({
 
 /* Switch definition with SP1T..SP8T and Open position state support */
 def({
-  type: "switch", keys: "spdt sp3t sp4t spnt select transfer path", name: "Switch", group: "Routing", w: 120, h: 120,
+  type: "switch", keys: "spdt sp3t sp4t spnt select transfer path", name: "Switch", group: "Routing", w: 60, h: 120,
   dynSize: p => ({ w: 60, h: 60 * cint(p.throws, 1, 8) }),
   dynPorts: p => {
     const n = cint(p.throws, 1, 8), h = 60 * n;
@@ -2062,11 +2131,12 @@ def({
   val: p => "IL " + fmt(Math.abs(p.il)) + " dB",
   sym(p) {
     const n = cint(p.throws, 1, 8), h = 60 * n, st = swState(p, n);
-    const nx = (st > 0 ? 42 : 36), ny = (st > 0 ? 60 * st - 30 : h / 2 - 12);
+    const inY = h / 2;
+    const nx = (st > 0 ? 40 : 30), ny = (st > 0 ? 60 * st - 30 : inY - 10);
     let s = `<rect class="blk-shape" x="0" y="3" width="60" height="${h - 6}" rx="9"/>`;
-    s += L(0, h / 2, 21, h / 2) + `<circle class="blk-fillg" cx="21" cy="${h / 2}" r="4.5"/>`;
-    s += `<path class="blk-line" d="M21 ${h / 2}L${nx} ${ny}"/>`;
-    for (let i = 1; i <= n; i++) { const y = 60 * i - 30; s += L(42, y, 60, y) + `<circle class="blk-shape" cx="42" cy="${y}" r="3.6"/>`; }
+    s += L(0, inY, 20, inY) + `<circle class="blk-fillg" cx="20" cy="${inY}" r="4"/>`;
+    s += `<path class="blk-line" d="M20 ${inY}L${nx} ${ny}"/>`;
+    for (let i = 1; i <= n; i++) { const y = 60 * i - 30; s += L(40, y, 60, y) + `<circle class="blk-shape" cx="40" cy="${y}" r="4"/>`; }
     return s;
   }
 });
@@ -3331,7 +3401,7 @@ function getBlockBranchIndex(b, path) {
   return 1;
 }
 
-function getStageTransmissionDb(b, freqs, warnings, path) {
+function getStageTransmissionDb(b, freqs, warnings, path, isReverse = false, inPort = null, outPort = null) {
   const N = freqs.length;
   const tDb = new Float64Array(N);
   const lbl = (b.params && b.params.label) || (COMP[b.type] && COMP[b.type].name) || "Block";
@@ -3339,8 +3409,15 @@ function getStageTransmissionDb(b, freqs, warnings, path) {
   if (b.type === "switch") {
     const nThrows = parseInt(b.params && b.params.throws) || 2;
     const stNum = swState(b.params || {}, nThrows);
-    const kThrow = getBlockBranchIndex(b, path);
-    const isoDb = -Math.abs(+b.params.iso >= 0 ? +b.params.iso : 60);
+    let kThrow = 1;
+    if (outPort && outPort.startsWith("o")) {
+      kThrow = parseInt(outPort.slice(1)) || 1;
+    } else if (inPort && inPort.startsWith("o")) {
+      kThrow = parseInt(inPort.slice(1)) || 1;
+    } else {
+      kThrow = getBlockBranchIndex(b, path);
+    }
+    const isoDb = -Math.abs(+b.params.iso >= 0 ? +b.params.iso : 40);
     const ilDb = -Math.abs(+b.params.il || 0.4);
 
     if (stNum === 0) {
@@ -3349,8 +3426,8 @@ function getStageTransmissionDb(b, freqs, warnings, path) {
       return tDb;
     }
 
-    // Check per-state file for active switch position stNum
-    const sRaw = (b.params && b.params[`s2pData_st${stNum}`]) || (b.params && b.params.s2pData);
+    // Check per-throw file or active switch position file or multi-port Touchstone
+    const sRaw = (b.params && b.params[`s2pData_st${kThrow}`]) || (b.params && b.params[`s2pData_st${stNum}`]) || (b.params && b.params.s2pData) || (b.params && b.params.s3pData) || (b.params && b.params.snpData);
 
     if (sRaw) {
       const parsed = parseTouchstone(sRaw);
@@ -3361,8 +3438,6 @@ function getStageTransmissionDb(b, freqs, warnings, path) {
           dstPortIdx = kThrow;
         } else {
           // 2-port Touchstone file:
-          // If this path goes through the active throw (kThrow === stNum), use Port 2 (index 1) S21
-          // If this path goes through an inactive throw (kThrow !== stNum), return isolation
           if (kThrow !== stNum) {
             for (let k = 0; k < N; k++) tDb[k] = isoDb;
             return tDb;
@@ -3400,7 +3475,7 @@ function getStageTransmissionDb(b, freqs, warnings, path) {
       }
     }
 
-    // Fallback to ideal switch loss
+    // Behavioral synthesis for switch:
     const pathLossDb = (kThrow === stNum) ? ilDb : isoDb;
     for (let k = 0; k < N; k++) tDb[k] = pathLossDb;
     return tDb;
@@ -3408,11 +3483,18 @@ function getStageTransmissionDb(b, freqs, warnings, path) {
 
   if (b.type === "splitter" || b.type === "combiner") {
     const nWays = parseInt(b.params && b.params.ways) || 2;
-    const kBranch = getBlockBranchIndex(b, path);
+    let kBranch = 1;
+    if (outPort && outPort.startsWith("o")) {
+      kBranch = parseInt(outPort.slice(1)) || 1;
+    } else if (inPort && inPort.startsWith("i")) {
+      kBranch = parseInt(inPort.slice(1)) || 1;
+    } else {
+      kBranch = getBlockBranchIndex(b, path);
+    }
     const exLoss = Math.abs(+b.params.exloss || 0);
     const pathLossDb = -(10 * Math.log10(Math.max(1, nWays)) + exLoss);
 
-    const sRaw = b.params && b.params.s2pData;
+    const sRaw = b.params && (b.params.s2pData || b.params.s3pData || b.params.snpData);
     if (sRaw) {
       const parsed = parseTouchstone(sRaw);
       if (parsed) {
@@ -3454,26 +3536,28 @@ function getStageTransmissionDb(b, freqs, warnings, path) {
   if (b.type === "bamp") {
     const isByp = (b.params && b.params.mode === "Bypass Mode");
     const sRaw = isByp ? (b.params.s2pData_byp || b.params.s2pData) : (b.params.s2pData_amp || b.params.s2pData);
-    const idealDb = isByp ? -Math.abs(+b.params.bypLoss || 1.8) : (+b.params.gain || 18);
+    const idealDb = isByp ? -Math.abs(+b.params.bypLoss || 1.8) : (isReverse ? -Math.abs(+b.params.iso || +b.params.s12 || 30) : (+b.params.gain || 18));
 
     if (sRaw) {
       const parsed = parseTouchstone(sRaw);
       if (parsed) {
         const pts = parsed.pts, numPts = pts.length;
+        const rowIdx = isReverse ? 0 : 1;
+        const colIdx = isReverse ? 1 : 0;
         for (let k = 0; k < N; k++) {
           const f = freqs[k];
           let cVal = CMath.zero();
           if (f <= pts[0].f) {
-            cVal = (pts[0].s[1] && pts[0].s[1][0]) || CMath.zero();
+            cVal = (pts[0].s[rowIdx] && pts[0].s[rowIdx][colIdx]) || CMath.zero();
           } else if (f >= pts[numPts - 1].f) {
-            cVal = (pts[numPts - 1].s[1] && pts[numPts - 1].s[1][0]) || CMath.zero();
+            cVal = (pts[numPts - 1].s[rowIdx] && pts[numPts - 1].s[rowIdx][colIdx]) || CMath.zero();
           } else {
             let idx = 0;
             while (idx < numPts - 1 && pts[idx + 1].f < f) idx++;
             const p0 = pts[idx], p1 = pts[idx + 1];
             const t = (f - p0.f) / (p1.f - p0.f);
-            const r0 = (p0.s[1] && p0.s[1][0]) || CMath.zero();
-            const r1 = (p1.s[1] && p1.s[1][0]) || CMath.zero();
+            const r0 = (p0.s[rowIdx] && p0.s[rowIdx][colIdx]) || CMath.zero();
+            const r1 = (p1.s[rowIdx] && p1.s[rowIdx][colIdx]) || CMath.zero();
             cVal = CMath.fromRI(r0.r + t * (r1.r - r0.r), r0.i + t * (r1.i - r0.i));
           }
           tDb[k] = CMath.dB(cVal);
@@ -3496,20 +3580,22 @@ function getStageTransmissionDb(b, freqs, warnings, path) {
     const parsed = parseTouchstone(sRaw);
     if (parsed) {
       const pts = parsed.pts, numPts = pts.length;
+      const rowIdx = isReverse ? 0 : 1;
+      const colIdx = isReverse ? 1 : 0;
       for (let k = 0; k < N; k++) {
         const f = freqs[k];
         let cVal = CMath.zero();
         if (f <= pts[0].f) {
-          cVal = (pts[0].s[1] && pts[0].s[1][0]) || CMath.zero();
+          cVal = (pts[0].s[rowIdx] && pts[0].s[rowIdx][colIdx]) || CMath.zero();
         } else if (f >= pts[numPts - 1].f) {
-          cVal = (pts[numPts - 1].s[1] && pts[numPts - 1].s[1][0]) || CMath.zero();
+          cVal = (pts[numPts - 1].s[rowIdx] && pts[numPts - 1].s[rowIdx][colIdx]) || CMath.zero();
         } else {
           let idx = 0;
           while (idx < numPts - 1 && pts[idx + 1].f < f) idx++;
           const p0 = pts[idx], p1 = pts[idx + 1];
           const t = (f - p0.f) / (p1.f - p0.f);
-          const r0 = (p0.s[1] && p0.s[1][0]) || CMath.zero();
-          const r1 = (p1.s[1] && p1.s[1][0]) || CMath.zero();
+          const r0 = (p0.s[rowIdx] && p0.s[rowIdx][colIdx]) || CMath.zero();
+          const r1 = (p1.s[rowIdx] && p1.s[rowIdx][colIdx]) || CMath.zero();
           cVal = CMath.fromRI(r0.r + t * (r1.r - r0.r), r0.i + t * (r1.i - r0.i));
         }
         tDb[k] = CMath.dB(cVal);
@@ -3526,7 +3612,26 @@ function getStageTransmissionDb(b, freqs, warnings, path) {
   let idealDb = 0;
   const c = COMP[b.type];
   const p = b.params || {};
-  if (c && c.out) {
+  if (b.type === "amp") {
+    idealDb = isReverse ? -Math.abs(+p.s12 || +p.iso || 30) : (+p.gain || 0);
+  } else if (b.type === "isolator") {
+    idealDb = isReverse ? -Math.abs(+p.iso || 25) : -Math.abs(+p.il || 0.4);
+  } else if (b.type === "coupler") {
+    if (typeof cplMatrix === "function") {
+      const M = cplMatrix(p);
+      const pIn = inPort || "in";
+      const pOut = outPort || (isReverse ? "in" : "thru");
+      const lossVal = (M[pIn] && M[pIn][pOut] !== undefined) ? M[pIn][pOut] : 0.5;
+      idealDb = -Math.abs(lossVal);
+    } else {
+      const cpl = Math.abs(+p.coupling || 10);
+      const il = Math.abs(+p.il || 0.5);
+      const dir = Math.abs(+p.iso || 30);
+      if (outPort === "cpl" || inPort === "cpl") idealDb = -cpl;
+      else if (outPort === "iso" || inPort === "iso") idealDb = -(cpl + dir);
+      else idealDb = -il;
+    }
+  } else if (c && c.out) {
     const o = c.out(p);
     if (o) {
       if (o.out !== undefined) idealDb = +o.out || 0;
@@ -3535,8 +3640,15 @@ function getStageTransmissionDb(b, freqs, warnings, path) {
         if (vals.length) idealDb = vals[0];
       }
     }
-  } else if (p.gain !== undefined) idealDb = +p.gain || 0;
-  else if (p.loss !== undefined) idealDb = -Math.abs(+p.loss || 0);
+  } else if (p.gain !== undefined) {
+    idealDb = isReverse ? -Math.abs(+p.s12 || +p.iso || 30) : (+p.gain || 0);
+  } else if (p.atten !== undefined) {
+    idealDb = -Math.abs(+p.atten || 0);
+  } else if (p.il !== undefined) {
+    idealDb = -Math.abs(+p.il || 0);
+  } else if (p.loss !== undefined) {
+    idealDb = -Math.abs(+p.loss || 0);
+  }
 
   for (let k = 0; k < N; k++) tDb[k] = idealDb;
   return tDb;
@@ -3554,6 +3666,209 @@ function tagPartner(b) {
   return allB.find(x => COMP[x.type] && COMP[x.type].isInterconnect && (x.params && x.params.role) === targetRole && (x.params && x.params.tag || "").trim() === t) || null;
 }
 
+const SOURCE_TYPES = new Set(["source", "rfin", "antenna", "pll", "lo"]);
+const SINK_TYPES = new Set(["rfout", "detector", "termination", "antenna"]);
+
+function getBlockInternalConnections(b, includeAllThrows = true) {
+  if (!b) return [];
+  const btype = b.type || "";
+  const params = b.params || {};
+
+  if (SOURCE_TYPES.has(btype) || SINK_TYPES.has(btype)) return [];
+
+  if (btype === "switch") {
+    const throws = parseInt(params.throws) || 2;
+    if (includeAllThrows) {
+      const res = [];
+      for (let i = 1; i <= throws; i++) {
+        res.push(["in", `o${i}`]);
+        res.push([`o${i}`, "in"]);
+      }
+      return res;
+    }
+    const state = String(params.state !== undefined ? params.state : "1");
+    if (state === "open" || state === "0") return [];
+    const sel = parseInt(state) || 1;
+    return [["in", `o${sel}`], [`o${sel}`, "in"]];
+  }
+
+  if (btype === "circulator") {
+    return [["p1", "p2"], ["p2", "p3"], ["p3", "p1"]];
+  }
+
+  if (btype === "splitter") {
+    const ways = parseInt(params.ways) || 2;
+    const res = [];
+    for (let i = 1; i <= ways; i++) {
+      res.push(["in", `o${i}`]);
+      res.push([`o${i}`, "in"]);
+    }
+    return res;
+  }
+
+  if (btype === "combiner") {
+    const ways = parseInt(params.ways) || 2;
+    const res = [];
+    for (let i = 1; i <= ways; i++) {
+      res.push([`i${i}`, "out"]);
+      res.push(["out", `i${i}`]);
+    }
+    return res;
+  }
+
+  if (btype === "coupler") {
+    const ctype = params.ctype || "Directional";
+    if (ctype === "Bi-directional") return [["in", "thru"], ["in", "fwd"], ["thru", "rev"]];
+    if (ctype === "Power tap") return [["in", "thru"], ["in", "tap"]];
+    if (ctype === "Resistive") return [["in", "o1"], ["in", "o2"]];
+    if (ctype.toLowerCase().includes("90")) return [["in", "out0"], ["in", "out90"]];
+    if (ctype.toLowerCase().includes("180")) return [["sum", "o1"], ["sum", "o2"]];
+    return [["in", "thru"], ["in", "cpl"]];
+  }
+
+  return [["in", "out"]];
+}
+
+function findAllSignalPaths(allBlocks, allConnections, includeAllThrows = true) {
+  if (!allBlocks || !allBlocks.length) return [];
+  const blocksMap = new Map();
+  allBlocks.forEach(b => blocksMap.set(b.id, b));
+
+  const wireMap = new Map();
+  const addWire = (sB, sP, dB, dP) => {
+    const k1 = `${sB}:${sP}`;
+    if (!wireMap.has(k1)) wireMap.set(k1, []);
+    wireMap.get(k1).push({ block: dB, port: dP });
+
+    const k2 = `${dB}:${dP}`;
+    if (!wireMap.has(k2)) wireMap.set(k2, []);
+    wireMap.get(k2).push({ block: sB, port: sP });
+  };
+
+  (allConnections || []).forEach(cn => {
+    if (cn.from && cn.to) {
+      addWire(cn.from.block, cn.from.port, cn.to.block, cn.to.port);
+    }
+  });
+
+  // Interconnect tag connections
+  allBlocks.forEach(b => {
+    if (typeof COMP !== "undefined" && COMP[b.type] && COMP[b.type].isInterconnect) {
+      const partner = tagPartner(b);
+      if (partner) {
+        const isSend = (b.params && b.params.role === "send");
+        if (isSend) addWire(b.id, "out", partner.id, "in");
+      }
+    }
+  });
+
+  // Identify sources
+  const startNodes = [];
+  allBlocks.forEach(b => {
+    if (SOURCE_TYPES.has(b.type) || (b.params && b.params.anaPort === "P1")) {
+      const outP = (b.type === "antenna" && b.params && b.params.role === "Rx") ? "ant" : "out";
+      startNodes.push({ block: b.id, port: outP });
+    }
+  });
+  if (!startNodes.length && allBlocks.length) {
+    const firstB = allBlocks[0];
+    const outP = (firstB.type === "antenna" && firstB.params && firstB.params.role === "Rx") ? "ant" : "out";
+    startNodes.push({ block: firstB.id, port: outP });
+  }
+
+  // Identify sinks
+  const sinkBlockIds = new Set();
+  allBlocks.forEach(b => {
+    if (SINK_TYPES.has(b.type) || (b.params && b.params.anaPort && b.params.anaPort !== "P1" && b.params.anaPort !== "None")) {
+      sinkBlockIds.add(b.id);
+    }
+  });
+
+  const discovered = [];
+
+  function dfs(currNode, currPath, visitedBlocks) {
+    const { block: cbId, port: cpId } = currNode;
+    const wireKey = `${cbId}:${cpId}`;
+    const nextDsts = wireMap.get(wireKey) || [];
+
+    for (const dst of nextDsts) {
+      const nbId = dst.block;
+      const npId = dst.port;
+
+      if (!blocksMap.has(nbId) || visitedBlocks.has(nbId)) continue;
+      const targetB = blocksMap.get(nbId);
+
+      if (sinkBlockIds.has(nbId)) {
+        const finalNode = [nbId, npId];
+        const fullChain = [...currPath, finalNode];
+        const blockChain = Array.from(new Set(fullChain.map(x => x[0])));
+
+        // Determine if path is active based on current switch states
+        let isActive = true;
+        for (let i = 0; i < fullChain.length - 1; i++) {
+          const [b1, p1] = fullChain[i];
+          const [b2, p2] = fullChain[i + 1];
+          if (b1 === b2) {
+            const blk = blocksMap.get(b1);
+            if (blk && blk.type === "switch") {
+              const st = String(blk.params && blk.params.state !== undefined ? blk.params.state : "1");
+              if (p1 === "in" && p2 !== `o${st}`) isActive = false;
+              if (p2 === "in" && p1 !== `o${st}`) isActive = false;
+            }
+          }
+        }
+
+        const labels = blockChain.map(id => {
+          const bObj = blocksMap.get(id);
+          let lbl = (bObj && bObj.params && bObj.params.label) || (typeof COMP !== "undefined" && COMP[bObj.type] && COMP[bObj.type].name) || id;
+          if (bObj && bObj.type === "switch") {
+            for (let i = 0; i < fullChain.length - 1; i++) {
+              if (fullChain[i][0] === id && fullChain[i + 1][0] === id) {
+                const pA = fullChain[i][1];
+                const pB = fullChain[i + 1][1];
+                const outP = (pB && pB.startsWith("o")) ? pB : pA;
+                if (outP && outP.startsWith("o")) lbl += ` [Throw ${outP.slice(1)}]`;
+                break;
+              }
+            }
+          }
+          return lbl;
+        });
+
+        const statusTag = isActive ? " (Active)" : "";
+        discovered.push({
+          id: `path_${discovered.length + 1}`,
+          name: `Path ${discovered.length + 1}${statusTag}: ${labels.join(" ➔ ")}`,
+          block_ids: blockChain,
+          node_chain: fullChain,
+          isActive
+        });
+        continue;
+      }
+
+      // Follow internal block connections
+      const intConns = getBlockInternalConnections(targetB, includeAllThrows);
+      for (const [inP, outP] of intConns) {
+        if (inP === npId) {
+          const newVisited = new Set(visitedBlocks);
+          newVisited.add(nbId);
+          dfs(
+            { block: nbId, port: outP },
+            [...currPath, [nbId, inP], [nbId, outP]],
+            newVisited
+          );
+        }
+      }
+    }
+  }
+
+  startNodes.forEach(sn => {
+    dfs(sn, [[sn.block, sn.port]], new Set([sn.block]));
+  });
+
+  return discovered;
+}
+
 function findSignalPath(startBlockId, endBlockId) {
   if (!startBlockId || !endBlockId) return [];
 
@@ -3565,124 +3880,259 @@ function findSignalPath(startBlockId, endBlockId) {
     return b ? [b] : [];
   }
 
-  const queue = [[startBlockId]];
-  const visited = new Set([startBlockId]);
+  // 1. Try finding path respecting active switch states
+  const activePath = _searchPath(startBlockId, endBlockId, allB, allC, true);
+  if (activePath.length) return activePath;
+
+  // 2. Fallback to exploring all throws
+  return _searchPath(startBlockId, endBlockId, allB, allC, false);
+}
+
+function _searchPath(startBlockId, endBlockId, allB, allC, respectSwitches) {
+  const blocksMap = new Map();
+  allB.forEach(b => blocksMap.set(b.id, b));
+
+  const queue = [{ id: startBlockId, path: [startBlockId], visited: new Set([startBlockId]) }];
 
   while (queue.length > 0) {
-    const currentPath = queue.shift();
-    const lastId = currentPath[currentPath.length - 1];
-
+    const { id: lastId, path: currPath, visited } = queue.shift();
     if (lastId === endBlockId) {
-      return currentPath.map(id => allB.find(x => x.id === id)).filter(Boolean);
+      return currPath.map(id => blocksMap.get(id)).filter(Boolean);
     }
 
-    // Find all connected blocks (forward or backward)
-    const neighbors = [];
+    const lastB = blocksMap.get(lastId);
+
+    // Find all connected blocks
     for (const cn of allC) {
-      if (cn.from.block === lastId && !visited.has(cn.to.block)) {
-        neighbors.push(cn.to.block);
-      } else if (cn.to.block === lastId && !visited.has(cn.from.block)) {
-        neighbors.push(cn.from.block);
+      let nextId = null;
+      let exitPort = null;
+
+      if (cn.from.block === lastId) {
+        nextId = cn.to.block;
+        exitPort = cn.from.port;
+      } else if (cn.to.block === lastId) {
+        nextId = cn.from.block;
+        exitPort = cn.to.port;
       }
+
+      if (!nextId || visited.has(nextId)) continue;
+
+      if (respectSwitches && lastB && lastB.type === "switch") {
+        const throws = parseInt(lastB.params && lastB.params.throws) || 2;
+        const stNum = swState(lastB.params || {}, throws);
+        if (stNum === 0) continue; // isolated / open
+        if (exitPort && exitPort.startsWith("o") && exitPort !== `o${stNum}`) {
+          continue; // not active throw
+        }
+      }
+
+      const newVisited = new Set(visited);
+      newVisited.add(nextId);
+      queue.push({ id: nextId, path: [...currPath, nextId], visited: newVisited });
     }
 
     // Interconnect tag partner check
-    const lastB = allB.find(x => x.id === lastId);
     if (lastB && COMP[lastB.type] && COMP[lastB.type].isInterconnect) {
       const partner = tagPartner(lastB);
       if (partner && !visited.has(partner.id)) {
-        neighbors.push(partner.id);
+        const newVisited = new Set(visited);
+        newVisited.add(partner.id);
+        queue.push({ id: partner.id, path: [...currPath, partner.id], visited: newVisited });
       }
-    }
-
-    for (const neighborId of neighbors) {
-      visited.add(neighborId);
-      queue.push([...currentPath, neighborId]);
     }
   }
 
   return [];
 }
 
-/* Main Execution Engine for Scalable Multi-Port S-Parameter Analysis (Transmission Focus) */
+/* Main Execution Engine for Scalable Multi-Port S-Parameter Analysis */
 function computeLinearAnalysis(band) {
   const freqs = generateFreqVector(band);
   const N = freqs.length;
 
   const allB = (typeof blocks !== "undefined" ? blocks : []);
+  const allC = (typeof allConns === "function") ? allConns() : (typeof conns !== "undefined" ? conns : []);
 
-  // Scan for defined analysis ports P1 through P8
-  const portsList = []; // [{ num: 1, label: "P1", block: {...} }, ...]
+  // Scan for defined analysis ports P1 through P8, auto-resolving multiple sinks/terminals without collision
+  const portsList = [];
+  const assignedBlockIds = new Set();
+  const usedPortNums = new Set();
+
   for (let pNum = 1; pNum <= 8; pNum++) {
     const pTag = "P" + pNum;
-    const b = allB.find(x => x.params && x.params.anaPort === pTag);
+    const b = allB.find(x => x.params && x.params.anaPort === pTag && !assignedBlockIds.has(x.id));
     if (b) {
       portsList.push({ num: pNum, tag: pTag, label: b.params.label || pTag, block: b });
+      assignedBlockIds.add(b.id);
+      usedPortNums.add(pNum);
     }
   }
+
+  // Auto-assign P1 if missing but a source exists
+  if (!usedPortNums.has(1)) {
+    const srcB = allB.find(b => (SOURCE_TYPES.has(b.type) || (typeof COMP !== "undefined" && COMP[b.type] && COMP[b.type].isSource)) && !assignedBlockIds.has(b.id));
+    if (srcB) {
+      portsList.unshift({ num: 1, tag: "P1", label: (srcB.params && srcB.params.label) || "P1", block: srcB });
+      assignedBlockIds.add(srcB.id);
+      usedPortNums.add(1);
+    }
+  }
+
+  // Auto-assign next ports to unassigned/duplicate sinks (e.g. second RF OUT with default P2)
+  const unassignedSinks = allB.filter(b => (SINK_TYPES.has(b.type) || (b.params && b.params.anaPort && b.params.anaPort !== "None")) && !assignedBlockIds.has(b.id));
+  let nextP = 2;
+  for (const sb of unassignedSinks) {
+    while (usedPortNums.has(nextP) && nextP <= 8) nextP++;
+    if (nextP > 8) break;
+    const pTag = "P" + nextP;
+    portsList.push({ num: nextP, tag: pTag, label: (sb.params && sb.params.label) || pTag, block: sb });
+    assignedBlockIds.add(sb.id);
+    usedPortNums.add(nextP);
+  }
+
+  portsList.sort((a, b) => a.num - b.num);
 
   const warnings = [];
 
-  if (portsList.length < 2) {
-    return { error: "At least 2 Analysis Ports (e.g. P1 and P2) must be defined on schematic terminals to run linear analysis.", freqs, portsList };
-  }
+  // Discover all topological paths
+  const discoveredPaths = findAllSignalPaths(allB, allC, true);
 
-  // Matrix dictionary: store transmission parameters S_ij (where i != j)
+  // Calculate S-parameters for each discovered path
+  discoveredPaths.forEach(pInfo => {
+    const chainBlocks = pInfo.block_ids.map(id => allB.find(x => x.id === id)).filter(b => b && !COMP[b.type].isSource && b.type !== "antenna" && b.type !== "rfin" && b.type !== "rfout");
+
+    const s21Arr = new Float64Array(N);
+    const s12Arr = new Float64Array(N);
+    const s11Arr = new Float64Array(N);
+    const s22Arr = new Float64Array(N);
+
+    for (let k = 0; k < N; k++) {
+      s11Arr[k] = -20.0;
+      s22Arr[k] = -20.0;
+    }
+
+    // Extract exact traversed in/out ports for each block from node_chain
+    const blockPortsMap = new Map();
+    if (pInfo.node_chain) {
+      for (let i = 0; i < pInfo.node_chain.length - 1; i++) {
+        const itemA = pInfo.node_chain[i];
+        const itemB = pInfo.node_chain[i + 1];
+        if (itemA[0] === itemB[0]) {
+          blockPortsMap.set(itemA[0], { inPort: itemA[1], outPort: itemB[1] });
+        }
+      }
+    }
+
+    for (const b of chainBlocks) {
+      const ports = blockPortsMap.get(b.id) || {};
+      const fwdDb = getStageTransmissionDb(b, freqs, warnings, chainBlocks, false, ports.inPort, ports.outPort);
+      const revDb = getStageTransmissionDb(b, freqs, warnings, chainBlocks, true, ports.outPort, ports.inPort);
+
+      for (let k = 0; k < N; k++) {
+        s21Arr[k] += fwdDb[k];
+        s12Arr[k] += revDb[k];
+      }
+    }
+
+    const startId = pInfo.block_ids[0];
+    const endId = pInfo.block_ids[pInfo.block_ids.length - 1];
+    const srcPObj = portsList.find(p => p.block && p.block.id === startId);
+    const dstPObj = portsList.find(p => p.block && p.block.id === endId);
+    const srcNum = srcPObj ? srcPObj.num : 1;
+    const dstNum = dstPObj ? dstPObj.num : 2;
+    const fwdKey = `S${dstNum}${srcNum}`;
+    const revKey = `S${srcNum}${dstNum}`;
+    const inMatchKey = `S${srcNum}${srcNum}`;
+    const outMatchKey = `S${dstNum}${dstNum}`;
+
+    pInfo.srcPort = srcNum;
+    pInfo.dstPort = dstNum;
+    pInfo.fwdKey = fwdKey;
+    pInfo.revKey = revKey;
+
+    pInfo.s21_db = Array.from(s21Arr);
+    pInfo.s12_db = Array.from(s12Arr);
+    pInfo.s11_db = Array.from(s11Arr);
+    pInfo.s22_db = Array.from(s22Arr);
+    pInfo.matrix = {
+      [fwdKey]: s21Arr,
+      [revKey]: s12Arr,
+      [inMatchKey]: s11Arr,
+      [outMatchKey]: s22Arr,
+      S21: s21Arr,
+      S12: s12Arr,
+      S11: s11Arr,
+      S22: s22Arr
+    };
+  });
+
   const matrix = {};
 
-  // Analyze pair (i, j): Port j (source) -> Port i (destination)
-  for (const srcPort of portsList) {
-    for (const dstPort of portsList) {
-      if (srcPort.num === dstPort.num) continue; // Focus strictly on transmission parameters S_ij (i != j)
-
-      const sKey = `S${dstPort.num}${srcPort.num}`;
-      const path = findSignalPath(srcPort.block.id, dstPort.block.id);
-
-      if (!path.length || path[path.length - 1].id !== dstPort.block.id) {
-        // No connected physical path between Port j and Port i
-        const sArr = new Float64Array(N);
-        for (let k = 0; k < N; k++) sArr[k] = -120.0; // Isolation (-120 dB)
-        matrix[sKey] = sArr;
-        continue;
-      }
-
-      const chainBlocks = path.filter(b => !COMP[b.type].isSource && b.type !== "antenna" && b.type !== "rfin" && b.type !== "rfout");
-      const sArr = new Float64Array(N);
-
-      for (const b of chainBlocks) {
-        const stageDb = getStageTransmissionDb(b, freqs, warnings, path);
-        for (let k = 0; k < N; k++) {
-          sArr[k] += stageDb[k];
-        }
-      }
-
-      matrix[sKey] = sArr;
+  // Populate multi-port matrix from discovered paths
+  // Inactive paths populate first, active paths overwrite so active takes priority
+  discoveredPaths.filter(p => !p.isActive).forEach(p => {
+    if (p.fwdKey && !matrix[p.fwdKey]) {
+      matrix[p.fwdKey] = p.matrix[p.fwdKey];
+      matrix[p.revKey] = p.matrix[p.revKey];
+      matrix[`S${p.srcPort}${p.srcPort}`] = p.matrix[`S${p.srcPort}${p.srcPort}`];
+      matrix[`S${p.dstPort}${p.dstPort}`] = p.matrix[`S${p.dstPort}${p.dstPort}`];
     }
+  });
+  discoveredPaths.filter(p => p.isActive).forEach(p => {
+    if (p.fwdKey) {
+      matrix[p.fwdKey] = p.matrix[p.fwdKey];
+      matrix[p.revKey] = p.matrix[p.revKey];
+      matrix[`S${p.srcPort}${p.srcPort}`] = p.matrix[`S${p.srcPort}${p.srcPort}`];
+      matrix[`S${p.dstPort}${p.dstPort}`] = p.matrix[`S${p.dstPort}${p.dstPort}`];
+    }
+  });
+
+  // Ensure default S21 and S12 are set from primary active path
+  const activePath = discoveredPaths.find(p => p.isActive) || (discoveredPaths.length ? discoveredPaths[0] : null);
+  if (activePath && activePath.matrix) {
+    if (!matrix.S21) matrix.S21 = activePath.matrix.S21;
+    if (!matrix.S12) matrix.S12 = activePath.matrix.S12;
+    if (!matrix.S11) matrix.S11 = activePath.matrix.S11;
+    if (!matrix.S22) matrix.S22 = activePath.matrix.S22;
   }
 
-  // Compute combined linear power transmission S_iΣ for destination ports with multiple inputs
-  for (const dstPort of portsList) {
-    const incomingKeys = [];
+  // Port-pair matrix calculations (for P1–P8 terminal system compatibility)
+  if (portsList.length >= 2) {
     for (const srcPort of portsList) {
-      if (srcPort.num === dstPort.num) continue;
-      const sKey = `S${dstPort.num}${srcPort.num}`;
-      if (matrix[sKey] && matrix[sKey].some(v => v > -100)) {
-        incomingKeys.push(sKey);
-      }
-    }
-    if (incomingKeys.length > 1) {
-      const combArr = new Float64Array(N);
-      for (let k = 0; k < N; k++) {
-        let linSum = 0;
-        for (const key of incomingKeys) {
-          const valDb = matrix[key][k];
-          if (valDb > -120) {
-            linSum += Math.pow(10, valDb / 10);
+      for (const dstPort of portsList) {
+        if (srcPort.num === dstPort.num) continue;
+        const sKey = `S${dstPort.num}${srcPort.num}`;
+        if (matrix[sKey]) continue; // Already populated from discovered paths
+        const path = findSignalPath(srcPort.block.id, dstPort.block.id);
+
+        if (!path.length || path[path.length - 1].id !== dstPort.block.id) {
+          const sArr = new Float64Array(N);
+          for (let k = 0; k < N; k++) sArr[k] = -120.0;
+          matrix[sKey] = sArr;
+          continue;
+        }
+
+        const chainBlocks = path.filter(b => !COMP[b.type].isSource && b.type !== "antenna" && b.type !== "rfin" && b.type !== "rfout");
+        const sArr = new Float64Array(N);
+        const isReverse = (srcPort.num > dstPort.num);
+
+        for (const b of chainBlocks) {
+          const stageDb = getStageTransmissionDb(b, freqs, warnings, path, isReverse);
+          for (let k = 0; k < N; k++) {
+            sArr[k] += stageDb[k];
           }
         }
-        combArr[k] = linSum > 0 ? 10 * Math.log10(linSum) : -120.0;
+        matrix[sKey] = sArr;
       }
-      matrix[`S${dstPort.num}Σ`] = combArr;
+    }
+
+    for (const port of portsList) {
+      const sKey = `S${port.num}${port.num}`;
+      if (!matrix[sKey]) {
+        const sArr = new Float64Array(N);
+        for (let k = 0; k < N; k++) sArr[k] = -20.0;
+        matrix[sKey] = sArr;
+      }
     }
   }
 
@@ -3692,7 +4142,18 @@ function computeLinearAnalysis(band) {
     freqs,
     portsList,
     matrix,
+    paths: discoveredPaths,
     warnings: uniqueWarnings
+  };
+}
+
+if (typeof module !== "undefined" && module.exports) {
+  module.exports = {
+    computeLinearAnalysis,
+    findAllSignalPaths,
+    findSignalPath,
+    parseTouchstone,
+    CMath
   };
 }
 
@@ -3780,27 +4241,32 @@ function distToSeg(pt, p, q) {
 }
 
 function insertWaypointInOrder(cn, pt) {
+  const gs = (typeof settings !== "undefined" && settings.gridSize) || 10;
+  const spt = {
+    x: Math.round(pt.x / gs) * gs,
+    y: Math.round(pt.y / gs) * gs
+  };
   if (!cn.waypoints || !cn.waypoints.length) {
-    cn.waypoints = [pt];
+    cn.waypoints = [spt];
     return;
   }
   const fb = findBlock(cn.from.block), tb = findBlock(cn.to.block);
   const a = portPt(fb, cn.from.port), z = portPt(tb, cn.to.port);
   if (!a || !z) {
-    cn.waypoints.push(pt);
+    cn.waypoints.push(spt);
     return;
   }
 
   const nodes = [a, ...cn.waypoints, z];
   let bestDist = Infinity, bestIdx = 0;
   for (let i = 0; i < nodes.length - 1; i++) {
-    const d = distToSeg(pt, nodes[i], nodes[i + 1]);
+    const d = distToSeg(spt, nodes[i], nodes[i + 1]);
     if (d < bestDist) {
       bestDist = d;
       bestIdx = i;
     }
   }
-  cn.waypoints.splice(bestIdx, 0, pt);
+  cn.waypoints.splice(bestIdx, 0, spt);
 }
 
 function obstacleRects(m) {
@@ -3827,11 +4293,13 @@ function segHitsRect(s, rx1, ry1, rx2, ry2) {
 }
 
 function route(a, z, cn) {
-  const S = 16, off = p => ({ left: [-S, 0], right: [S, 0], top: [0, -S], bottom: [0, S] }[p.side] || [S, 0]);
+  const gs = (typeof settings !== "undefined" && settings.gridSize) || 10;
+  const S = Math.max(gs, Math.round(20 / gs) * gs);
+  const off = p => ({ left: [-S, 0], right: [S, 0], top: [0, -S], bottom: [0, S] }[p.side] || [S, 0]);
   const [ax, ay] = off(a), [zx, zy] = off(z);
   const a2 = { x: a.x + ax, y: a.y + ay }, z2 = { x: z.x + zx, y: z.y + zy };
   const hA = a.side === "left" || a.side === "right", hZ = z.side === "left" || z.side === "right";
-  const g = v => Math.round(v / settings.gridSize) * settings.gridSize;
+  const g = v => Math.round(v / gs) * gs;
   const jogAxis = (hA && hZ) ? "x" : ((!hA && !hZ) ? "y" : null);
   let pts;
 
@@ -3881,13 +4349,22 @@ function route(a, z, cn) {
     const VJ = mx => [a, a2, { x: mx, y: a2.y }, { x: mx, y: z2.y }, z2, z];
     const HJ = my => [a, a2, { x: a2.x, y: my }, { x: z2.x, y: my }, z2, z];
     const cands = [];
+    if (hA && hZ && Math.abs(a.y - z.y) < 1) {
+      if ((a.side === "right" && z.side === "left" && a.x < z.x) || (a.side === "left" && z.side === "right" && z.x < a.x)) {
+        cands.push([a, z]);
+      }
+    } else if (!hA && !hZ && Math.abs(a.x - z.x) < 1) {
+      if ((a.side === "bottom" && z.side === "top" && a.y < z.y) || (a.side === "top" && z.side === "bottom" && z.y < a.y)) {
+        cands.push([a, z]);
+      }
+    }
     if (hA && hZ) cands.push(VJ(g((a2.x + z2.x) / 2)));
     else if (!hA && !hZ) cands.push(HJ(g((a2.y + z2.y) / 2)));
     else if (hA && !hZ) cands.push([a, a2, { x: z2.x, y: a2.y }, z2, z]);
     else cands.push([a, a2, { x: a2.x, y: z2.y }, z2, z]);
     const xlo = Math.min(a2.x, z2.x), xhi = Math.max(a2.x, z2.x), ylo = Math.min(a2.y, z2.y), yhi = Math.max(a2.y, z2.y);
     cands.push(VJ(g((a2.x + z2.x) / 2)), HJ(g((a2.y + z2.y) / 2)));
-    for (const k of [24, 64, 120, 200]) cands.push(VJ(g(xlo - k)), VJ(g(xhi + k)), HJ(g(ylo - k)), HJ(g(yhi + k)));
+    for (const k of [20, 60, 120, 200]) cands.push(VJ(g(xlo - k)), VJ(g(xhi + k)), HJ(g(ylo - k)), HJ(g(yhi + k)));
     let best = null, bc = Infinity;
     for (const c of cands) { const cs = cost(c); if (cs < bc) { bc = cs; best = c; } }
     pts = best;
@@ -3898,7 +4375,21 @@ function route(a, z, cn) {
       cleanPts.push(pts[i]);
     }
   }
-  pts = cleanPts;
+  const simpPts = [];
+  for (let i = 0; i < cleanPts.length; i++) {
+    if (i === 0 || i === cleanPts.length - 1) {
+      simpPts.push(cleanPts[i]);
+      continue;
+    }
+    const prev = simpPts[simpPts.length - 1];
+    const curr = cleanPts[i];
+    const next = cleanPts[i + 1];
+    const sameX = Math.abs(prev.x - curr.x) < 0.5 && Math.abs(curr.x - next.x) < 0.5;
+    const sameY = Math.abs(prev.y - curr.y) < 0.5 && Math.abs(curr.y - next.y) < 0.5;
+    if (sameX || sameY) continue;
+    simpPts.push(curr);
+  }
+  pts = simpPts;
 
   const d = "M" + pts.map(p => `${p.x} ${p.y}`).join("L");
   const segs = []; let total = 0;
@@ -4161,6 +4652,310 @@ if (typeof module !== "undefined" && module.exports) {
     pill,
     indicatorPillLayout,
     pillStack
+  };
+}
+
+
+/* --- File: js/layout/auto-space.js --- */
+"use strict";
+
+/* =====================================================================
+ * RF Block Diagram Editor - Dynamic Grid Snap & Auto Component Spacing
+ * ===================================================================== */
+
+let _measureCanvas = null;
+
+/**
+ * Accurately measures the rendered pixel dimensions of a parameter label.
+ * Takes into account actual text, font-family, font-size, font-weight,
+ * and pill background padding (rx=5, 5px on each side).
+ */
+function measureRenderedLabel(text, fontSpec) {
+  if (!text) return { text: "", width: 32, height: 20 };
+  const str = String(text);
+  const font = fontSpec || "600 13px Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif";
+  const paddingH = 10; // 5px left + 5px right padding in rect.pbg
+
+  if (typeof document !== "undefined" && typeof document.createElement === "function") {
+    if (!_measureCanvas) {
+      _measureCanvas = document.createElement("canvas");
+    }
+    const ctx = _measureCanvas.getContext("2d");
+    if (ctx) {
+      ctx.font = font;
+      const textMetrics = ctx.measureText(str);
+      const w = Math.max(Math.ceil(textMetrics.width + paddingH), 32);
+      return { text: str, width: w, height: 20 };
+    }
+  }
+
+  // Fallback measurement for headless / test environments
+  const charWidth = 7.6;
+  const w = Math.max(Math.ceil(str.length * charWidth + paddingH), 32);
+  return { text: str, width: w, height: 20 };
+}
+
+/**
+ * Identifies and measures all applicable parameter labels (PWR1, PWR2,
+ * Noise Figure, Noise Floor) for the wires touching the given blocks.
+ */
+function getApplicableLabelsForSelection(selectedIds) {
+  const ids = new Set(selectedIds || []);
+  if (!ids.size) return [];
+
+  // Compute power and noise calculations if available
+  const P = (typeof computePowers === "function") ? computePowers("primary") : {};
+  const PSecondary = (typeof computePowers === "function") ? computePowers("secondary") : {};
+  const needNoise = !!(typeof settings !== "undefined" && (settings.showNF || settings.showNoiseFloor));
+  const NFm = (needNoise && typeof computeNoise === "function") ? computeNoise(P) : null;
+  const bwHz = (typeof settings !== "undefined" && settings.bandwidthHz) || 1e6;
+
+  const relevantConns = (typeof conns !== "undefined" ? conns : []).filter(cn =>
+    ids.has(cn.from.block) || ids.has(cn.to.block)
+  );
+
+  const results = [];
+  for (const cn of relevantConns) {
+    const k = (typeof key === "function") ? key(cn.from.block, cn.from.port) : `${cn.from.block}:${cn.from.port}`;
+    const lvlPrimary = P[k];
+    const lvlSecondary = PSecondary[k];
+    const nnObj = NFm ? NFm[k] : undefined;
+    const nfVal = (typeof nfDb === "function") ? nfDb(nnObj) : undefined;
+    const srcLvl = (typeof startBlocks === "function" && startBlocks().length)
+      ? P[key(startBlocks()[0].id, srcPorts(COMP[startBlocks()[0].type], startBlocks()[0].params)[0])]
+      : 0;
+    const nflVal = (nnObj && typeof computeNoiseFloor === "function")
+      ? computeNoiseFloor(nnObj, lvlPrimary, srcLvl, bwHz)
+      : undefined;
+
+    // 1. PWR1
+    if (lvlPrimary !== undefined && isFinite(lvlPrimary)) {
+      const text = (typeof dbm === "function") ? dbm(lvlPrimary) : (lvlPrimary.toFixed(1) + " dBm");
+      const m = measureRenderedLabel(text);
+      results.push({ type: "pwr1", text, width: m.width, height: m.height, connId: cn.id });
+    }
+    // 2. PWR2
+    if (lvlSecondary !== undefined && isFinite(lvlSecondary)) {
+      const text = (typeof dbm === "function") ? dbm(lvlSecondary) : (lvlSecondary.toFixed(1) + " dBm");
+      const m = measureRenderedLabel(text);
+      results.push({ type: "pwr2", text, width: m.width, height: m.height, connId: cn.id });
+    }
+    // 3. Noise Figure (NF)
+    if (nfVal !== undefined && isFinite(nfVal)) {
+      const text = (typeof fmt === "function") ? ("NF " + fmt(nfVal) + " dB") : ("NF " + nfVal.toFixed(1) + " dB");
+      const m = measureRenderedLabel(text);
+      results.push({ type: "nf", text, width: m.width, height: m.height, connId: cn.id });
+    }
+    // 4. Noise Floor (NFloor)
+    if (nflVal !== undefined && isFinite(nflVal)) {
+      const text = (typeof dbm === "function") ? dbm(nflVal) : (nflVal.toFixed(1) + " dBm");
+      const m = measureRenderedLabel(text);
+      results.push({ type: "nfloor", text, width: m.width, height: m.height, connId: cn.id });
+    }
+  }
+
+  return results;
+}
+
+/**
+ * Snaps all currently selected components to the active configured grid.
+ * Preserves connections, parameters, and relationships.
+ */
+function snapSelectionToGrid(targetGridSize) {
+  const ids = [...(typeof selected !== "undefined" ? selected : [])].filter(id => findBlock(id));
+  if (!ids.length) {
+    if (typeof hint === "function") hint("Select one or more components to snap to grid.");
+    return;
+  }
+  if (typeof pushHistory === "function") pushHistory();
+
+  const gs = Number(targetGridSize || (typeof settings !== "undefined" && settings.gridSize)) || 10;
+  const affectedBlocks = ids.map(id => findBlock(id));
+
+  for (const b of affectedBlocks) {
+    b.x = Math.round(b.x / gs) * gs;
+    b.y = Math.round(b.y / gs) * gs;
+  }
+
+  // Snap jogs and waypoints on connections linked to selected blocks
+  const affectedSet = new Set(ids);
+  for (const cn of (typeof conns !== "undefined" ? conns : [])) {
+    if (affectedSet.has(cn.from.block) || affectedSet.has(cn.to.block)) {
+      if (cn.jog != null) {
+        cn.jog = Math.round(cn.jog / gs) * gs;
+      }
+      if (cn.waypoints && Array.isArray(cn.waypoints)) {
+        cn.waypoints.forEach(wp => {
+          wp.x = Math.round(wp.x / gs) * gs;
+          wp.y = Math.round(wp.y / gs) * gs;
+        });
+      }
+    }
+  }
+
+  if (typeof commitSheet === "function") commitSheet();
+  if (typeof markDirty === "function") markDirty();
+  if (typeof renderAll === "function") renderAll();
+  if (typeof hint === "function") {
+    hint(`Snapped ${affectedBlocks.length} component${affectedBlocks.length > 1 ? "s" : ""} to ${gs}px grid.`);
+  }
+}
+
+/**
+ * Snaps ALL blocks and connections across the current sheet to the grid.
+ */
+function snapAllToGrid(targetGridSize) {
+  if (typeof pushHistory === "function") pushHistory();
+  const gs = Number(targetGridSize || (typeof settings !== "undefined" && settings.gridSize)) || 10;
+  const blist = typeof blocks !== "undefined" ? blocks : [];
+  for (const b of blist) {
+    b.x = Math.round(b.x / gs) * gs;
+    b.y = Math.round(b.y / gs) * gs;
+  }
+  for (const cn of (typeof conns !== "undefined" ? conns : [])) {
+    if (cn.jog != null) {
+      cn.jog = Math.round(cn.jog / gs) * gs;
+    }
+    if (cn.waypoints && Array.isArray(cn.waypoints)) {
+      cn.waypoints.forEach(wp => {
+        wp.x = Math.round(wp.x / gs) * gs;
+        wp.y = Math.round(wp.y / gs) * gs;
+      });
+    }
+  }
+
+  if (typeof commitSheet === "function") commitSheet();
+  if (typeof markDirty === "function") markDirty();
+  if (typeof renderAll === "function") renderAll();
+  if (typeof hint === "function") {
+    hint(`Snapped entire diagram (${blist.length} blocks) to ${gs}px grid.`);
+  }
+}
+
+/**
+ * Automatically adjusts the spacing between selected components based on
+ * the actual rendered size of applicable parameter labels (PWR1, PWR2, NF,
+ * Noise Floor) plus configurable padding.
+ */
+function autoSpaceSelection(opts) {
+  const ids = [...(typeof selected !== "undefined" ? selected : [])].filter(id => findBlock(id));
+  if (ids.length < 2) {
+    if (typeof hint === "function") hint("Select two or more components to auto space.");
+    return;
+  }
+  if (typeof pushHistory === "function") pushHistory();
+
+  const cfg = typeof settings !== "undefined" ? settings : {};
+  const gs = Number((opts && opts.gridSize) || cfg.gridSize) || 10;
+  const padding = Number((opts && opts.padding !== undefined) ? opts.padding : (cfg.autoSpacePadding !== undefined ? cfg.autoSpacePadding : 20));
+  const minSpacing = Number((opts && opts.minSpacing !== undefined) ? opts.minSpacing : (cfg.minSpacing !== undefined ? cfg.minSpacing : 20));
+
+  const bs = ids.map(id => findBlock(id));
+
+  // Determine rendered size of applicable labels (PWR1, PWR2, NF, Noise Floor)
+  const labels = getApplicableLabelsForSelection(ids);
+  let largestLabelWidth = labels.reduce((max, item) => Math.max(max, item.width), 0);
+
+  // If no calculated levels found on wire yet but labels are enabled in settings,
+  // use nominal rendered dimension for the enabled indicators to ensure clearance
+  if (largestLabelWidth === 0 && cfg.showLabels !== false) {
+    const nominals = [];
+    if (cfg.showPwr1 !== false) nominals.push(measureRenderedLabel("+0.0 dBm").width);
+    if (cfg.showPwr2) nominals.push(measureRenderedLabel("+0.0 dBm").width);
+    if (cfg.showNF) nominals.push(measureRenderedLabel("NF 0.0 dB").width);
+    if (cfg.showNoiseFloor) nominals.push(measureRenderedLabel("-114.0 dBm").width);
+    if (nominals.length) largestLabelWidth = Math.max(...nominals);
+  }
+
+  // Required spacing = Maximum required label dimension + Padding
+  const requiredSpacing = Math.max(minSpacing, largestLabelWidth + padding);
+  const effectiveSpacing = Math.max(gs, Math.round(requiredSpacing / gs) * gs);
+
+  // Determine layout orientation (horizontal signal flow vs vertical)
+  const minX = Math.min(...bs.map(b => b.x)), maxX = Math.max(...bs.map(b => b.x));
+  const minY = Math.min(...bs.map(b => b.y)), maxY = Math.max(...bs.map(b => b.y));
+  const isHorizontal = (maxX - minX) >= (maxY - minY);
+
+  // Sort components along the primary layout axis
+  if (isHorizontal) {
+    bs.sort((a, b) => a.x - b.x);
+  } else {
+    bs.sort((a, b) => a.y - b.y);
+  }
+
+  // Anchor the first block at its snapped position
+  bs[0].x = Math.round(bs[0].x / gs) * gs;
+  bs[0].y = Math.round(bs[0].y / gs) * gs;
+
+  // Space subsequent components sequentially
+  for (let i = 1; i < bs.length; i++) {
+    const prev = bs[i - 1];
+    const curr = bs[i];
+    const prevFoot = (typeof footprint === "function") ? footprint(prev) : { w: 60, h: 60 };
+
+    if (isHorizontal) {
+      curr.x = prev.x + prevFoot.w + effectiveSpacing;
+      curr.y = Math.round(curr.y / gs) * gs;
+    } else {
+      curr.y = prev.y + prevFoot.h + effectiveSpacing;
+      curr.x = Math.round(curr.x / gs) * gs;
+    }
+  }
+
+  // Clear manual jogs between spaced blocks so Manhattan router generates clean straight wires
+  const selSet = new Set(ids);
+  for (const cn of (typeof conns !== "undefined" ? conns : [])) {
+    if (selSet.has(cn.from.block) && selSet.has(cn.to.block)) {
+      delete cn.jog;
+    }
+  }
+
+  if (typeof commitSheet === "function") commitSheet();
+  if (typeof markDirty === "function") markDirty();
+  if (typeof renderAll === "function") renderAll();
+  if (typeof hint === "function") {
+    const labelInfo = largestLabelWidth > 0 ? ` (max label: ${largestLabelWidth}px + pad: ${padding}px)` : "";
+    hint(`Auto-spaced ${bs.length} components with ${effectiveSpacing}px clearance${labelInfo}.`);
+  }
+}
+
+/**
+ * Dynamically adjusts the visual SVG grid pattern (#gridm and #grid)
+ * in real-time when gridSize changes.
+ */
+function updateCanvasGridVisual(gridSize) {
+  const gs = Number(gridSize) || 10;
+  if (typeof document === "undefined") return;
+  const gridm = document.getElementById("gridm");
+  const grid = document.getElementById("grid");
+  if (gridm) {
+    gridm.setAttribute("width", String(gs));
+    gridm.setAttribute("height", String(gs));
+    const path = gridm.querySelector("path");
+    if (path) path.setAttribute("d", `M${gs} 0H0V${gs}`);
+  }
+  if (grid) {
+    const maj = gs * 10;
+    grid.setAttribute("width", String(maj));
+    grid.setAttribute("height", String(maj));
+    const rect = grid.querySelector("rect");
+    if (rect) {
+      rect.setAttribute("width", String(maj));
+      rect.setAttribute("height", String(maj));
+    }
+    const path = grid.querySelector("path");
+    if (path) path.setAttribute("d", `M${maj} 0H0V${maj}`);
+  }
+}
+
+if (typeof module !== "undefined" && module.exports) {
+  module.exports = {
+    measureRenderedLabel,
+    getApplicableLabelsForSelection,
+    snapSelectionToGrid,
+    snapAllToGrid,
+    autoSpaceSelection,
+    updateCanvasGridVisual
   };
 }
 
@@ -5591,19 +6386,41 @@ function loadDoc(text, name, handle) {
   }
   pushHistory();
   const fileVer = Number(d.version) || 1;
+
+  // Sanitize settings: legacy files often carried gridSize: 40 from 40x40 symbol era
+  const loadedSettings = d.settings || {};
+  let targetGrid = Number(loadedSettings.gridSize);
+  if (!targetGrid || targetGrid === 40 || targetGrid < 2) targetGrid = 10;
+  settings = { ...settings, ...loadedSettings, gridSize: targetGrid };
+  if (settings.autoSpacePadding === undefined) settings.autoSpacePadding = 20;
+
   const fix = b => {
     let nb = { rot: 0, flip: false, ...b };
     if (fileVer < 4) {
       nb.x = (nb.x || 0) * 2;
       nb.y = (nb.y || 0) * 2;
     }
+    // Snap block position to active grid
+    nb.x = Math.round((nb.x || 0) / targetGrid) * targetGrid;
+    nb.y = Math.round((nb.y || 0) / targetGrid) * targetGrid;
     return nb;
   };
   const fixConn = cn => {
-    if (fileVer < 4 && cn && cn.waypoints && Array.isArray(cn.waypoints)) {
-      return { ...cn, waypoints: cn.waypoints.map(w => ({ x: w.x * 2, y: w.y * 2 })) };
+    let ncn = { ...cn };
+    if (fileVer < 4 && ncn.waypoints && Array.isArray(ncn.waypoints)) {
+      ncn.waypoints = ncn.waypoints.map(w => ({ x: w.x * 2, y: w.y * 2 }));
     }
-    return cn;
+    if (ncn.waypoints && Array.isArray(ncn.waypoints)) {
+      ncn.waypoints = ncn.waypoints.map(w => ({
+        x: Math.round(w.x / targetGrid) * targetGrid,
+        y: Math.round(w.y / targetGrid) * targetGrid
+      }));
+    }
+    if (ncn.jog != null) {
+      if (fileVer < 4) ncn.jog = ncn.jog * 2;
+      ncn.jog = Math.round(ncn.jog / targetGrid) * targetGrid;
+    }
+    return ncn;
   };
 
   /* Security Sanitizer Fix: Validate typeColor values against normHex */
@@ -5630,7 +6447,6 @@ function loadDoc(text, name, handle) {
     sheets = [{ id: "s1", name: "Sheet 1", blocks: d.blocks.map(fix), conns: (d.connections || []).map(fixConn), view: d.view || { tx: 60, ty: 56, scale: 1 } }];
     cur = 0;
   }
-  settings = { ...settings, ...(d.settings || {}) };
   if ($("tglColor")) $("tglColor").checked = settings.color !== false;
   if ($("tglTheme")) {
     $("tglTheme").checked = (settings.theme === "light");
@@ -5640,8 +6456,8 @@ function loadDoc(text, name, handle) {
   renderSheets();
   clearSel();
   renderPalette();
-  $("tglSnap").checked = settings.snap;
-  $("tglGrid").checked = settings.grid;
+  if ($("tglSnap")) $("tglSnap").checked = settings.snap;
+  if ($("tglGrid")) $("tglGrid").checked = settings.grid;
   if ($("tglLabels")) $("tglLabels").checked = settings.showLabels !== false;
   if ($("tglPwr1")) $("tglPwr1").checked = settings.showPwr1 !== false;
   if ($("tglPwr2")) $("tglPwr2").checked = !!settings.showPwr2;
@@ -5650,6 +6466,9 @@ function loadDoc(text, name, handle) {
   if ($("tglNF")) $("tglNF").checked = !!settings.showNF;
   if ($("tbBw")) $("tbBw").value = settings.bandwidthVal !== undefined ? settings.bandwidthVal : 1;
   if ($("tbBwUnit")) $("tbBwUnit").value = settings.bandwidthUnit || "MHz";
+  if ($("tbGridSize")) $("tbGridSize").value = settings.gridSize !== undefined ? settings.gridSize : 10;
+  if ($("tbAutoPadding")) $("tbAutoPadding").value = settings.autoSpacePadding !== undefined ? settings.autoSpacePadding : 20;
+  if (typeof updateCanvasGridVisual === "function") updateCanvasGridVisual(settings.gridSize);
   if ($("selLayout")) $("selLayout").value = (sheets[cur] && sheets[cur].layoutPreset) || settings.layoutPreset || "free";
   applyView();
   renderAll();
@@ -6354,6 +7173,10 @@ function renderInspector() {
         renderAll();
         const panel = $("spStagePanel");
         if (panel && panel.style.display !== "none" && typeof renderLinearAnalysis === "function") {
+          if (typeof sparamsTabs !== "undefined" && sparamsTabs.length) {
+            const curTab = sparamsTabs[typeof activeTabIdx !== "undefined" ? activeTabIdx : 0];
+            if (curTab) curTab.res = null;
+          }
           renderLinearAnalysis();
         }
       });
@@ -7194,7 +8017,7 @@ if (typeof module !== "undefined" && module.exports) {
 let sparamsTabs = []; // Array of { id, name, band, res }
 let activeTabIdx = 0;
 let linearMarkers = [{ id: "M1", f: 0 }];
-let invokedTraces = new Set(["S21", "S11", "S22"]); // Currently invoked S-parameter trace keys
+let invokedTraces = new Set(["S21", "S12"]); // Default to Forward Gain S21 and Reverse Isolation S12
 
 /* --- Full-Stage Multi-Port S-Params Panel & Tab Management --- */
 function toggleSParamsDrawer() {
@@ -7210,6 +8033,11 @@ function toggleSParamsDrawer() {
       const band = settings.analysisBand || { startFreq: 1, startUnit: "GHz", stopFreq: 10, stopUnit: "GHz", points: 101, sweepType: "lin" };
       runNewSParamSweep(band, "Sweep 1");
     } else {
+      const activeTab = sparamsTabs[activeTabIdx];
+      if (activeTab) {
+        activeTab.res = null;
+        activeTab.selectedPathIdx = null;
+      }
       renderLinearAnalysis();
     }
   }
@@ -7241,7 +8069,7 @@ async function fetchBackendSParams(band) {
 
 function runNewSParamSweep(band, tabName) {
   const name = tabName || `Sweep ${sparamsTabs.length + 1}`;
-  const newTab = { id: "sp_tab_" + Date.now(), name, band: { ...band }, res: null, selectedPathIdx: 0, activeMetric: "mag" };
+  const newTab = { id: "sp_tab_" + Date.now(), name, band: { ...band }, res: null, selectedPathIdx: null, activeMetric: "mag" };
   sparamsTabs.push(newTab);
   activeTabIdx = sparamsTabs.length - 1;
 
@@ -7249,8 +8077,18 @@ function runNewSParamSweep(band, tabName) {
   fetchBackendSParams(band).then(backendRes => {
     const localRes = withAllSheets(() => computeLinearAnalysis(band));
     if (backendRes && backendRes.status === "success" && backendRes.paths && backendRes.paths.length) {
-      // Merge portsList from local solver for UI compatibility
       backendRes.portsList = localRes.portsList || [];
+      if (backendRes.freq_hz) backendRes.freqs = new Float64Array(backendRes.freq_hz);
+      const activeIdx = backendRes.paths.findIndex(p => p.is_active || p.isActive);
+      const selIdx = activeIdx >= 0 ? activeIdx : 0;
+      newTab.selectedPathIdx = selIdx;
+      const curPath = backendRes.paths[selIdx] || backendRes.paths[0];
+      backendRes.matrix = curPath.matrix || {
+        S21: curPath.s21_db,
+        S12: curPath.s12_db,
+        S11: curPath.s11_db,
+        S22: curPath.s22_db,
+      };
       newTab.res = backendRes;
     } else {
       newTab.res = localRes;
@@ -7266,12 +8104,35 @@ function renderLinearAnalysis() {
   if (!sparamsTabs.length || activeTabIdx >= sparamsTabs.length) activeTabIdx = Math.max(0, sparamsTabs.length - 1);
   const activeTab = sparamsTabs[activeTabIdx];
 
-  // Data persistence: use stored snapshot result if present, or evaluate once if missing
+  // Data persistence: evaluate for current state if not cached
   const band = (activeTab && activeTab.band) || settings.analysisBand || { startFreq: 1, startUnit: "GHz", stopFreq: 10, stopUnit: "GHz", points: 101, sweepType: "lin" };
   if (activeTab && !activeTab.res) {
     activeTab.res = withAllSheets(() => computeLinearAnalysis(band));
+    if (activeTab.res && activeTab.res.paths && (activeTab.selectedPathIdx === null || activeTab.selectedPathIdx === undefined)) {
+      const activeIdx = activeTab.res.paths.findIndex(p => p.isActive || p.is_active);
+      activeTab.selectedPathIdx = activeIdx >= 0 ? activeIdx : 0;
+    }
   }
   const res = (activeTab && activeTab.res) || withAllSheets(() => computeLinearAnalysis(band));
+
+  // Sync selected path: allow user to select and KEEP any path without forcing it back
+  if (res && res.paths && res.paths.length) {
+    if (activeTab.selectedPathIdx === null || activeTab.selectedPathIdx === undefined || activeTab.selectedPathIdx >= res.paths.length) {
+      const activeIdx = res.paths.findIndex(p => p.isActive || p.is_active);
+      activeTab.selectedPathIdx = activeIdx >= 0 ? activeIdx : 0;
+    }
+    const selIdx = activeTab.selectedPathIdx;
+    const curPath = res.paths[selIdx];
+    if (curPath && curPath.matrix) {
+      // Merge path matrix with global matrix without destroying multi-port keys
+      Object.assign(res.matrix, curPath.matrix);
+      if (curPath.s21_db) res.matrix.S21 = new Float64Array(curPath.s21_db);
+      if (curPath.s12_db) res.matrix.S12 = new Float64Array(curPath.s12_db);
+      if (curPath.fwdKey && curPath.matrix[curPath.fwdKey]) {
+        res.matrix[curPath.fwdKey] = new Float64Array(curPath.matrix[curPath.fwdKey]);
+      }
+    }
+  }
 
   let html = `<div style="max-width:1240px; margin:0 auto; font-family:var(--sans); color:var(--ink,#f8fafc)">`;
 
@@ -7279,7 +8140,7 @@ function renderLinearAnalysis() {
   html += `<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; border-bottom:1px solid var(--line,#334155); padding-bottom:12px">
     <div style="display:flex; align-items:center; gap:12px">
       <h3 style="margin:0; font-size:16px; font-weight:700; display:flex; align-items:center; gap:8px; color:#f8fafc">
-        <span>📈</span> Multi-Port Transmission Analysis & Benchmark View
+        <span>📈</span> Multi-Port S-Parameter Analysis & Matrix Cascade
       </h3>
       <button class="btn btn-sm primary" id="spRerunSweep" title="Re-evaluate sweep for current schematic state">⚡ Re-run Sweep</button>
       <button class="btn btn-sm" id="spOpenSettings" title="Open Analyser Settings">⚙️ Analyser Settings</button>
@@ -7318,6 +8179,23 @@ function renderLinearAnalysis() {
     </div>
   </div>`;
 
+  // Path Selector Bar (if multi-path results are available)
+  if (res.paths && res.paths.length > 0) {
+    html += `<div style="background:var(--chrome-2,#1f2937); border:1px solid var(--line,#374151); border-radius:8px; padding:10px 14px; margin-bottom:14px; display:flex; align-items:center; gap:12px; flex-wrap:wrap">
+      <div style="display:flex; align-items:center; gap:8px; flex:1">
+        <label style="font-size:12.5px; font-weight:700; color:var(--accent,#f59e0b); display:flex; align-items:center; gap:6px">
+          <span>📍</span> Signal Path:
+        </label>
+        <select id="spPathSelect" style="flex:1; padding:6px 10px; font-size:12.5px; border-radius:6px; border:1px solid var(--line); background:var(--chrome); color:var(--ink); font-weight:600">
+          ${res.paths.map((p, pIdx) => `<option value="${pIdx}" ${pIdx === (activeTab.selectedPathIdx || 0) ? "selected" : ""}>${esc(p.name || ("Path " + (pIdx + 1)))}</option>`).join("")}
+        </select>
+      </div>
+      <div style="font-size:11.5px; color:var(--ink-dim,#94a3b8)">
+        Discovered Paths: <b>${res.paths.length}</b>
+      </div>
+    </div>`;
+  }
+
   // Warning Alerts Banner
   if (res.error) {
     html += `<div style="background:#3f1717; color:#fca5a5; padding:12px 16px; border-radius:8px; margin-bottom:14px; font-size:12.5px; border:1px solid #991b1b">
@@ -7330,16 +8208,17 @@ function renderLinearAnalysis() {
     </div>`;
   }
 
-  if (!res.error && portsList.length >= 2) {
-    const P = portsList.length;
+  if (!res.error && (portsList.length >= 2 || (res.paths && res.paths.length > 0))) {
+    const P = Math.max(2, portsList.length);
 
     const availableTraces = [];
     for (let i = 1; i <= P; i++) {
       for (let j = 1; j <= P; j++) {
-        if (i === j) continue;
         const sKey = `S${i}${j}`;
         let label = sKey;
-        if (j === 1) label += ` (Forward Transmission P1 → P${i})`;
+        if (i === j) label += ` (Return Loss P${i})`;
+        else if (j === 1) label += ` (Forward Transmission P1 → P${i})`;
+        else if (i === 1) label += ` (Reverse Isolation P${j} → P1)`;
         else label += ` (Transmission P${j} → P${i})`;
         availableTraces.push({ key: sKey, label });
       }
@@ -7348,34 +8227,37 @@ function renderLinearAnalysis() {
       }
     }
 
-    invokedTraces.forEach(k => {
-      if (/^S(\d+)\1$/.test(k)) invokedTraces.delete(k);
-    });
     let hasValidActive = false;
     invokedTraces.forEach(sk => {
-      if (res.matrix[sk] && res.matrix[sk].some(v => v > -110)) hasValidActive = true;
+      if (res.matrix && res.matrix[sk] && res.matrix[sk].some(v => v > -110)) hasValidActive = true;
     });
-    if (!hasValidActive) {
+    if (!hasValidActive && res.matrix) {
       for (const sk in res.matrix) {
-        if (res.matrix[sk].some(v => v > -110)) {
+        if (res.matrix[sk] && res.matrix[sk].some(v => v > -110)) {
           invokedTraces.add(sk);
         }
       }
     }
     if (invokedTraces.size === 0) {
-      availableTraces.forEach(tr => invokedTraces.add(tr.key));
+      invokedTraces.add("S21");
+      if (P >= 3) {
+        for (let i = 3; i <= P; i++) invokedTraces.add(`S${i}1`);
+      } else {
+        invokedTraces.add("S12");
+      }
     }
 
     html += `<div style="background:var(--chrome-2,#1f2937); border:1px solid var(--line,#374151); border-radius:8px; padding:14px; margin-bottom:16px">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:8px">
         <h4 style="margin:0; font-size:13px; font-weight:700; color:var(--ink,#f8fafc); display:flex; align-items:center; gap:6px">
-          <span>🎛️</span> Transmission Parameter Selection (${P}-Port System)
+          <span>🎛️</span> S-Parameter Trace Selection
         </h4>
         <div style="display:flex; gap:6px; flex-wrap:wrap">
-          <button class="btn btn-sm" id="spPrePrimary">Preset: Primary (S21)</button>
-          <button class="btn btn-sm" id="spPreAllOutputs">Preset: All Outputs (S_j1)</button>
-          <button class="btn btn-sm" id="spPreAllTrans">Preset: All Transmission (S_ij)</button>
-          <button class="btn btn-sm" id="spPreClearAll">Clear All</button>
+          <button class="btn btn-sm" id="spPrePrimary">All Gains (${P >= 3 ? "S21, S31..." : "S21"})</button>
+          <button class="btn btn-sm" id="spPreGainIso">Gain & Iso</button>
+          <button class="btn btn-sm" id="spPreFull2Port">All ${P}×${P} S-Params</button>
+          <button class="btn btn-sm" id="spPreMatch">Match (Snn)</button>
+          <button class="btn btn-sm" id="spPreClearAll">Clear</button>
         </div>
       </div>
 
@@ -7383,7 +8265,7 @@ function renderLinearAnalysis() {
         <div style="display:flex; align-items:center; gap:6px">
           <label style="font-size:12px; font-weight:600; color:var(--ink-dim)">Add Trace:</label>
           <select id="spTraceSelect" style="padding:6px 10px; font-size:12px; border-radius:6px; border:1px solid var(--line); background:var(--chrome-2); color:var(--ink); min-width:240px">
-            <option value="">-- Select Transmission Trace --</option>`;
+            <option value="">-- Select S-Parameter Trace --</option>`;
 
     availableTraces.forEach(tr => {
       const isInv = invokedTraces.has(tr.key);
@@ -7438,15 +8320,53 @@ function renderLinearAnalysis() {
   html += `</div>`;
   box.innerHTML = html;
 
+  // Bind Path Selector
+  const selPath = $("spPathSelect");
+  if (selPath && activeTab && res && res.paths) {
+    selPath.onchange = e => {
+      const pIdx = parseInt(e.target.value) || 0;
+      activeTab.selectedPathIdx = pIdx;
+      const pData = res.paths[pIdx];
+      if (pData) {
+        if (pData.matrix) Object.assign(res.matrix, pData.matrix);
+        if (pData.s21_db) res.matrix.S21 = new Float64Array(pData.s21_db);
+        if (pData.s12_db) res.matrix.S12 = new Float64Array(pData.s12_db);
+        if (pData.fwdKey && pData.matrix && pData.matrix[pData.fwdKey]) {
+          res.matrix[pData.fwdKey] = new Float64Array(pData.matrix[pData.fwdKey]);
+        }
+        if (pData.fwdKey) invokedTraces.add(pData.fwdKey);
+        invokedTraces.add("S21");
+      }
+      renderLinearAnalysis();
+    };
+  }
+
   // Bind Header Action Buttons
   if ($("spClosePanel")) $("spClosePanel").onclick = toggleSParamsDrawer;
   if ($("spOpenSettings")) $("spOpenSettings").onclick = toggleAnalyserDrawer;
   if ($("spRerunSweep")) {
     $("spRerunSweep").onclick = () => {
       if (activeTab) {
-        activeTab.res = withAllSheets(() => computeLinearAnalysis(activeTab.band));
-        renderLinearAnalysis();
-        if (typeof hint === "function") hint(`Re-evaluated sweep for '${activeTab.name}'`);
+        fetchBackendSParams(activeTab.band).then(backendRes => {
+          const localRes = withAllSheets(() => computeLinearAnalysis(activeTab.band));
+          if (backendRes && backendRes.status === "success" && backendRes.paths && backendRes.paths.length) {
+            backendRes.portsList = localRes.portsList || [];
+            if (backendRes.freq_hz) backendRes.freqs = new Float64Array(backendRes.freq_hz);
+            const selIdx = activeTab.selectedPathIdx || 0;
+            const curPath = backendRes.paths[selIdx] || backendRes.paths[0];
+            backendRes.matrix = curPath.matrix || {
+              S21: curPath.s21_db,
+              S12: curPath.s12_db,
+              S11: curPath.s11_db,
+              S22: curPath.s22_db,
+            };
+            activeTab.res = backendRes;
+          } else {
+            activeTab.res = localRes;
+          }
+          renderLinearAnalysis();
+          if (typeof hint === "function") hint(`Re-evaluated sweep for '${activeTab.name}'`);
+        });
       }
     };
   }
@@ -7473,25 +8393,41 @@ function renderLinearAnalysis() {
 
   if ($("spPrePrimary")) {
     $("spPrePrimary").onclick = () => {
-      invokedTraces = new Set(["S21"]);
+      invokedTraces = new Set();
+      for (let i = 2; i <= P; i++) invokedTraces.add(`S${i}1`);
+      if (invokedTraces.size === 0) invokedTraces.add("S21");
       renderLinearAnalysis();
     };
   }
-  if ($("spPreAllOutputs")) {
-    $("spPreAllOutputs").onclick = () => {
-      invokedTraces.clear();
-      for (let p = 2; p <= portsList.length; p++) invokedTraces.add(`S${p}1`);
+  if ($("spPreGainIso")) {
+    $("spPreGainIso").onclick = () => {
+      invokedTraces = new Set();
+      for (let i = 2; i <= P; i++) {
+        invokedTraces.add(`S${i}1`);
+        invokedTraces.add(`S1${i}`);
+      }
+      if (invokedTraces.size === 0) {
+        invokedTraces.add("S21");
+        invokedTraces.add("S12");
+      }
       renderLinearAnalysis();
     };
   }
-  if ($("spPreAllTrans")) {
-    $("spPreAllTrans").onclick = () => {
-      invokedTraces.clear();
-      for (let i = 1; i <= portsList.length; i++) {
-        for (let j = 1; j <= portsList.length; j++) {
-          if (i !== j) invokedTraces.add(`S${i}${j}`);
+  if ($("spPreFull2Port")) {
+    $("spPreFull2Port").onclick = () => {
+      invokedTraces = new Set();
+      for (let i = 1; i <= P; i++) {
+        for (let j = 1; j <= P; j++) {
+          invokedTraces.add(`S${i}${j}`);
         }
       }
+      renderLinearAnalysis();
+    };
+  }
+  if ($("spPreMatch")) {
+    $("spPreMatch").onclick = () => {
+      invokedTraces = new Set();
+      for (let i = 1; i <= P; i++) invokedTraces.add(`S${i}${i}`);
       renderLinearAnalysis();
     };
   }
@@ -7540,7 +8476,7 @@ function renderLinearAnalysis() {
     };
   }
 
-  if (!res.error && portsList.length >= 2) {
+  if (!res.error && (portsList.length >= 2 || (res.paths && res.paths.length > 0))) {
     renderSvgPlot(res);
     renderMarkerTable(res);
 
@@ -7778,6 +8714,10 @@ function ctxItems(list) {
     if (a === "sh-dup") { duplicateSheet(); return; }
     if (a === "sh-del") { deleteSheet(); return; }
     if (a && a.indexOf("al-") === 0) { alignSelection(a.slice(3)); return; }
+    if (a === "snap-grid") { if (typeof snapSelectionToGrid === "function") snapSelectionToGrid(); return; }
+    if (a === "snap-all") { if (typeof snapAllToGrid === "function") snapAllToGrid(); return; }
+    if (a === "auto-space") { if (typeof autoSpaceSelection === "function") autoSpaceSelection(); return; }
+    if (a === "clear-sel") { clearSel(); renderAll(); return; }
     if (a === "mirror") mirrorSelection();
     else if (a === "rotate") rotateSelection();
     else if (a === "dup") duplicateSelection();
@@ -7821,8 +8761,10 @@ function showCtx(x, y) {
   ctx.classList.add("open");
   const r = ctx.getBoundingClientRect();
   let px = x, py = y;
-  if (x + r.width > window.innerWidth) px = window.innerWidth - r.width - 6;
-  if (y + r.height > window.innerHeight) py = window.innerHeight - r.height - 6;
+  if (x + r.width > window.innerWidth - 8) px = Math.max(8, window.innerWidth - r.width - 8);
+  if (y + r.height > window.innerHeight - 8) py = Math.max(8, window.innerHeight - r.height - 8);
+  if (px < 8) px = 8;
+  if (py < 8) py = 8;
   ctx.style.left = px + "px";
   ctx.style.top = py + "px";
 }
@@ -7993,7 +8935,7 @@ function onMove(e) {
     const w = screenToWorld(e.clientX, e.clientY);
     let dx = w.x - drag.sx, dy = w.y - drag.sy;
     if (settings.snap) { dx = Math.round(dx / settings.gridSize) * settings.gridSize; dy = Math.round(dy / settings.gridSize) * settings.gridSize; }
-    for (const it of drag.items) { const b = findBlock(it.id); b.x = it.ox + dx; b.y = it.oy + dy; }
+    for (const it of drag.items) { const b = findBlock(it.id); b.x = snap(it.ox + dx); b.y = snap(it.oy + dy); }
     for (const j of (drag.jogs || [])) {
       if (j.axis === null) continue;
       if (j.both) j.c.jog = j.jog + (j.axis === "x" ? dx : dy);
@@ -8065,15 +9007,12 @@ function onMove(e) {
   }
 }
 
-let rightPanMoved = false;
-
 function onUp(e) {
   window.removeEventListener("mousemove", onMove); window.removeEventListener("mouseup", onUp);
   svg.classList.remove("panning", "connecting");
   if (!drag) return;
   if (drag.mode === "pan") {
-    if (drag.right && drag.moved) rightPanMoved = true;
-    if (!drag.moved && !drag.right) { clearSel(); renderAll(); }
+    if (!drag.moved) { clearSel(); renderAll(); }
   }
   if (drag.mode === "blocklabel") {
     if (drag.moved) {
@@ -8167,8 +9106,8 @@ function alignGuides(b, nx, ny) {
   const { w, h } = footprint(b); const cx = nx + w / 2, cy = ny + h / 2, tol = 7; let gx = nx, gy = ny, lines = "";
   for (const o of blocks) {
     if (o.id === b.id) continue; const s = footprint(o); const ocx = o.x + s.w / 2, ocy = o.y + s.h / 2;
-    if (Math.abs(cy - ocy) <= tol) { gy = Math.round(ocy - h / 2); lines += `<path class="guide" d="M-4000 ${ocy}H5000"/>`; }
-    if (Math.abs(cx - ocx) <= tol) { gx = Math.round(ocx - w / 2); lines += `<path class="guide" d="M${ocx} -4000V5000"/>`; }
+    if (Math.abs(cy - ocy) <= tol) { gy = snap(ocy - h / 2); lines += `<path class="guide" d="M-4000 ${ocy}H5000"/>`; }
+    if (Math.abs(cx - ocx) <= tol) { gx = snap(ocx - w / 2); lines += `<path class="guide" d="M${ocx} -4000V5000"/>`; }
   }
   return { x: gx, y: gy, svg: lines };
 }
@@ -8211,10 +9150,6 @@ function initEvents() {
       e.preventDefault();
       drag = { mode: "pan", sx: e.clientX, sy: e.clientY, tx0: view.tx, ty0: view.ty, moved: false };
       svg.classList.add("panning"); attachDrag(); return;
-    }
-    if (e.button === 2) {
-      drag = { mode: "pan", right: true, sx: e.clientX, sy: e.clientY, tx0: view.tx, ty0: view.ty, moved: false };
-      attachDrag(); return;
     }
     if (e.button !== 0) return;
     const nodeEl = e.target.closest(".wire-node-g, .wire-node");
@@ -8371,7 +9306,30 @@ function initEvents() {
     const blkEl = e.target.closest(".block");
     if (blkEl) {
       const b = findBlock(blkEl.getAttribute("data-block"));
-      if (b && COMP[b.type].isSubsystem) { e.preventDefault(); openSubsystem(b); return; }
+      if (b && COMP[b.type] && COMP[b.type].isSubsystem) { e.preventDefault(); openSubsystem(b); return; }
+      if (b && b.type === "switch") {
+        e.preventDefault();
+        pushHistory();
+        const nThrows = parseInt(b.params && b.params.throws) || 2;
+        const curSt = parseInt(b.params && b.params.state) || 1;
+        const nextSt = (curSt % nThrows) + 1;
+        b.params.state = String(nextSt);
+        renderAll();
+        if (typeof renderInspector === "function") renderInspector();
+        const panel = $("spStagePanel");
+        if (panel && panel.style.display !== "none" && typeof renderLinearAnalysis === "function") {
+          if (typeof sparamsTabs !== "undefined" && sparamsTabs.length) {
+            const curTab = sparamsTabs[typeof activeTabIdx !== "undefined" ? activeTabIdx : 0];
+            if (curTab) {
+              curTab.res = null;
+              curTab.selectedPathIdx = null;
+            }
+          }
+          renderLinearAnalysis();
+        }
+        hint(`Switch toggled to throw ${nextSt}.`);
+        return;
+      }
     }
     const pillEl = e.target.closest(".pill"), connEl = e.target.closest(".conn");
     if (pillEl && pillEl.getAttribute("data-conn")) {
@@ -8434,11 +9392,6 @@ function initEvents() {
 
   /* Context menu trigger */
   svg.addEventListener("contextmenu", e => {
-    if (typeof rightPanMoved !== "undefined" && rightPanMoved) {
-      rightPanMoved = false;
-      e.preventDefault();
-      return;
-    }
     e.preventDefault();
     const nodeEl = e.target.closest(".wire-node-g, .wire-node");
     if (nodeEl) {
@@ -8469,7 +9422,9 @@ function initEvents() {
       if (m) items.push("divider",
         ctxItem("Align tops", "", "al-top"), ctxItem("Align middles", "", "al-cy"), ctxItem("Align bottoms", "", "al-bottom"),
         ctxItem("Align lefts", "", "al-left"), ctxItem("Align centres", "", "al-cx"), ctxItem("Align rights", "", "al-right"),
-        ctxItem("Space evenly across", "", "al-dx"), ctxItem("Space evenly down", "", "al-dy"));
+        ctxItem("Space evenly across", "", "al-dx"), ctxItem("Space evenly down", "", "al-dy"),
+        ctxItem("Auto space (clear labels)", "", "auto-space"));
+      items.push("divider", ctxItem(m ? "Snap selection to grid" : "Snap to grid", "⇧⌘G", "snap-grid"));
       items.push("divider", ctxItem(m ? `Delete ${n} blocks` : "Delete", "Del", "del", "danger"));
       ctxItems(items); showCtx(e.clientX, e.clientY);
     }
@@ -8491,7 +9446,29 @@ function initEvents() {
       items.push("divider", ctxItem("Delete connection", "Del", "delc", "danger"));
       ctxItems(items); showCtx(e.clientX, e.clientY);
     }
-    else { ctxItems([ctxItem("Select all", "⌘A", "all"), ctxItem("Fit view", "", "fit")]); showCtx(e.clientX, e.clientY); }
+    else {
+      const emptyItems = [
+        ctxItem("Select all", "⌘A", "all"),
+        ctxItem("Fit view", "", "fit"),
+        ctxItem("Snap all to grid", "", "snap-all")
+      ];
+      if (selected.size > 1) {
+        emptyItems.splice(2, 0,
+          ctxItem("Auto space selected", "", "auto-space"),
+          ctxItem("Snap selection to grid", "⇧⌘G", "snap-grid"),
+          ctxItem("Clear selection", "Esc", "clear-sel"),
+          "divider"
+        );
+      } else if (selected.size === 1) {
+        emptyItems.splice(2, 0,
+          ctxItem("Snap selection to grid", "⇧⌘G", "snap-grid"),
+          ctxItem("Clear selection", "Esc", "clear-sel"),
+          "divider"
+        );
+      }
+      ctxItems(emptyItems);
+      showCtx(e.clientX, e.clientY);
+    }
   });
 
   /* Window keyboard shortcuts */
@@ -8516,6 +9493,11 @@ function initEvents() {
       return;
     }
     if ((e.ctrlKey || e.metaKey) && (e.key === "a" || e.key === "A")) { e.preventDefault(); selectAll(); return; }
+    if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === "g" || e.key === "G")) {
+      e.preventDefault();
+      if (typeof snapSelectionToGrid === "function") snapSelectionToGrid();
+      return;
+    }
     if ((e.ctrlKey || e.metaKey) && (e.key === "d" || e.key === "D")) { e.preventDefault(); duplicateSelection(); return; }
     if ((e.key === "r" || e.key === "R")) { if (e.ctrlKey || e.metaKey) e.preventDefault(); rotateSelection(); return; }
     if ((e.key === "m" || e.key === "M")) { if (e.ctrlKey || e.metaKey) e.preventDefault(); mirrorSelection(); return; }
@@ -8604,6 +9586,32 @@ function initEvents() {
   }
   if ($("tglColor")) $("tglColor").addEventListener("change", e => { settings.color = e.target.checked; renderPalette(); renderCanvas(); });
   if ($("tglTheme")) $("tglTheme").addEventListener("change", e => { applyTheme(e.target.checked ? "light" : "dark"); renderPalette(); renderCanvas(); });
+  if ($("tbGridSize")) {
+    $("tbGridSize").addEventListener("change", e => {
+      const val = Math.max(2, Math.min(200, Math.round(+e.target.value || 10)));
+      settings.gridSize = val;
+      if ($("tbGridSize")) $("tbGridSize").value = val;
+      if (typeof updateCanvasGridVisual === "function") updateCanvasGridVisual(val);
+      renderCanvas();
+    });
+  }
+  if ($("tbAutoPadding")) {
+    $("tbAutoPadding").addEventListener("change", e => {
+      const val = Math.max(0, Math.min(500, Math.round(+e.target.value || 20)));
+      settings.autoSpacePadding = val;
+      if ($("tbAutoPadding")) $("tbAutoPadding").value = val;
+    });
+  }
+  if ($("btnSnapGrid")) {
+    $("btnSnapGrid").addEventListener("click", () => {
+      if (typeof snapSelectionToGrid === "function") snapSelectionToGrid();
+    });
+  }
+  if ($("btnAutoSpace")) {
+    $("btnAutoSpace").addEventListener("click", () => {
+      if (typeof autoSpaceSelection === "function") autoSpaceSelection();
+    });
+  }
   if ($("selLayout")) $("selLayout").addEventListener("change", e => {
     pushHistory();
     const val = e.target.value;
@@ -8770,6 +9778,9 @@ window.addEventListener("DOMContentLoaded", () => {
   const savedTheme = (function() { try { return localStorage.getItem("rfblock_theme"); } catch(e) { return null; } })() || settings.theme || "dark";
   applyTheme(savedTheme);
   if ($("tglTheme")) $("tglTheme").checked = (settings.theme === "light");
+  if ($("tbGridSize")) $("tbGridSize").value = settings.gridSize || 10;
+  if ($("tbAutoPadding")) $("tbAutoPadding").value = settings.autoSpacePadding !== undefined ? settings.autoSpacePadding : 20;
+  if (typeof updateCanvasGridVisual === "function") updateCanvasGridVisual(settings.gridSize || 10);
   if ($("palSearch")) $("palSearch").addEventListener("input", renderPalette);
   renderPalette();
   renderSheets();

@@ -19,30 +19,42 @@ def get_block_internal_connections(block: Dict[str, Any], include_all_throws: bo
     if btype in SOURCE_TYPES or btype in SINK_TYPES:
         return []
 
-    # Handle SPnT Switch positions
+    # Handle SPnT Switch positions (bidirectional: forward demux and reverse mux)
     if btype == "switch":
         throws = int(params.get("throws", 2))
         if include_all_throws:
-            return [("in", f"o{i}") for i in range(1, throws + 1)]
+            res = []
+            for i in range(1, throws + 1):
+                res.append(("in", f"o{i}"))
+                res.append((f"o{i}", "in"))
+            return res
         state = str(params.get("state", "1"))
         if state == "open" or state == "0":
             return [] # Isolated / open state
         selected_throw = int(state) if state.isdigit() else 1
-        return [("in", f"o{selected_throw}")]
+        return [("in", f"o{selected_throw}"), (f"o{selected_throw}", "in")]
 
     # Handle 3-Port Circulator (P1 -> P2, P2 -> P3, P3 -> P1)
     if btype == "circulator":
         return [("p1", "p2"), ("p2", "p3"), ("p3", "p1")]
 
-    # Handle Splitter (in -> o1, o2 ... oN)
+    # Handle Splitter (in -> o1..oN, and o1..oN -> in)
     if btype == "splitter":
         ways = int(params.get("ways", 2))
-        return [("in", f"o{i}") for i in range(1, ways + 1)]
+        res = []
+        for i in range(1, ways + 1):
+            res.append(("in", f"o{i}"))
+            res.append((f"o{i}", "in"))
+        return res
 
-    # Handle Combiner (i1, i2 ... iN -> out)
+    # Handle Combiner (i1..iN -> out, and out -> i1..iN)
     if btype == "combiner":
         ways = int(params.get("ways", 2))
-        return [(f"i{i}", "out") for i in range(1, ways + 1)]
+        res = []
+        for i in range(1, ways + 1):
+            res.append((f"i{i}", "out"))
+            res.append(("out", f"i{i}"))
+        return res
 
     # Handle Couplers
     if btype == "coupler":
@@ -75,12 +87,13 @@ def find_all_signal_paths(schematic: Dict[str, Any]) -> List[Dict[str, Any]]:
     if not blocks:
         return []
 
-    # Map external connections: (from_block, from_port) -> list of (to_block, to_port)
+    # Map external connections: symmetrically connect (from_block, from_port) <-> (to_block, to_port)
     wire_map: Dict[Tuple[str, str], List[Tuple[str, str]]] = {}
     for c in conns:
         src = (c["from"]["block"], c["from"]["port"])
         dst = (c["to"]["block"], c["to"]["port"])
         wire_map.setdefault(src, []).append(dst)
+        wire_map.setdefault(dst, []).append(src)
 
     # Identify source start nodes: (block_id, out_port_id)
     start_nodes: List[Tuple[str, str]] = []
@@ -112,20 +125,47 @@ def find_all_signal_paths(schematic: Dict[str, Any]) -> List[Dict[str, Any]]:
                 full_path = current_path + [final_node]
                 block_chain = list(dict.fromkeys([b for b, p in full_path]))
                 
-                # Format human-readable path name
+                # Format human-readable path name with port/throw annotations
                 path_labels = []
+                is_active = True
+                
+                # Check switch states along this path
+                for i in range(len(full_path) - 1):
+                    b1, p1 = full_path[i]
+                    b2, p2 = full_path[i + 1]
+                    if b1 == b2:
+                        blk = blocks.get(b1, {})
+                        if blk.get("type") == "switch":
+                            st = str(blk.get("params", {}).get("state", "1"))
+                            if p1 == "in" and p2 != f"o{st}":
+                                is_active = False
+                            elif p2 == "in" and p1 != f"o{st}":
+                                is_active = False
+
                 for b_id in block_chain:
                     b_obj = blocks.get(b_id, {})
                     label = b_obj.get("params", {}).get("label") or b_obj.get("type", "blk")
+                    # Check if switch throw can be specified
+                    if b_obj.get("type") == "switch":
+                        for i in range(len(full_path) - 1):
+                            if full_path[i][0] == b_id and full_path[i+1][0] == b_id:
+                                p_a = full_path[i][1]
+                                p_b = full_path[i+1][1]
+                                out_p = p_b if p_b.startswith("o") else p_a
+                                if out_p.startswith("o"):
+                                    label += f" [Throw {out_p[1:]}]"
+                                break
                     path_labels.append(label)
                 
-                path_name = f"Path {len(discovered_paths) + 1}: " + " ➔ ".join(path_labels)
+                status_tag = " (Active)" if is_active else ""
+                path_name = f"Path {len(discovered_paths) + 1}{status_tag}: " + " ➔ ".join(path_labels)
 
                 discovered_paths.append({
                     "id": f"path_{len(discovered_paths) + 1}",
                     "name": path_name,
                     "block_ids": block_chain,
-                    "node_chain": full_path
+                    "node_chain": full_path,
+                    "is_active": is_active
                 })
                 continue
 

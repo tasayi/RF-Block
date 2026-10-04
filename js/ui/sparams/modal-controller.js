@@ -7,7 +7,7 @@
 let sparamsTabs = []; // Array of { id, name, band, res }
 let activeTabIdx = 0;
 let linearMarkers = [{ id: "M1", f: 0 }];
-let invokedTraces = new Set(["S21", "S11", "S22"]); // Currently invoked S-parameter trace keys
+let invokedTraces = new Set(["S21", "S12"]); // Default to Forward Gain S21 and Reverse Isolation S12
 
 /* --- Full-Stage Multi-Port S-Params Panel & Tab Management --- */
 function toggleSParamsDrawer() {
@@ -23,6 +23,11 @@ function toggleSParamsDrawer() {
       const band = settings.analysisBand || { startFreq: 1, startUnit: "GHz", stopFreq: 10, stopUnit: "GHz", points: 101, sweepType: "lin" };
       runNewSParamSweep(band, "Sweep 1");
     } else {
+      const activeTab = sparamsTabs[activeTabIdx];
+      if (activeTab) {
+        activeTab.res = null;
+        activeTab.selectedPathIdx = null;
+      }
       renderLinearAnalysis();
     }
   }
@@ -54,7 +59,7 @@ async function fetchBackendSParams(band) {
 
 function runNewSParamSweep(band, tabName) {
   const name = tabName || `Sweep ${sparamsTabs.length + 1}`;
-  const newTab = { id: "sp_tab_" + Date.now(), name, band: { ...band }, res: null, selectedPathIdx: 0, activeMetric: "mag" };
+  const newTab = { id: "sp_tab_" + Date.now(), name, band: { ...band }, res: null, selectedPathIdx: null, activeMetric: "mag" };
   sparamsTabs.push(newTab);
   activeTabIdx = sparamsTabs.length - 1;
 
@@ -62,8 +67,18 @@ function runNewSParamSweep(band, tabName) {
   fetchBackendSParams(band).then(backendRes => {
     const localRes = withAllSheets(() => computeLinearAnalysis(band));
     if (backendRes && backendRes.status === "success" && backendRes.paths && backendRes.paths.length) {
-      // Merge portsList from local solver for UI compatibility
       backendRes.portsList = localRes.portsList || [];
+      if (backendRes.freq_hz) backendRes.freqs = new Float64Array(backendRes.freq_hz);
+      const activeIdx = backendRes.paths.findIndex(p => p.is_active || p.isActive);
+      const selIdx = activeIdx >= 0 ? activeIdx : 0;
+      newTab.selectedPathIdx = selIdx;
+      const curPath = backendRes.paths[selIdx] || backendRes.paths[0];
+      backendRes.matrix = curPath.matrix || {
+        S21: curPath.s21_db,
+        S12: curPath.s12_db,
+        S11: curPath.s11_db,
+        S22: curPath.s22_db,
+      };
       newTab.res = backendRes;
     } else {
       newTab.res = localRes;
@@ -79,12 +94,35 @@ function renderLinearAnalysis() {
   if (!sparamsTabs.length || activeTabIdx >= sparamsTabs.length) activeTabIdx = Math.max(0, sparamsTabs.length - 1);
   const activeTab = sparamsTabs[activeTabIdx];
 
-  // Data persistence: use stored snapshot result if present, or evaluate once if missing
+  // Data persistence: evaluate for current state if not cached
   const band = (activeTab && activeTab.band) || settings.analysisBand || { startFreq: 1, startUnit: "GHz", stopFreq: 10, stopUnit: "GHz", points: 101, sweepType: "lin" };
   if (activeTab && !activeTab.res) {
     activeTab.res = withAllSheets(() => computeLinearAnalysis(band));
+    if (activeTab.res && activeTab.res.paths && (activeTab.selectedPathIdx === null || activeTab.selectedPathIdx === undefined)) {
+      const activeIdx = activeTab.res.paths.findIndex(p => p.isActive || p.is_active);
+      activeTab.selectedPathIdx = activeIdx >= 0 ? activeIdx : 0;
+    }
   }
   const res = (activeTab && activeTab.res) || withAllSheets(() => computeLinearAnalysis(band));
+
+  // Sync selected path: allow user to select and KEEP any path without forcing it back
+  if (res && res.paths && res.paths.length) {
+    if (activeTab.selectedPathIdx === null || activeTab.selectedPathIdx === undefined || activeTab.selectedPathIdx >= res.paths.length) {
+      const activeIdx = res.paths.findIndex(p => p.isActive || p.is_active);
+      activeTab.selectedPathIdx = activeIdx >= 0 ? activeIdx : 0;
+    }
+    const selIdx = activeTab.selectedPathIdx;
+    const curPath = res.paths[selIdx];
+    if (curPath && curPath.matrix) {
+      // Merge path matrix with global matrix without destroying multi-port keys
+      Object.assign(res.matrix, curPath.matrix);
+      if (curPath.s21_db) res.matrix.S21 = new Float64Array(curPath.s21_db);
+      if (curPath.s12_db) res.matrix.S12 = new Float64Array(curPath.s12_db);
+      if (curPath.fwdKey && curPath.matrix[curPath.fwdKey]) {
+        res.matrix[curPath.fwdKey] = new Float64Array(curPath.matrix[curPath.fwdKey]);
+      }
+    }
+  }
 
   let html = `<div style="max-width:1240px; margin:0 auto; font-family:var(--sans); color:var(--ink,#f8fafc)">`;
 
@@ -92,7 +130,7 @@ function renderLinearAnalysis() {
   html += `<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; border-bottom:1px solid var(--line,#334155); padding-bottom:12px">
     <div style="display:flex; align-items:center; gap:12px">
       <h3 style="margin:0; font-size:16px; font-weight:700; display:flex; align-items:center; gap:8px; color:#f8fafc">
-        <span>📈</span> Multi-Port Transmission Analysis & Benchmark View
+        <span>📈</span> Multi-Port S-Parameter Analysis & Matrix Cascade
       </h3>
       <button class="btn btn-sm primary" id="spRerunSweep" title="Re-evaluate sweep for current schematic state">⚡ Re-run Sweep</button>
       <button class="btn btn-sm" id="spOpenSettings" title="Open Analyser Settings">⚙️ Analyser Settings</button>
@@ -131,6 +169,23 @@ function renderLinearAnalysis() {
     </div>
   </div>`;
 
+  // Path Selector Bar (if multi-path results are available)
+  if (res.paths && res.paths.length > 0) {
+    html += `<div style="background:var(--chrome-2,#1f2937); border:1px solid var(--line,#374151); border-radius:8px; padding:10px 14px; margin-bottom:14px; display:flex; align-items:center; gap:12px; flex-wrap:wrap">
+      <div style="display:flex; align-items:center; gap:8px; flex:1">
+        <label style="font-size:12.5px; font-weight:700; color:var(--accent,#f59e0b); display:flex; align-items:center; gap:6px">
+          <span>📍</span> Signal Path:
+        </label>
+        <select id="spPathSelect" style="flex:1; padding:6px 10px; font-size:12.5px; border-radius:6px; border:1px solid var(--line); background:var(--chrome); color:var(--ink); font-weight:600">
+          ${res.paths.map((p, pIdx) => `<option value="${pIdx}" ${pIdx === (activeTab.selectedPathIdx || 0) ? "selected" : ""}>${esc(p.name || ("Path " + (pIdx + 1)))}</option>`).join("")}
+        </select>
+      </div>
+      <div style="font-size:11.5px; color:var(--ink-dim,#94a3b8)">
+        Discovered Paths: <b>${res.paths.length}</b>
+      </div>
+    </div>`;
+  }
+
   // Warning Alerts Banner
   if (res.error) {
     html += `<div style="background:#3f1717; color:#fca5a5; padding:12px 16px; border-radius:8px; margin-bottom:14px; font-size:12.5px; border:1px solid #991b1b">
@@ -143,16 +198,17 @@ function renderLinearAnalysis() {
     </div>`;
   }
 
-  if (!res.error && portsList.length >= 2) {
-    const P = portsList.length;
+  if (!res.error && (portsList.length >= 2 || (res.paths && res.paths.length > 0))) {
+    const P = Math.max(2, portsList.length);
 
     const availableTraces = [];
     for (let i = 1; i <= P; i++) {
       for (let j = 1; j <= P; j++) {
-        if (i === j) continue;
         const sKey = `S${i}${j}`;
         let label = sKey;
-        if (j === 1) label += ` (Forward Transmission P1 → P${i})`;
+        if (i === j) label += ` (Return Loss P${i})`;
+        else if (j === 1) label += ` (Forward Transmission P1 → P${i})`;
+        else if (i === 1) label += ` (Reverse Isolation P${j} → P1)`;
         else label += ` (Transmission P${j} → P${i})`;
         availableTraces.push({ key: sKey, label });
       }
@@ -161,34 +217,37 @@ function renderLinearAnalysis() {
       }
     }
 
-    invokedTraces.forEach(k => {
-      if (/^S(\d+)\1$/.test(k)) invokedTraces.delete(k);
-    });
     let hasValidActive = false;
     invokedTraces.forEach(sk => {
-      if (res.matrix[sk] && res.matrix[sk].some(v => v > -110)) hasValidActive = true;
+      if (res.matrix && res.matrix[sk] && res.matrix[sk].some(v => v > -110)) hasValidActive = true;
     });
-    if (!hasValidActive) {
+    if (!hasValidActive && res.matrix) {
       for (const sk in res.matrix) {
-        if (res.matrix[sk].some(v => v > -110)) {
+        if (res.matrix[sk] && res.matrix[sk].some(v => v > -110)) {
           invokedTraces.add(sk);
         }
       }
     }
     if (invokedTraces.size === 0) {
-      availableTraces.forEach(tr => invokedTraces.add(tr.key));
+      invokedTraces.add("S21");
+      if (P >= 3) {
+        for (let i = 3; i <= P; i++) invokedTraces.add(`S${i}1`);
+      } else {
+        invokedTraces.add("S12");
+      }
     }
 
     html += `<div style="background:var(--chrome-2,#1f2937); border:1px solid var(--line,#374151); border-radius:8px; padding:14px; margin-bottom:16px">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:8px">
         <h4 style="margin:0; font-size:13px; font-weight:700; color:var(--ink,#f8fafc); display:flex; align-items:center; gap:6px">
-          <span>🎛️</span> Transmission Parameter Selection (${P}-Port System)
+          <span>🎛️</span> S-Parameter Trace Selection
         </h4>
         <div style="display:flex; gap:6px; flex-wrap:wrap">
-          <button class="btn btn-sm" id="spPrePrimary">Preset: Primary (S21)</button>
-          <button class="btn btn-sm" id="spPreAllOutputs">Preset: All Outputs (S_j1)</button>
-          <button class="btn btn-sm" id="spPreAllTrans">Preset: All Transmission (S_ij)</button>
-          <button class="btn btn-sm" id="spPreClearAll">Clear All</button>
+          <button class="btn btn-sm" id="spPrePrimary">All Gains (${P >= 3 ? "S21, S31..." : "S21"})</button>
+          <button class="btn btn-sm" id="spPreGainIso">Gain & Iso</button>
+          <button class="btn btn-sm" id="spPreFull2Port">All ${P}×${P} S-Params</button>
+          <button class="btn btn-sm" id="spPreMatch">Match (Snn)</button>
+          <button class="btn btn-sm" id="spPreClearAll">Clear</button>
         </div>
       </div>
 
@@ -196,7 +255,7 @@ function renderLinearAnalysis() {
         <div style="display:flex; align-items:center; gap:6px">
           <label style="font-size:12px; font-weight:600; color:var(--ink-dim)">Add Trace:</label>
           <select id="spTraceSelect" style="padding:6px 10px; font-size:12px; border-radius:6px; border:1px solid var(--line); background:var(--chrome-2); color:var(--ink); min-width:240px">
-            <option value="">-- Select Transmission Trace --</option>`;
+            <option value="">-- Select S-Parameter Trace --</option>`;
 
     availableTraces.forEach(tr => {
       const isInv = invokedTraces.has(tr.key);
@@ -251,15 +310,53 @@ function renderLinearAnalysis() {
   html += `</div>`;
   box.innerHTML = html;
 
+  // Bind Path Selector
+  const selPath = $("spPathSelect");
+  if (selPath && activeTab && res && res.paths) {
+    selPath.onchange = e => {
+      const pIdx = parseInt(e.target.value) || 0;
+      activeTab.selectedPathIdx = pIdx;
+      const pData = res.paths[pIdx];
+      if (pData) {
+        if (pData.matrix) Object.assign(res.matrix, pData.matrix);
+        if (pData.s21_db) res.matrix.S21 = new Float64Array(pData.s21_db);
+        if (pData.s12_db) res.matrix.S12 = new Float64Array(pData.s12_db);
+        if (pData.fwdKey && pData.matrix && pData.matrix[pData.fwdKey]) {
+          res.matrix[pData.fwdKey] = new Float64Array(pData.matrix[pData.fwdKey]);
+        }
+        if (pData.fwdKey) invokedTraces.add(pData.fwdKey);
+        invokedTraces.add("S21");
+      }
+      renderLinearAnalysis();
+    };
+  }
+
   // Bind Header Action Buttons
   if ($("spClosePanel")) $("spClosePanel").onclick = toggleSParamsDrawer;
   if ($("spOpenSettings")) $("spOpenSettings").onclick = toggleAnalyserDrawer;
   if ($("spRerunSweep")) {
     $("spRerunSweep").onclick = () => {
       if (activeTab) {
-        activeTab.res = withAllSheets(() => computeLinearAnalysis(activeTab.band));
-        renderLinearAnalysis();
-        if (typeof hint === "function") hint(`Re-evaluated sweep for '${activeTab.name}'`);
+        fetchBackendSParams(activeTab.band).then(backendRes => {
+          const localRes = withAllSheets(() => computeLinearAnalysis(activeTab.band));
+          if (backendRes && backendRes.status === "success" && backendRes.paths && backendRes.paths.length) {
+            backendRes.portsList = localRes.portsList || [];
+            if (backendRes.freq_hz) backendRes.freqs = new Float64Array(backendRes.freq_hz);
+            const selIdx = activeTab.selectedPathIdx || 0;
+            const curPath = backendRes.paths[selIdx] || backendRes.paths[0];
+            backendRes.matrix = curPath.matrix || {
+              S21: curPath.s21_db,
+              S12: curPath.s12_db,
+              S11: curPath.s11_db,
+              S22: curPath.s22_db,
+            };
+            activeTab.res = backendRes;
+          } else {
+            activeTab.res = localRes;
+          }
+          renderLinearAnalysis();
+          if (typeof hint === "function") hint(`Re-evaluated sweep for '${activeTab.name}'`);
+        });
       }
     };
   }
@@ -286,25 +383,41 @@ function renderLinearAnalysis() {
 
   if ($("spPrePrimary")) {
     $("spPrePrimary").onclick = () => {
-      invokedTraces = new Set(["S21"]);
+      invokedTraces = new Set();
+      for (let i = 2; i <= P; i++) invokedTraces.add(`S${i}1`);
+      if (invokedTraces.size === 0) invokedTraces.add("S21");
       renderLinearAnalysis();
     };
   }
-  if ($("spPreAllOutputs")) {
-    $("spPreAllOutputs").onclick = () => {
-      invokedTraces.clear();
-      for (let p = 2; p <= portsList.length; p++) invokedTraces.add(`S${p}1`);
+  if ($("spPreGainIso")) {
+    $("spPreGainIso").onclick = () => {
+      invokedTraces = new Set();
+      for (let i = 2; i <= P; i++) {
+        invokedTraces.add(`S${i}1`);
+        invokedTraces.add(`S1${i}`);
+      }
+      if (invokedTraces.size === 0) {
+        invokedTraces.add("S21");
+        invokedTraces.add("S12");
+      }
       renderLinearAnalysis();
     };
   }
-  if ($("spPreAllTrans")) {
-    $("spPreAllTrans").onclick = () => {
-      invokedTraces.clear();
-      for (let i = 1; i <= portsList.length; i++) {
-        for (let j = 1; j <= portsList.length; j++) {
-          if (i !== j) invokedTraces.add(`S${i}${j}`);
+  if ($("spPreFull2Port")) {
+    $("spPreFull2Port").onclick = () => {
+      invokedTraces = new Set();
+      for (let i = 1; i <= P; i++) {
+        for (let j = 1; j <= P; j++) {
+          invokedTraces.add(`S${i}${j}`);
         }
       }
+      renderLinearAnalysis();
+    };
+  }
+  if ($("spPreMatch")) {
+    $("spPreMatch").onclick = () => {
+      invokedTraces = new Set();
+      for (let i = 1; i <= P; i++) invokedTraces.add(`S${i}${i}`);
       renderLinearAnalysis();
     };
   }
@@ -353,7 +466,7 @@ function renderLinearAnalysis() {
     };
   }
 
-  if (!res.error && portsList.length >= 2) {
+  if (!res.error && (portsList.length >= 2 || (res.paths && res.paths.length > 0))) {
     renderSvgPlot(res);
     renderMarkerTable(res);
 

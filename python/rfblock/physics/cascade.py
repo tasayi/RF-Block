@@ -2,7 +2,7 @@
 Multi-path S-parameter Matrix Cascade & Network Analysis Engine using scikit-rf.
 """
 
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional, Tuple
 import numpy as np
 import skrf
 from .network_builder import build_block_network
@@ -12,6 +12,30 @@ from functools import reduce
 
 import tempfile
 import os
+
+def extract_block_traversed_ports(node_chain: List[Any]) -> Dict[str, Tuple[Optional[str], Optional[str]]]:
+    """
+    Parses node_chain into a mapping of { block_id: (in_port, out_port) }.
+    """
+    ports_map: Dict[str, Tuple[Optional[str], Optional[str]]] = {}
+    if not node_chain:
+        return ports_map
+    
+    i = 0
+    n = len(node_chain)
+    while i < n:
+        item = node_chain[i]
+        if isinstance(item, (list, tuple)) and len(item) == 2:
+            bid, pid = item
+            if i + 1 < n and isinstance(node_chain[i+1], (list, tuple)) and len(node_chain[i+1]) == 2 and node_chain[i+1][0] == bid:
+                ports_map[bid] = (pid, node_chain[i+1][1])
+                i += 2
+            else:
+                ports_map[bid] = (pid, pid)
+                i += 1
+        else:
+            i += 1
+    return ports_map
 
 def export_network_touchstone_str(net: skrf.Network) -> str:
     """Helper to convert skrf.Network to Touchstone text string."""
@@ -73,11 +97,14 @@ def analyze_schematic_cascade(schematic: Dict[str, Any]) -> Dict[str, Any]:
 
     for idx, path_info in enumerate(discovered_paths):
         path_bids = path_info["block_ids"]
+        node_chain = path_info.get("node_chain", [])
+        block_ports = extract_block_traversed_ports(node_chain)
         networks: List[skrf.Network] = []
 
         for bid in path_bids:
             if bid in blocks_dict:
-                net = build_block_network(blocks_dict[bid], freq)
+                in_p, out_p = block_ports.get(bid, (None, None))
+                net = build_block_network(blocks_dict[bid], freq, in_port=in_p, out_port=out_p)
                 networks.append(net)
 
         if networks:
@@ -100,6 +127,13 @@ def analyze_schematic_cascade(schematic: Dict[str, Any]) -> Dict[str, Any]:
         if idx == 0:
             primary_touchstone = export_network_touchstone_str(total_net)
 
+        matrix_dict = {
+            "S21": s21_db,
+            "S12": s12_db,
+            "S11": s11_db,
+            "S22": s22_db,
+        }
+
         analyzed_paths.append({
             "id": path_info["id"],
             "name": path_info["name"],
@@ -108,17 +142,22 @@ def analyze_schematic_cascade(schematic: Dict[str, Any]) -> Dict[str, Any]:
             "s21_db": s21_db,
             "s12_db": s12_db,
             "s22_db": s22_db,
+            "matrix": matrix_dict,
             "group_delay_ns": group_delay_ns,
-            "k_factor": k_factor
+            "k_factor": k_factor,
+            "is_active": path_info.get("is_active", True)
         })
 
-    # Return primary path curves at top level for backwards compatibility + paths array
-    first_p = analyzed_paths[0] if analyzed_paths else {}
+    # Return active path curves at top level (matching current switch state), or first path
+    active_p = next((p for p in analyzed_paths if p.get("is_active")), None)
+    first_p = active_p or (analyzed_paths[0] if analyzed_paths else {})
 
     return {
         "status": "success",
         "freq_hz": (freq.f).tolist(),
         "freq_ghz": (freq.f / 1e9).tolist(),
+        "freqs": (freq.f).tolist(),
+        "matrix": first_p.get("matrix", {}),
         "s11_db": first_p.get("s11_db", []),
         "s21_db": first_p.get("s21_db", []),
         "s12_db": first_p.get("s12_db", []),

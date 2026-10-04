@@ -79,27 +79,32 @@ function distToSeg(pt, p, q) {
 }
 
 function insertWaypointInOrder(cn, pt) {
+  const gs = (typeof settings !== "undefined" && settings.gridSize) || 10;
+  const spt = {
+    x: Math.round(pt.x / gs) * gs,
+    y: Math.round(pt.y / gs) * gs
+  };
   if (!cn.waypoints || !cn.waypoints.length) {
-    cn.waypoints = [pt];
+    cn.waypoints = [spt];
     return;
   }
   const fb = findBlock(cn.from.block), tb = findBlock(cn.to.block);
   const a = portPt(fb, cn.from.port), z = portPt(tb, cn.to.port);
   if (!a || !z) {
-    cn.waypoints.push(pt);
+    cn.waypoints.push(spt);
     return;
   }
 
   const nodes = [a, ...cn.waypoints, z];
   let bestDist = Infinity, bestIdx = 0;
   for (let i = 0; i < nodes.length - 1; i++) {
-    const d = distToSeg(pt, nodes[i], nodes[i + 1]);
+    const d = distToSeg(spt, nodes[i], nodes[i + 1]);
     if (d < bestDist) {
       bestDist = d;
       bestIdx = i;
     }
   }
-  cn.waypoints.splice(bestIdx, 0, pt);
+  cn.waypoints.splice(bestIdx, 0, spt);
 }
 
 function obstacleRects(m) {
@@ -126,11 +131,13 @@ function segHitsRect(s, rx1, ry1, rx2, ry2) {
 }
 
 function route(a, z, cn) {
-  const S = 16, off = p => ({ left: [-S, 0], right: [S, 0], top: [0, -S], bottom: [0, S] }[p.side] || [S, 0]);
+  const gs = (typeof settings !== "undefined" && settings.gridSize) || 10;
+  const S = Math.max(gs, Math.round(20 / gs) * gs);
+  const off = p => ({ left: [-S, 0], right: [S, 0], top: [0, -S], bottom: [0, S] }[p.side] || [S, 0]);
   const [ax, ay] = off(a), [zx, zy] = off(z);
   const a2 = { x: a.x + ax, y: a.y + ay }, z2 = { x: z.x + zx, y: z.y + zy };
   const hA = a.side === "left" || a.side === "right", hZ = z.side === "left" || z.side === "right";
-  const g = v => Math.round(v / settings.gridSize) * settings.gridSize;
+  const g = v => Math.round(v / gs) * gs;
   const jogAxis = (hA && hZ) ? "x" : ((!hA && !hZ) ? "y" : null);
   let pts;
 
@@ -180,13 +187,22 @@ function route(a, z, cn) {
     const VJ = mx => [a, a2, { x: mx, y: a2.y }, { x: mx, y: z2.y }, z2, z];
     const HJ = my => [a, a2, { x: a2.x, y: my }, { x: z2.x, y: my }, z2, z];
     const cands = [];
+    if (hA && hZ && Math.abs(a.y - z.y) < 1) {
+      if ((a.side === "right" && z.side === "left" && a.x < z.x) || (a.side === "left" && z.side === "right" && z.x < a.x)) {
+        cands.push([a, z]);
+      }
+    } else if (!hA && !hZ && Math.abs(a.x - z.x) < 1) {
+      if ((a.side === "bottom" && z.side === "top" && a.y < z.y) || (a.side === "top" && z.side === "bottom" && z.y < a.y)) {
+        cands.push([a, z]);
+      }
+    }
     if (hA && hZ) cands.push(VJ(g((a2.x + z2.x) / 2)));
     else if (!hA && !hZ) cands.push(HJ(g((a2.y + z2.y) / 2)));
     else if (hA && !hZ) cands.push([a, a2, { x: z2.x, y: a2.y }, z2, z]);
     else cands.push([a, a2, { x: a2.x, y: z2.y }, z2, z]);
     const xlo = Math.min(a2.x, z2.x), xhi = Math.max(a2.x, z2.x), ylo = Math.min(a2.y, z2.y), yhi = Math.max(a2.y, z2.y);
     cands.push(VJ(g((a2.x + z2.x) / 2)), HJ(g((a2.y + z2.y) / 2)));
-    for (const k of [24, 64, 120, 200]) cands.push(VJ(g(xlo - k)), VJ(g(xhi + k)), HJ(g(ylo - k)), HJ(g(yhi + k)));
+    for (const k of [20, 60, 120, 200]) cands.push(VJ(g(xlo - k)), VJ(g(xhi + k)), HJ(g(ylo - k)), HJ(g(yhi + k)));
     let best = null, bc = Infinity;
     for (const c of cands) { const cs = cost(c); if (cs < bc) { bc = cs; best = c; } }
     pts = best;
@@ -197,7 +213,21 @@ function route(a, z, cn) {
       cleanPts.push(pts[i]);
     }
   }
-  pts = cleanPts;
+  const simpPts = [];
+  for (let i = 0; i < cleanPts.length; i++) {
+    if (i === 0 || i === cleanPts.length - 1) {
+      simpPts.push(cleanPts[i]);
+      continue;
+    }
+    const prev = simpPts[simpPts.length - 1];
+    const curr = cleanPts[i];
+    const next = cleanPts[i + 1];
+    const sameX = Math.abs(prev.x - curr.x) < 0.5 && Math.abs(curr.x - next.x) < 0.5;
+    const sameY = Math.abs(prev.y - curr.y) < 0.5 && Math.abs(curr.y - next.y) < 0.5;
+    if (sameX || sameY) continue;
+    simpPts.push(curr);
+  }
+  pts = simpPts;
 
   const d = "M" + pts.map(p => `${p.x} ${p.y}`).join("L");
   const segs = []; let total = 0;

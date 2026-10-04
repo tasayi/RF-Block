@@ -40,6 +40,10 @@ function ctxItems(list) {
     if (a === "sh-dup") { duplicateSheet(); return; }
     if (a === "sh-del") { deleteSheet(); return; }
     if (a && a.indexOf("al-") === 0) { alignSelection(a.slice(3)); return; }
+    if (a === "snap-grid") { if (typeof snapSelectionToGrid === "function") snapSelectionToGrid(); return; }
+    if (a === "snap-all") { if (typeof snapAllToGrid === "function") snapAllToGrid(); return; }
+    if (a === "auto-space") { if (typeof autoSpaceSelection === "function") autoSpaceSelection(); return; }
+    if (a === "clear-sel") { clearSel(); renderAll(); return; }
     if (a === "mirror") mirrorSelection();
     else if (a === "rotate") rotateSelection();
     else if (a === "dup") duplicateSelection();
@@ -83,8 +87,10 @@ function showCtx(x, y) {
   ctx.classList.add("open");
   const r = ctx.getBoundingClientRect();
   let px = x, py = y;
-  if (x + r.width > window.innerWidth) px = window.innerWidth - r.width - 6;
-  if (y + r.height > window.innerHeight) py = window.innerHeight - r.height - 6;
+  if (x + r.width > window.innerWidth - 8) px = Math.max(8, window.innerWidth - r.width - 8);
+  if (y + r.height > window.innerHeight - 8) py = Math.max(8, window.innerHeight - r.height - 8);
+  if (px < 8) px = 8;
+  if (py < 8) py = 8;
   ctx.style.left = px + "px";
   ctx.style.top = py + "px";
 }

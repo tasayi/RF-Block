@@ -216,7 +216,7 @@ def({
 
 /* Switch definition with SP1T..SP8T and Open position state support */
 def({
-  type: "switch", keys: "spdt sp3t sp4t spnt select transfer path", name: "Switch", group: "Routing", w: 120, h: 120,
+  type: "switch", keys: "spdt sp3t sp4t spnt select transfer path", name: "Switch", group: "Routing", w: 60, h: 120,
   dynSize: p => ({ w: 60, h: 60 * cint(p.throws, 1, 8) }),
   dynPorts: p => {
     const n = cint(p.throws, 1, 8), h = 60 * n;
@@ -242,11 +242,12 @@ def({
   val: p => "IL " + fmt(Math.abs(p.il)) + " dB",
   sym(p) {
     const n = cint(p.throws, 1, 8), h = 60 * n, st = swState(p, n);
-    const nx = (st > 0 ? 42 : 36), ny = (st > 0 ? 60 * st - 30 : h / 2 - 12);
+    const inY = h / 2;
+    const nx = (st > 0 ? 40 : 30), ny = (st > 0 ? 60 * st - 30 : inY - 10);
     let s = `<rect class="blk-shape" x="0" y="3" width="60" height="${h - 6}" rx="9"/>`;
-    s += L(0, h / 2, 21, h / 2) + `<circle class="blk-fillg" cx="21" cy="${h / 2}" r="4.5"/>`;
-    s += `<path class="blk-line" d="M21 ${h / 2}L${nx} ${ny}"/>`;
-    for (let i = 1; i <= n; i++) { const y = 60 * i - 30; s += L(42, y, 60, y) + `<circle class="blk-shape" cx="42" cy="${y}" r="3.6"/>`; }
+    s += L(0, inY, 20, inY) + `<circle class="blk-fillg" cx="20" cy="${inY}" r="4"/>`;
+    s += `<path class="blk-line" d="M20 ${inY}L${nx} ${ny}"/>`;
+    for (let i = 1; i <= n; i++) { const y = 60 * i - 30; s += L(40, y, 60, y) + `<circle class="blk-shape" cx="40" cy="${y}" r="4"/>`; }
     return s;
   }
 });

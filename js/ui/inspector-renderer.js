@@ -251,6 +251,10 @@ function renderInspector() {
         renderAll();
         const panel = $("spStagePanel");
         if (panel && panel.style.display !== "none" && typeof renderLinearAnalysis === "function") {
+          if (typeof sparamsTabs !== "undefined" && sparamsTabs.length) {
+            const curTab = sparamsTabs[typeof activeTabIdx !== "undefined" ? activeTabIdx : 0];
+            if (curTab) curTab.res = null;
+          }
           renderLinearAnalysis();
         }
       });
