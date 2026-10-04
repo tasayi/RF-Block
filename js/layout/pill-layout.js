@@ -151,15 +151,27 @@ function indicatorPillLayout(R, indicators) {
     }
   }
 
+  const arrowSize = 12;
+  const lastPt = R.pts && R.pts[R.pts.length - 1];
+  const isTerm = !!(seg && lastPt && Math.hypot(seg.q.x - lastPt.x, seg.q.y - lastPt.y) < 1);
+
   let wireX = cx, wireY = cy;
   if (seg) {
     if (seg.horiz) {
-      const lo = Math.min(seg.p.x, seg.q.x) + colWidth / 2 + 8, hi = Math.max(seg.p.x, seg.q.x) - colWidth / 2 - 8;
-      wireX = lo <= hi ? Math.min(Math.max(cx, lo), hi) : (seg.p.x + seg.q.x) / 2;
+      const dirX = seg.q.x >= seg.p.x ? 1 : -1;
+      const arrowShiftX = isTerm ? (-dirX * arrowSize / 2) : 0;
+      const clearMidX = (seg.p.x + seg.q.x) / 2 + arrowShiftX;
+      const lo = Math.min(seg.p.x, seg.q.x) + colWidth / 2 + (isTerm && dirX < 0 ? (8 + arrowSize) : 8);
+      const hi = Math.max(seg.p.x, seg.q.x) - colWidth / 2 - (isTerm && dirX > 0 ? (8 + arrowSize) : 8);
+      wireX = lo <= hi ? Math.min(Math.max(clearMidX, lo), hi) : clearMidX;
       wireY = seg.p.y;
     } else {
-      const lo = Math.min(seg.p.y, seg.q.y) + 18, hi = Math.max(seg.p.y, seg.q.y) - 18;
-      wireY = lo <= hi ? Math.min(Math.max(cy, lo), hi) : (seg.p.y + seg.q.y) / 2;
+      const dirY = seg.q.y >= seg.p.y ? 1 : -1;
+      const arrowShiftY = isTerm ? (-dirY * arrowSize / 2) : 0;
+      const clearMidY = (seg.p.y + seg.q.y) / 2 + arrowShiftY;
+      const lo = Math.min(seg.p.y, seg.q.y) + (isTerm && dirY < 0 ? (18 + arrowSize) : 18);
+      const hi = Math.max(seg.p.y, seg.q.y) - (isTerm && dirY > 0 ? (18 + arrowSize) : 18);
+      wireY = lo <= hi ? Math.min(Math.max(clearMidY, lo), hi) : clearMidY;
       wireX = seg.p.x + (colWidth / 2 + 6);
     }
   }

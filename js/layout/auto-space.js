@@ -208,8 +208,10 @@ function autoSpaceSelection(opts) {
     if (nominals.length) largestLabelWidth = Math.max(...nominals);
   }
 
-  // Required spacing = Maximum required label dimension + Padding
-  const requiredSpacing = Math.max(minSpacing, largestLabelWidth + padding);
+  const arrowSize = Number((opts && opts.arrowSize !== undefined) ? opts.arrowSize : 12);
+  // Required spacing = Maximum required label dimension + arrowSize + Padding
+  // Clear wire length = wire_len - arrowSize, leaving (padding / 2) on the left and (padding / 2) on the right to the arrow
+  const requiredSpacing = Math.max(minSpacing, largestLabelWidth + arrowSize + padding);
   const effectiveSpacing = Math.max(gs, Math.round(requiredSpacing / gs) * gs);
 
   // Determine layout orientation (horizontal signal flow vs vertical)
