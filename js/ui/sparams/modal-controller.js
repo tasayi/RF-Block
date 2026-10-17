@@ -163,7 +163,13 @@ function renderLinearAnalysis() {
     box.classList.remove("docked");
   }
 
-  if (!sparamsTabs.length || activeTabIdx >= sparamsTabs.length) activeTabIdx = Math.max(0, sparamsTabs.length - 1);
+  if (!sparamsTabs.length) {
+    const bandDef = settings.analysisBand || { startFreq: 1, startUnit: "GHz", stopFreq: 10, stopUnit: "GHz", points: 101, sweepType: "lin" };
+    sparamsTabs.push({ id: "sp_tab_1", name: "Sweep 1", band: { ...bandDef }, res: null, selectedPathIdx: null, activeMetric: "mag", yScale: "auto" });
+    activeTabIdx = 0;
+  } else if (activeTabIdx >= sparamsTabs.length) {
+    activeTabIdx = Math.max(0, sparamsTabs.length - 1);
+  }
   const activeTab = sparamsTabs[activeTabIdx];
   const activeMetric = (activeTab && activeTab.activeMetric) || "mag";
   const yScale = (activeTab && activeTab.yScale) || "auto";
@@ -181,11 +187,11 @@ function renderLinearAnalysis() {
 
   // Sync selected path: allow user to select and KEEP any path without forcing it back
   if (res && res.paths && res.paths.length) {
-    if (activeTab.selectedPathIdx === null || activeTab.selectedPathIdx === undefined || activeTab.selectedPathIdx >= res.paths.length) {
+    if (activeTab && (activeTab.selectedPathIdx === null || activeTab.selectedPathIdx === undefined || activeTab.selectedPathIdx >= res.paths.length)) {
       const activeIdx = res.paths.findIndex(p => p.isActive || p.is_active);
       activeTab.selectedPathIdx = activeIdx >= 0 ? activeIdx : 0;
     }
-    const selIdx = activeTab.selectedPathIdx;
+    const selIdx = (activeTab && activeTab.selectedPathIdx !== null && activeTab.selectedPathIdx !== undefined) ? activeTab.selectedPathIdx : 0;
     const curPath = res.paths[selIdx];
     if (curPath) {
       if (curPath.matrix) {

@@ -70,15 +70,23 @@ function sheetXml(rows, widths) {
   return x + `</sheetData></worksheet>`;
 }
 
-function xlsxBlob(rows, widths, tabName) {
+function xlsxBlob(sheetsOrRows, widths, tabName) {
   const P = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
-  return zipStore([
+  const isMultiSheet = Array.isArray(sheetsOrRows) && sheetsOrRows.length > 0 && typeof sheetsOrRows[0] === "object" && !Array.isArray(sheetsOrRows[0]) && sheetsOrRows[0].rows;
+  const sheets = isMultiSheet ? sheetsOrRows : [{ name: tabName || "BOM", rows: sheetsOrRows, widths: widths || [] }];
+
+  const contentTypesSheets = sheets.map((s, i) => `<Override PartName="/xl/worksheets/sheet${i + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`).join("");
+  const workbookSheets = sheets.map((s, i) => `<sheet name="${xesc(s.name || `Sheet${i + 1}`)}" sheetId="${i + 1}" r:id="rId${i + 1}"/>`).join("");
+  const workbookRels = sheets.map((s, i) => `<Relationship Id="rId${i + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${i + 1}.xml"/>`).join("")
+    + `<Relationship Id="rId${sheets.length + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>`;
+
+  const entries = [
     {
       name: "[Content_Types].xml", data: P + `<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">`
         + `<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>`
         + `<Default Extension="xml" ContentType="application/xml"/>`
         + `<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>`
-        + `<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`
+        + contentTypesSheets
         + `<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>`
         + `</Types>`
     },
@@ -88,12 +96,11 @@ function xlsxBlob(rows, widths, tabName) {
     },
     {
       name: "xl/workbook.xml", data: P + `<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">`
-        + `<sheets><sheet name="${xesc(tabName || "BOM")}" sheetId="1" r:id="rId1"/></sheets></workbook>`
+        + `<sheets>${workbookSheets}</sheets></workbook>`
     },
     {
       name: "xl/_rels/workbook.xml.rels", data: P + `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">`
-        + `<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>`
-        + `<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`
+        + workbookRels + `</Relationships>`
     },
     {
       name: "xl/styles.xml", data: P + `<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">`
@@ -102,8 +109,13 @@ function xlsxBlob(rows, widths, tabName) {
         + `<borders count="1"><border/></borders><cellStyleXfs count="1"><xf/></cellStyleXfs>`
         + `<cellXfs count="2"><xf xfId="0"/><xf xfId="0" fontId="1" applyFont="1"/></cellXfs>`
         + `<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>`
-    },
-    { name: "xl/worksheets/sheet1.xml", data: sheetXml(rows, widths) }
-  ]);
+    }
+  ];
+
+  sheets.forEach((s, i) => {
+    entries.push({ name: `xl/worksheets/sheet${i + 1}.xml`, data: sheetXml(s.rows || [], s.widths || []) });
+  });
+
+  return zipStore(entries);
 }
 

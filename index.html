@@ -197,9 +197,15 @@
       <b>Cascade budget</b>
       <select id="bgStart" title="Signal source to trace from"></select>
       <label class="bg-bw">BW <input id="bgBw" type="number" value="1" step="any" min="0.000001"/><select id="bgBwUnit" class="tb-select-sm" title="Bandwidth Unit"><option value="Hz">Hz</option><option value="kHz">kHz</option><option value="MHz" selected>MHz</option><option value="GHz">GHz</option></select></label>
+      <div class="bg-view-tabs" style="display:flex; gap:4px; margin-left:6px">
+        <button class="bg-tab-btn" id="bgTabTable" title="Tabular View">📋 Table</button>
+        <button class="bg-tab-btn active" id="bgTabPlot" title="Interactive Cascade Stage Plot">📈 Stage Plot</button>
+      </div>
       <div class="tb-spacer"></div>
-      <button class="btn" id="bgCsv">Export CSV</button>
-      <button class="btn" id="bgClose">Close</button>
+      <button class="btn btn-sm" id="bgToggleExpand" title="Expand / Minimize Drawer">⛶ Expand</button>
+      <button class="btn btn-sm primary" id="bgXlsx" title="Export stage budget and plot settings to Excel">📥 Export Excel (.xlsx)</button>
+      <button class="btn btn-sm" id="bgCsv" title="Export CSV">Export CSV</button>
+      <button class="btn btn-sm" id="bgClose">Close</button>
     </div>
     <div class="bg-body" id="bgBody"></div>
   </div>

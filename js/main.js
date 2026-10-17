@@ -568,6 +568,10 @@ function initEvents() {
   if ($("btnBudget")) $("btnBudget").onclick = toggleBudget;
   if ($("bgClose")) $("bgClose").onclick = toggleBudget;
   if ($("bgCsv")) $("bgCsv").onclick = exportBudgetCsv;
+  if ($("bgXlsx")) $("bgXlsx").onclick = exportBudgetXlsx;
+  if ($("bgToggleExpand")) $("bgToggleExpand").onclick = toggleBudgetExpand;
+  if ($("bgTabTable")) $("bgTabTable").onclick = () => { budgetViewMode = "table"; renderBudget(); };
+  if ($("bgTabPlot")) $("bgTabPlot").onclick = () => { budgetViewMode = "plot"; renderBudget(); };
 
   if ($("btnAnalyser")) $("btnAnalyser").onclick = toggleAnalyserDrawer;
   if ($("anClose")) $("anClose").onclick = toggleAnalyserDrawer;
