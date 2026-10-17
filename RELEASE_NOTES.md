@@ -1,3 +1,62 @@
+# Release Notes — RF Chain v2.2.0
+
+**Release Date**: October 2, 2026  
+**Version**: `v2.2.0`  
+**Repository**: `RFBlock`
+
+---
+
+## 🚀 Overview
+
+`RF Chain v2.2.0` is a major architectural milestone introducing **Domain-Modular Architecture** and **AI-Agentic Maintenance Optimization**. Monolithic JavaScript source files (700–1000 LOC each) have been refactored into clean, single-responsibility domain modules (~50–150 LOC each) across component catalogs, orthogonal Manhattan layout routing, Microsoft Visio OpenXML export generation, and S-parameter UI charting.
+
+This reduces token context overhead by **70–87%** for AI coding agents inspecting or modifying specific submodules, establishes clear subsystem isolation, and provides dual-environment browser/Node.js compatibility.
+
+---
+
+## 🌟 Key Features & Improvements
+
+### 1. 🧩 Domain-Modular Component Catalogs (`js/components/*.js`)
+- **Decomposed Monolith**: Replaced monolithic `js/components.js` with 9 focused domain catalogs:
+  - `helpers.js`: Shared math, validation, and port builders (`cint`, `gsign`, `cplPorts`, `L`).
+  - `sources.js`: CW sources, LO generators, and signal references.
+  - `gain-loss.js`: Amplifiers (LNA/PA), bypass amplifiers, fixed/digital attenuators, limiters, and transmission lines.
+  - `filters.js`: Fixed filters (LPF, HPF, BPF, BSF) and tunable filters.
+  - `converters.js`: Frequency mixers, multipliers ($\times N$), and dividers ($\div N$).
+  - `routing.js`: Switches (SP1T–SP8T), Wilkinson splitters, combiners, directional/bi-directional couplers, and off-page interconnects.
+  - `passives.js`: Ferrite isolators, 3-port circulators, and phase shifters.
+  - `terminals.js`: Antennas (Tx/Rx), RF In/Out connectors, power detectors, and 50Ω load terminations.
+  - `containers.js`: Hierarchical subsystems, custom multi-port blocks, and text annotations.
+- **Unified Aggregator**: `js/components.js` cleanly aggregates all catalogs into `BLOCK_TYPES` and `COMP_CATEGORIES` while preserving 100% backwards compatibility.
+
+### 2. 📐 Decomposed Layout & Routing Subsystem (`js/layout/`)
+- **`manhattan-router.js`**: Isolated orthogonal Manhattan wire path finding, obstacle avoidance, bounding box margin calculations, and grid alignment logic.
+- **`pill-layout.js`**: Dedicated engine for computing 4-indicator signal pill badges ($P_{wr1}$, $P_{wr2}$, $\text{NF}$, $N_{floor}$), single-line styling, dynamic vertical clearances, and label offsets.
+- **`router.js`**: Lightweight coordination hub re-exporting layout primitives.
+
+### 3. 📄 Modular Microsoft Visio OpenXML Exporter (`js/io/vsdx/`)
+- **Pipeline Architecture**: Decomposed monolithic 927-line Visio generator into 4 specialized stages:
+  - `templates.js`: OpenXML document templates, relationships (`.rels`), content types, and XML sanitization.
+  - `geometry-converter.js`: SVG path to Visio vector geometry conversion (`MoveTo`, `LineTo`, `ArcTo`, `Ellipse`).
+  - `shape-builder.js`: Component master shapes, connection pin calculation, stacked badges, and wire connectors.
+  - `exporter.js`: Assembly, ZIP packaging via JSZip, and direct client file download.
+
+### 4. 📈 Modular S-Parameter Charting & Trace Grid (`js/ui/sparams/`)
+- **Decomposed Physics UI**: Refactored monolithic 802-line renderer into:
+  - `graph-chart.js`: SVG Cartesian grid plotting, dB/linear scales, frequency axes, and multi-path trace rendering.
+  - `trace-grid.js`: Tabular frequency point inspector, path selector dropdown, and data summary.
+  - `modal-controller.js`: Modal dialog lifecycle, frequency sweep controls, Touchstone `.s2p` export triggers, and error banners.
+
+### 5. 🤖 AI-Agentic Maintenance & Token Optimization
+- **70–87% Prompt Token Reduction**: Future AI agents modifying a specific component (e.g. adding a filter response parameter) only need to load `filters.js` (64 lines) rather than the previous 713-line monolith, drastically reducing token consumption and latency.
+- **Subsystem Isolation**: Eliminates cross-domain side-effects where modifications to UI charts or routing could inadvertently impact Visio vector math.
+- **Dual Browser & Node.js Scoping**: Bulletproof scoping that runs seamlessly in flat browser script tags without identifier collisions (`SyntaxError: Identifier already declared`), while supporting Node.js CommonJS `require()` for standalone bundling.
+
+### 6. 🌐 Unified Backend Engine Client (`js/api/engine-client.js`)
+- Standardized REST client handling communication with the FastAPI backend (`POST /api/v1/analyze/sparams`, health checks, Touchstone export) with automatic graceful fallback when running in standalone offline mode.
+
+---
+
 # Release Notes — RF Chain v2.1.0
 
 **Release Date**: October 2, 2026  

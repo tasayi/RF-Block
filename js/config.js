@@ -85,13 +85,13 @@ const SWATCHES = [
   "#e0f2fe", "#e0e7ff", "#f3e8ff", "#fce7f3", "#fee2e2", "#fef9c3"
 ];
 
-/* Layout Presets for Document & Print Compatibility */
+/* Layout Presets for Document & Print Compatibility (Calibrated to 96 DPI Visio / LibreOffice Draw ISO 216 standards) */
 const LAYOUT_PRESETS = {
-  free:         { id: "free",         name: "Free / Custom", isFree: true,  w: 0,    h: 0,    mmW: 0,   mmH: 0 },
-  a4_landscape: { id: "a4_landscape", name: "A4 Landscape", isFree: false, w: 1400, h: 990,  mmW: 297, mmH: 210 },
-  a4_portrait:  { id: "a4_portrait",  name: "A4 Portrait",  isFree: false, w: 990,  h: 1400, mmW: 210, mmH: 297 },
-  a3_landscape: { id: "a3_landscape", name: "A3 Landscape", isFree: false, w: 1980, h: 1400, mmW: 420, mmH: 297 },
-  a3_portrait:  { id: "a3_portrait",  name: "A3 Portrait",  isFree: false, w: 1400, h: 1980, mmW: 297, mmH: 420 }
+  free:         { id: "free",         name: "Free / Custom", isFree: true,  w: 0,    h: 0,    mmW: 0,   mmH: 0,   margin: 0 },
+  a4_landscape: { id: "a4_landscape", name: "A4 Landscape", isFree: false, w: 1120, h: 790,  mmW: 297, mmH: 210, margin: 40 },
+  a4_portrait:  { id: "a4_portrait",  name: "A4 Portrait",  isFree: false, w: 790,  h: 1120, mmW: 210, mmH: 297, margin: 40 },
+  a3_landscape: { id: "a3_landscape", name: "A3 Landscape", isFree: false, w: 1590, h: 1120, mmW: 420, mmH: 297, margin: 40 },
+  a3_portrait:  { id: "a3_portrait",  name: "A3 Portrait",  isFree: false, w: 1120, h: 1590, mmW: 297, mmH: 420, margin: 40 }
 };
 
 /* Default application configuration settings */

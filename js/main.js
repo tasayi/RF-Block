@@ -29,10 +29,6 @@ function initEvents() {
       drag = { mode: "pan", sx: e.clientX, sy: e.clientY, tx0: view.tx, ty0: view.ty, moved: false };
       svg.classList.add("panning"); attachDrag(); return;
     }
-    if (e.button === 2) {
-      drag = { mode: "pan", right: true, sx: e.clientX, sy: e.clientY, tx0: view.tx, ty0: view.ty, moved: false };
-      attachDrag(); return;
-    }
     if (e.button !== 0) return;
     const nodeEl = e.target.closest(".wire-node-g, .wire-node");
     const pillEl = e.target.closest(".pill"); let portEl = e.target.closest(".port");
@@ -188,7 +184,30 @@ function initEvents() {
     const blkEl = e.target.closest(".block");
     if (blkEl) {
       const b = findBlock(blkEl.getAttribute("data-block"));
-      if (b && COMP[b.type].isSubsystem) { e.preventDefault(); openSubsystem(b); return; }
+      if (b && COMP[b.type] && COMP[b.type].isSubsystem) { e.preventDefault(); openSubsystem(b); return; }
+      if (b && b.type === "switch") {
+        e.preventDefault();
+        pushHistory();
+        const nThrows = parseInt(b.params && b.params.throws) || 2;
+        const curSt = parseInt(b.params && b.params.state) || 1;
+        const nextSt = (curSt % nThrows) + 1;
+        b.params.state = String(nextSt);
+        renderAll();
+        if (typeof renderInspector === "function") renderInspector();
+        const panel = $("spStagePanel");
+        if (panel && panel.style.display !== "none" && typeof renderLinearAnalysis === "function") {
+          if (typeof sparamsTabs !== "undefined" && sparamsTabs.length) {
+            const curTab = sparamsTabs[typeof activeTabIdx !== "undefined" ? activeTabIdx : 0];
+            if (curTab) {
+              curTab.res = null;
+              curTab.selectedPathIdx = null;
+            }
+          }
+          renderLinearAnalysis();
+        }
+        hint(`Switch toggled to throw ${nextSt}.`);
+        return;
+      }
     }
     const pillEl = e.target.closest(".pill"), connEl = e.target.closest(".conn");
     if (pillEl && pillEl.getAttribute("data-conn")) {
@@ -251,11 +270,6 @@ function initEvents() {
 
   /* Context menu trigger */
   svg.addEventListener("contextmenu", e => {
-    if (typeof rightPanMoved !== "undefined" && rightPanMoved) {
-      rightPanMoved = false;
-      e.preventDefault();
-      return;
-    }
     e.preventDefault();
     const nodeEl = e.target.closest(".wire-node-g, .wire-node");
     if (nodeEl) {
@@ -286,7 +300,9 @@ function initEvents() {
       if (m) items.push("divider",
         ctxItem("Align tops", "", "al-top"), ctxItem("Align middles", "", "al-cy"), ctxItem("Align bottoms", "", "al-bottom"),
         ctxItem("Align lefts", "", "al-left"), ctxItem("Align centres", "", "al-cx"), ctxItem("Align rights", "", "al-right"),
-        ctxItem("Space evenly across", "", "al-dx"), ctxItem("Space evenly down", "", "al-dy"));
+        ctxItem("Space evenly across", "", "al-dx"), ctxItem("Space evenly down", "", "al-dy"),
+        ctxItem("Auto space (clear labels)", "", "auto-space"));
+      items.push("divider", ctxItem(m ? "Snap selection to grid" : "Snap to grid", "⇧⌘G", "snap-grid"));
       items.push("divider", ctxItem(m ? `Delete ${n} blocks` : "Delete", "Del", "del", "danger"));
       ctxItems(items); showCtx(e.clientX, e.clientY);
     }
@@ -308,7 +324,29 @@ function initEvents() {
       items.push("divider", ctxItem("Delete connection", "Del", "delc", "danger"));
       ctxItems(items); showCtx(e.clientX, e.clientY);
     }
-    else { ctxItems([ctxItem("Select all", "⌘A", "all"), ctxItem("Fit view", "", "fit")]); showCtx(e.clientX, e.clientY); }
+    else {
+      const emptyItems = [
+        ctxItem("Select all", "⌘A", "all"),
+        ctxItem("Fit view", "", "fit"),
+        ctxItem("Snap all to grid", "", "snap-all")
+      ];
+      if (selected.size > 1) {
+        emptyItems.splice(2, 0,
+          ctxItem("Auto space selected", "", "auto-space"),
+          ctxItem("Snap selection to grid", "⇧⌘G", "snap-grid"),
+          ctxItem("Clear selection", "Esc", "clear-sel"),
+          "divider"
+        );
+      } else if (selected.size === 1) {
+        emptyItems.splice(2, 0,
+          ctxItem("Snap selection to grid", "⇧⌘G", "snap-grid"),
+          ctxItem("Clear selection", "Esc", "clear-sel"),
+          "divider"
+        );
+      }
+      ctxItems(emptyItems);
+      showCtx(e.clientX, e.clientY);
+    }
   });
 
   /* Window keyboard shortcuts */
@@ -333,6 +371,11 @@ function initEvents() {
       return;
     }
     if ((e.ctrlKey || e.metaKey) && (e.key === "a" || e.key === "A")) { e.preventDefault(); selectAll(); return; }
+    if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === "g" || e.key === "G")) {
+      e.preventDefault();
+      if (typeof snapSelectionToGrid === "function") snapSelectionToGrid();
+      return;
+    }
     if ((e.ctrlKey || e.metaKey) && (e.key === "d" || e.key === "D")) { e.preventDefault(); duplicateSelection(); return; }
     if ((e.key === "r" || e.key === "R")) { if (e.ctrlKey || e.metaKey) e.preventDefault(); rotateSelection(); return; }
     if ((e.key === "m" || e.key === "M")) { if (e.ctrlKey || e.metaKey) e.preventDefault(); mirrorSelection(); return; }
@@ -421,6 +464,32 @@ function initEvents() {
   }
   if ($("tglColor")) $("tglColor").addEventListener("change", e => { settings.color = e.target.checked; renderPalette(); renderCanvas(); });
   if ($("tglTheme")) $("tglTheme").addEventListener("change", e => { applyTheme(e.target.checked ? "light" : "dark"); renderPalette(); renderCanvas(); });
+  if ($("tbGridSize")) {
+    $("tbGridSize").addEventListener("change", e => {
+      const val = Math.max(2, Math.min(200, Math.round(+e.target.value || 10)));
+      settings.gridSize = val;
+      if ($("tbGridSize")) $("tbGridSize").value = val;
+      if (typeof updateCanvasGridVisual === "function") updateCanvasGridVisual(val);
+      renderCanvas();
+    });
+  }
+  if ($("tbAutoPadding")) {
+    $("tbAutoPadding").addEventListener("change", e => {
+      const val = Math.max(0, Math.min(500, Math.round(+e.target.value || 20)));
+      settings.autoSpacePadding = val;
+      if ($("tbAutoPadding")) $("tbAutoPadding").value = val;
+    });
+  }
+  if ($("btnSnapGrid")) {
+    $("btnSnapGrid").addEventListener("click", () => {
+      if (typeof snapSelectionToGrid === "function") snapSelectionToGrid();
+    });
+  }
+  if ($("btnAutoSpace")) {
+    $("btnAutoSpace").addEventListener("click", () => {
+      if (typeof autoSpaceSelection === "function") autoSpaceSelection();
+    });
+  }
   if ($("selLayout")) $("selLayout").addEventListener("change", e => {
     pushHistory();
     const val = e.target.value;
@@ -587,6 +656,9 @@ window.addEventListener("DOMContentLoaded", () => {
   const savedTheme = (function() { try { return localStorage.getItem("rfblock_theme"); } catch(e) { return null; } })() || settings.theme || "dark";
   applyTheme(savedTheme);
   if ($("tglTheme")) $("tglTheme").checked = (settings.theme === "light");
+  if ($("tbGridSize")) $("tbGridSize").value = settings.gridSize || 10;
+  if ($("tbAutoPadding")) $("tbAutoPadding").value = settings.autoSpacePadding !== undefined ? settings.autoSpacePadding : 20;
+  if (typeof updateCanvasGridVisual === "function") updateCanvasGridVisual(settings.gridSize || 10);
   if ($("palSearch")) $("palSearch").addEventListener("input", renderPalette);
   renderPalette();
   renderSheets();

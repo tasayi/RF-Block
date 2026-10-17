@@ -63,6 +63,14 @@
           <label class="toggle" title="Tint blocks by category"><input type="checkbox" id="tglColor" checked/> Colour</label>
           <label class="toggle" title="Toggle Light / Dark background theme"><input type="checkbox" id="tglTheme"/> Theme</label>
         </div>
+        <div class="vdp-inline-row" style="margin-top:6px;gap:8px">
+          <label class="toggle" title="Canvas grid snapping step size in pixels" style="font-size:11px">
+            Grid&nbsp;<input id="tbGridSize" type="number" value="10" min="2" max="200" step="1" class="tb-num-input" style="width:48px"/>&nbsp;px
+          </label>
+          <label class="toggle" title="Auto-space label clearance padding in pixels" style="font-size:11px">
+            Pad&nbsp;<input id="tbAutoPadding" type="number" value="20" min="0" max="500" step="5" class="tb-num-input" style="width:48px"/>&nbsp;px
+          </label>
+        </div>
 
         <div class="vdp-divider"></div>
         <div class="vdp-section">Signals &amp; Labels</div>
@@ -231,24 +239,42 @@
 <!-- JavaScript Core Modules -->
 <script src="js/config.js"></script>
 <script src="js/utils.js"></script>
-<script src="js/components.js"></script>
+<script src="js/api/engine-client.js"></script>
+<!-- Component Catalog Modules -->
+<script src="js/components/helpers.js"></script>
+<script src="js/components/sources.js"></script>
+<script src="js/components/gain-loss.js"></script>
+<script src="js/components/filters.js"></script>
+<script src="js/components/converters.js"></script>
+<script src="js/components/routing.js"></script>
+<script src="js/components/passives.js"></script>
+<script src="js/components/terminals.js"></script>
+<script src="js/components/containers.js"></script>
 <script src="js/state.js"></script>
 <script src="js/geometry.js"></script>
 <script src="js/solvers/power-solver.js"></script>
 <script src="js/solvers/noise-solver.js"></script>
 <script src="js/solvers/budget-solver.js"></script>
 <script src="js/solvers/sparams-solver.js"></script>
-<script src="js/layout/router.js"></script>
+<script src="js/layout/manhattan-router.js"></script>
+<script src="js/layout/pill-layout.js"></script>
+<script src="js/layout/auto-space.js"></script>
 <script src="js/subsystems.js"></script>
 <script src="js/io/xlsx-exporter.js"></script>
-<script src="js/io/vsdx-exporter.js"></script>
-<script src="js/io/file-io.js"></script>
+<script src="js/io/vsdx/templates.js"></script>
+<script src="js/io/vsdx/geometry-converter.js"></script>
+<script src="js/io/vsdx/shape-builder.js"></script>
+<script src="js/io/vsdx/exporter.js"></script>
+<script src="js/io/document-io.js"></script>
+<script src="js/io/svg-exporter.js"></script>
 <script src="js/ui/canvas-renderer.js"></script>
 <script src="js/ui/palette-renderer.js"></script>
 <script src="js/ui/inspector-renderer.js"></script>
 <script src="js/ui/sheets-renderer.js"></script>
 <script src="js/ui/budget-renderer.js"></script>
-<script src="js/ui/sparams-renderer.js"></script>
+<script src="js/ui/sparams/graph-chart.js"></script>
+<script src="js/ui/sparams/trace-grid.js"></script>
+<script src="js/ui/sparams/modal-controller.js"></script>
 <script src="js/ui/colorpicker-renderer.js"></script>
 <script src="js/ui/contextmenu.js"></script>
 <script src="js/ui/interactions.js"></script>

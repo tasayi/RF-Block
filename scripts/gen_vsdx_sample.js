@@ -38,7 +38,13 @@ const componentContext = vm.createContext({
   icTagText: value => String(value || "").slice(0, 6),
   icTagFont: value => String(value || "").length <= 2 ? 13 : 11
 });
-const componentsSource = fs.readFileSync(path.join(__dirname, "../js/components.js"), "utf8") + "\n;globalThis.exportedCOMP = COMP;";
+const componentFiles = [
+  "helpers.js", "sources.js", "gain-loss.js", "filters.js",
+  "converters.js", "routing.js", "passives.js", "terminals.js", "containers.js"
+];
+const componentsSource = componentFiles
+  .map(f => fs.readFileSync(path.join(__dirname, "../js/components", f), "utf8"))
+  .join("\n") + "\n;globalThis.exportedCOMP = COMP;";
 vm.runInContext(componentsSource, componentContext);
 const componentRegistry = componentContext.exportedCOMP;
 const representativeTypes = new Set(["source", "amp", "mixer", "filter"]);
