@@ -297,13 +297,29 @@ def build_block_network(
             loaded_multi = load_touchstone_network(s_multi, freq=freq, label=label)
             if loaded_multi is not None and loaded_multi.nports == (throws + 1):
                 # Multi-port switch network matched: Port 0=in, Port 1=o1, Port 2=o2...
-                # If switch is switched to state > 1 and this file was from state 1 or global, permute ports 1 and state
-                has_state_specific = bool(params.get(f"s3pData_st{state}") or params.get(f"snpData_st{state}"))
-                if state > 1 and not has_state_specific and state <= throws:
-                    perm = list(range(loaded_multi.nports))
-                    perm[1], perm[state] = perm[state], perm[1]
-                    perm_s = loaded_multi.s[:, perm, :][:, :, perm]
-                    loaded_multi = skrf.Network(frequency=freq, s=perm_s, z0=loaded_multi.z0, name=label)
+                has_state_specific = bool(
+                    params.get(f"s3pData_st{state}") or
+                    params.get(f"snpData_st{state}") or
+                    params.get(f"s2pData_st{state}")
+                )
+                if state > 0 and state <= throws:
+                    mean_s_state = float(np.mean(np.abs(loaded_multi.s[:, state, 0])))
+                    mean_s_1 = float(np.mean(np.abs(loaded_multi.s[:, 1, 0])))
+                    if has_state_specific:
+                        # If the state-specific file was measured with Port 1 as active through (mean_s_1 > mean_s_state)
+                        # and current state > 1, permute Port 1 and Port state to route through to the active throw
+                        if state > 1 and mean_s_1 > mean_s_state:
+                            perm = list(range(loaded_multi.nports))
+                            perm[1], perm[state] = perm[state], perm[1]
+                            perm_s = loaded_multi.s[:, perm, :][:, :, perm]
+                            loaded_multi = skrf.Network(frequency=freq, s=perm_s, z0=loaded_multi.z0, name=label)
+                    else:
+                        # Global / State 1 file: permute ports 1 and state when state > 1
+                        if state > 1:
+                            perm = list(range(loaded_multi.nports))
+                            perm[1], perm[state] = perm[state], perm[1]
+                            perm_s = loaded_multi.s[:, perm, :][:, :, perm]
+                            loaded_multi = skrf.Network(frequency=freq, s=perm_s, z0=loaded_multi.z0, name=label)
 
                 if full_ports or (in_port is None and out_port is None):
                     return loaded_multi

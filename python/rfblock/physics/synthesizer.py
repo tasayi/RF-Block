@@ -140,10 +140,14 @@ def synthesize_switch_network(
                     s_mat[:, k, 0] = t_net.s[:, 1, 0]
                     s_mat[:, k, k] = t_net.s[:, 1, 1]
                 else:
-                    # Inactive / isolated throw: measured Touchstone provides true isolation
-                    s_mat[:, 0, k] = t_net.s[:, 0, 1]
-                    s_mat[:, k, 0] = t_net.s[:, 1, 0]
-                    s_mat[:, k, k] = t_net.s[:, 1, 1]
+                    # Inactive / isolated throw:
+                    # If this file specifically characterizes an isolation state (mean transmission < -15 dB), embed it.
+                    # Otherwise, the throw is off in this state, so retain physical switch isolation.
+                    mean_trans_db = float(20.0 * np.log10(np.maximum(1e-12, np.mean(np.abs(t_net.s[:, 1, 0])))))
+                    if mean_trans_db < -15.0:
+                        s_mat[:, 0, k] = t_net.s[:, 0, 1]
+                        s_mat[:, k, 0] = t_net.s[:, 1, 0]
+                        s_mat[:, k, k] = t_net.s[:, 1, 1]
 
     net = skrf.Network(frequency=freq, s=s_mat, z0=z0, name=name)
     net.params = {

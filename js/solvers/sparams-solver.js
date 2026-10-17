@@ -196,74 +196,102 @@ function getStageTransmissionDb(b, freqs, warnings, path, isReverse = false, inP
       return tDb;
     }
 
-    // Check per-throw file or active switch position file or multi-port Touchstone
-    let sRaw = null;
-    let isThrowSpecific = false;
-    if (kThrow !== stNum && b.params && (b.params[`s2pData_st${kThrow}`] || b.params[`s3pData_st${kThrow}`])) {
-      // The inactive throw has its own dedicated measured Touchstone file
-      sRaw = b.params[`s2pData_st${kThrow}`] || b.params[`s3pData_st${kThrow}`];
-      isThrowSpecific = true;
-    } else {
-      sRaw = (b.params && b.params[`s3pData_st${stNum}`]) ||
-             (b.params && b.params[`s2pData_st${stNum}`]) ||
-             (b.params && b.params.s3pData) ||
-             (b.params && b.params.s2pData) ||
-             (b.params && b.params.snpData) ||
-             (b.params && b.params.s4pData) ||
-             (b.params && b.params.s3pData_st1) ||
-             (b.params && b.params.s2pData_st1);
-    }
+    const isThrough = (kThrow === stNum);
 
-    if (sRaw) {
-      const parsed = parseTouchstone(sRaw);
-      if (parsed) {
-        let dstPortIdx = 1;
-        if (parsed.numPorts >= 3) {
-          // Multi-port S(N+1)P Touchstone file:
-          const hasDedicatedState = Boolean(b.params && (b.params[`s3pData_st${stNum}`] || b.params[`s2pData_st${stNum}`]));
-          if (stNum > 1 && !hasDedicatedState) {
-            // Auto-permuted: Throw stNum is through (Port 1), Throw 1 is isolated (Port stNum)
-            dstPortIdx = (kThrow === stNum) ? 1 : ((kThrow === 1) ? stNum : kThrow);
-          } else {
-            dstPortIdx = kThrow;
+    // 1. Determine Touchstone source file for current switch state:
+    let sRaw = (b.params && (b.params[`s3pData_st${stNum}`] || b.params[`s2pData_st${stNum}`] || b.params[`snpData_st${stNum}`])) ||
+               (b.params && (b.params.s3pData || b.params.s2pData || b.params.snpData || b.params.s4pData || b.params.s3pData_st1 || b.params.s2pData_st1));
+
+    let parsed = sRaw ? parseTouchstone(sRaw) : null;
+
+    if (parsed) {
+      let dstPortIdx = 1;
+      if (parsed.numPorts >= 3) {
+        // Multi-port S(N+1)P Touchstone file:
+        const midIdx = Math.floor(parsed.pts.length / 2);
+        const midPt = parsed.pts[midIdx];
+
+        // Find which port in the parsed file has the highest transmission from Port 0 (through port in this file)
+        let maxPortIdx = 1;
+        let maxDb = -999;
+        for (let p = 1; p < parsed.numPorts; p++) {
+          const rowVal = midPt.s[p] ? midPt.s[p][0] : null;
+          const dbVal = rowVal ? CMath.dB(rowVal) : -999;
+          if (dbVal > maxDb) {
+            maxDb = dbVal;
+            maxPortIdx = p;
           }
+        }
+
+        if (isThrough) {
+          // For active throw: use the detected through port in this state's file
+          dstPortIdx = maxPortIdx;
         } else {
-          // 2-port Touchstone file:
-          if (kThrow !== stNum && !isThrowSpecific) {
+          // For inactive throw:
+          // If the file uses physical pin mapping (Port 1=RF1, Port 2=RF2...), use kThrow if it's not the through port
+          if (kThrow < parsed.numPorts && kThrow !== maxPortIdx) {
+            dstPortIdx = kThrow;
+          } else {
+            // Otherwise use the isolated port
+            dstPortIdx = (maxPortIdx === 1) ? 2 : 1;
+          }
+        }
+      } else {
+        // 2-port Touchstone file:
+        if (!isThrough) {
+          // Inactive throw: check if dedicated isolation file exists for kThrow
+          const isoRaw = b.params && (b.params[`s2pData_st${kThrow}`] || b.params[`s3pData_st${kThrow}`]);
+          if (isoRaw) {
+            const isoParsed = parseTouchstone(isoRaw);
+            if (isoParsed) {
+              const midPt = isoParsed.pts[Math.floor(isoParsed.pts.length / 2)];
+              const midDb = midPt && midPt.s[1] ? CMath.dB(midPt.s[1][0]) : 0;
+              if (midDb < -15.0) {
+                parsed = isoParsed;
+                dstPortIdx = 1;
+              } else {
+                for (let k = 0; k < N; k++) tDb[k] = isoDb;
+                return tDb;
+              }
+            } else {
+              for (let k = 0; k < N; k++) tDb[k] = isoDb;
+              return tDb;
+            }
+          } else {
             for (let k = 0; k < N; k++) tDb[k] = isoDb;
             return tDb;
           }
-          dstPortIdx = 1;
         }
-
-        const pts = parsed.pts, numPts = pts.length;
-
-        for (let k = 0; k < N; k++) {
-          const f = freqs[k];
-          let cVal = CMath.zero();
-          if (f <= pts[0].f) {
-            const row = pts[0].s[dstPortIdx];
-            cVal = row ? row[0] : CMath.zero();
-          } else if (f >= pts[numPts - 1].f) {
-            const row = pts[numPts - 1].s[dstPortIdx];
-            cVal = row ? row[0] : CMath.zero();
-          } else {
-            let idx = 0;
-            while (idx < numPts - 1 && pts[idx + 1].f < f) idx++;
-            const p0 = pts[idx], p1 = pts[idx + 1];
-            const t = (f - p0.f) / (p1.f - p0.f);
-            const r0 = p0.s[dstPortIdx] ? p0.s[dstPortIdx][0] : CMath.zero();
-            const r1 = p1.s[dstPortIdx] ? p1.s[dstPortIdx][0] : CMath.zero();
-            cVal = CMath.fromRI(r0.r + t * (r1.r - r0.r), r0.i + t * (r1.i - r0.i));
-          }
-          tDb[k] = CMath.dB(cVal);
-        }
-
-        if ((freqs[0] < parsed.minFreq || freqs[N - 1] > parsed.maxFreq) && warnings) {
-          warnings.push(`Warning: Touchstone data for '${lbl}' (${(parsed.minFreq/1e9).toFixed(2)}–${(parsed.maxFreq/1e9).toFixed(2)} GHz) was extrapolated to match the analysis band.`);
-        }
-        return tDb;
+        dstPortIdx = 1;
       }
+
+      const pts = parsed.pts, numPts = pts.length;
+
+      for (let k = 0; k < N; k++) {
+        const f = freqs[k];
+        let cVal = CMath.zero();
+        if (f <= pts[0].f) {
+          const row = pts[0].s[dstPortIdx];
+          cVal = row ? row[0] : CMath.zero();
+        } else if (f >= pts[numPts - 1].f) {
+          const row = pts[numPts - 1].s[dstPortIdx];
+          cVal = row ? row[0] : CMath.zero();
+        } else {
+          let idx = 0;
+          while (idx < numPts - 1 && pts[idx + 1].f < f) idx++;
+          const p0 = pts[idx], p1 = pts[idx + 1];
+          const t = (f - p0.f) / (p1.f - p0.f);
+          const r0 = p0.s[dstPortIdx] ? p0.s[dstPortIdx][0] : CMath.zero();
+          const r1 = p1.s[dstPortIdx] ? p1.s[dstPortIdx][0] : CMath.zero();
+          cVal = CMath.fromRI(r0.r + t * (r1.r - r0.r), r0.i + t * (r1.i - r0.i));
+        }
+        tDb[k] = CMath.dB(cVal);
+      }
+
+      if ((freqs[0] < parsed.minFreq || freqs[N - 1] > parsed.maxFreq) && warnings) {
+        warnings.push(`Warning: Touchstone data for '${lbl}' (${(parsed.minFreq/1e9).toFixed(2)}–${(parsed.maxFreq/1e9).toFixed(2)} GHz) was extrapolated to match the analysis band.`);
+      }
+      return tDb;
     }
 
     // Behavioral synthesis for switch:
@@ -881,10 +909,12 @@ function computeLinearAnalysis(band) {
   // Ensure default S21 and S12 are set from primary active path
   const activePath = discoveredPaths.find(p => p.isActive) || (discoveredPaths.length ? discoveredPaths[0] : null);
   if (activePath && activePath.matrix) {
-    if (!matrix.S21) matrix.S21 = activePath.matrix.S21;
-    if (!matrix.S12) matrix.S12 = activePath.matrix.S12;
-    if (!matrix.S11) matrix.S11 = activePath.matrix.S11;
-    if (!matrix.S22) matrix.S22 = activePath.matrix.S22;
+    const actFwd = activePath.matrix[activePath.fwdKey] || activePath.matrix.S21;
+    const actRev = activePath.matrix[activePath.revKey] || activePath.matrix.S12;
+    if (actFwd) matrix.S21 = actFwd;
+    if (actRev) matrix.S12 = actRev;
+    if (activePath.matrix.S11) matrix.S11 = activePath.matrix.S11;
+    if (activePath.matrix.S22) matrix.S22 = activePath.matrix.S22;
   }
 
   // Port-pair matrix calculations (for P1–P8 terminal system compatibility)

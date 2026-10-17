@@ -124,8 +124,7 @@ function renderInspector() {
 
         <div style="font-size:11px; font-weight:600; color:var(--txt2,#64748b); margin-top:6px; margin-bottom:4px">Per-Throw / Position Files:</div>`;
       for (let t = 1; t <= numThrows; t++) {
-        const fnKey = `s2pFileName_st${t}`;
-        const fn = b.params[fnKey];
+        const fn = b.params[`s3pFileName_st${t}`] || b.params[`s2pFileName_st${t}`] || b.params[`snpFileName_st${t}`];
         h += `<div style="margin-bottom:6px">
           <div style="font-size:11px; font-weight:600; color:var(--txt2,#64748b)">Throw ${t} (Path ${t}):</div>
           <div style="display:flex; gap:6px; align-items:center; margin-top:2px">
@@ -234,9 +233,21 @@ function renderInspector() {
           const rd = new FileReader();
           rd.onload = ev => {
             pushHistory();
+            const content = ev.target.result;
             b.params[`s2pFileName_st${t}`] = f.name;
-            b.params[`s2pData_st${t}`] = ev.target.result;
+            b.params[`s2pData_st${t}`] = content;
+            b.params[`s3pFileName_st${t}`] = f.name;
+            b.params[`s3pData_st${t}`] = content;
+            b.params[`snpFileName_st${t}`] = f.name;
+            b.params[`snpData_st${t}`] = content;
             renderAll();
+            if (typeof sparamsTabs !== "undefined" && sparamsTabs.length) {
+              const curTab = sparamsTabs[typeof activeTabIdx !== "undefined" ? activeTabIdx : 0];
+              if (curTab) {
+                curTab.res = null;
+                curTab.selectedPathIdx = null;
+              }
+            }
             if (typeof renderLinearAnalysis === "function") renderLinearAnalysis();
             hint(`Attached '${f.name}' for Throw ${t}`);
           };
@@ -250,7 +261,18 @@ function renderInspector() {
         pushHistory();
         delete b.params[`s2pFileName_st${t}`];
         delete b.params[`s2pData_st${t}`];
+        delete b.params[`s3pFileName_st${t}`];
+        delete b.params[`s3pData_st${t}`];
+        delete b.params[`snpFileName_st${t}`];
+        delete b.params[`snpData_st${t}`];
         renderAll();
+        if (typeof sparamsTabs !== "undefined" && sparamsTabs.length) {
+          const curTab = sparamsTabs[typeof activeTabIdx !== "undefined" ? activeTabIdx : 0];
+          if (curTab) {
+            curTab.res = null;
+            curTab.selectedPathIdx = null;
+          }
+        }
         if (typeof renderLinearAnalysis === "function") renderLinearAnalysis();
         hint(`Removed Touchstone file for Throw ${t}.`);
       };
@@ -297,7 +319,10 @@ function renderInspector() {
         if (panel && panel.style.display !== "none" && typeof renderLinearAnalysis === "function") {
           if (typeof sparamsTabs !== "undefined" && sparamsTabs.length) {
             const curTab = sparamsTabs[typeof activeTabIdx !== "undefined" ? activeTabIdx : 0];
-            if (curTab) curTab.res = null;
+            if (curTab) {
+              curTab.res = null;
+              curTab.selectedPathIdx = null;
+            }
           }
           renderLinearAnalysis();
         }

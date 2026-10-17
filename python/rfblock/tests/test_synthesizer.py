@@ -384,6 +384,68 @@ class TestPiNetworkSynthesizer(unittest.TestCase):
         # Expected: +12.0 dB - 4.0 dB = +8.0 dB (NOT 40 - 25 = 15 dB!)
         self.assertAlmostEqual(p0["s21_db"][0], 8.0, delta=0.2)
 
+    def test_switch_with_dual_s3p_files(self):
+        """
+        Verify that when an SPDT switch is provided separate .s3p files for Throw 1 and Throw 2:
+        - When in State 1: Throw 1 uses File 1 through (-1 dB) and Throw 2 uses File 1 isolation (-40 dB).
+        - When in State 2: Throw 2 uses File 2 through (-2 dB) and Throw 1 uses File 2 isolation (-45 dB).
+        """
+        st1_s3p = """# GHz S DB R 50
+1.0  -20 0  -1.0 0  -40.0 0
+     -1.0 0 -20 0   -40.0 0
+     -40.0 0 -40.0 0 -20 0
+2.0  -20 0  -1.0 0  -40.0 0
+     -1.0 0 -20 0   -40.0 0
+     -40.0 0 -40.0 0 -20 0
+"""
+        st2_s3p = """# GHz S DB R 50
+1.0  -20 0  -45.0 0  -2.0 0
+     -45.0 0 -20 0   -45.0 0
+     -2.0 0 -45.0 0  -20 0
+2.0  -20 0  -45.0 0  -2.0 0
+     -45.0 0 -20 0   -45.0 0
+     -2.0 0 -45.0 0  -20 0
+"""
+        schematic = {
+            "band": {"startFreq": 1.0, "stopFreq": 2.0, "startUnit": "GHz", "points": 2},
+            "blocks": [
+                {"id": "src", "type": "rfin", "params": {"label": "IN", "anaPort": "P1"}},
+                {"id": "sw", "type": "switch", "params": {
+                    "label": "SW",
+                    "throws": "2",
+                    "state": "1",
+                    "s2pData_st1": st1_s3p,
+                    "s2pData_st2": st2_s3p
+                }},
+                {"id": "out1", "type": "rfout", "params": {"label": "OUT1", "anaPort": "P2"}},
+                {"id": "out2", "type": "rfout", "params": {"label": "OUT2", "anaPort": "P3"}},
+            ],
+            "conns": [
+                {"from": {"block": "src", "port": "out"}, "to": {"block": "sw", "port": "in"}},
+                {"from": {"block": "sw", "port": "o1"}, "to": {"block": "out1", "port": "in"}},
+                {"from": {"block": "sw", "port": "o2"}, "to": {"block": "out2", "port": "in"}},
+            ]
+        }
+
+        # Case 1: Switch in State 1
+        res1 = analyze_schematic_cascade(schematic)
+        p1 = next(p for p in res1["paths"] if "out1" in p["block_ids"])
+        p2 = next(p for p in res1["paths"] if "out2" in p["block_ids"])
+        self.assertTrue(p1["is_active"])
+        self.assertFalse(p2["is_active"])
+        self.assertAlmostEqual(p1["s21_db"][0], -1.0, delta=0.2)
+        self.assertAlmostEqual(p2["s21_db"][0], -40.0, delta=0.5)
+
+        # Case 2: Switch shifted to State 2
+        schematic["blocks"][1]["params"]["state"] = "2"
+        res2 = analyze_schematic_cascade(schematic)
+        p1_st2 = next(p for p in res2["paths"] if "out1" in p["block_ids"])
+        p2_st2 = next(p for p in res2["paths"] if "out2" in p["block_ids"])
+        self.assertFalse(p1_st2["is_active"])
+        self.assertTrue(p2_st2["is_active"])
+        self.assertAlmostEqual(p1_st2["s21_db"][0], -45.0, delta=0.5)
+        self.assertAlmostEqual(p2_st2["s21_db"][0], -2.0, delta=0.2)
+
 
 if __name__ == "__main__":
     unittest.main()

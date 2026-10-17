@@ -194,8 +194,11 @@ function renderLinearAnalysis() {
           if (!res.matrix[k]) res.matrix[k] = curPath.matrix[k];
         }
       }
-      if (curPath.fwdKey && !res.matrix[curPath.fwdKey] && curPath.s21_db) {
-        res.matrix[curPath.fwdKey] = new Float64Array(curPath.s21_db);
+      if (curPath.fwdKey) {
+        if (!res.matrix[curPath.fwdKey] && curPath.s21_db) {
+          res.matrix[curPath.fwdKey] = new Float64Array(curPath.s21_db);
+        }
+        invokedTraces.add(curPath.fwdKey);
       }
       highlightSignalPath(curPath);
     }
