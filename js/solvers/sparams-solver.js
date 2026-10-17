@@ -197,18 +197,39 @@ function getStageTransmissionDb(b, freqs, warnings, path, isReverse = false, inP
     }
 
     // Check per-throw file or active switch position file or multi-port Touchstone
-    const sRaw = (b.params && b.params[`s2pData_st${kThrow}`]) || (b.params && b.params[`s2pData_st${stNum}`]) || (b.params && b.params.s2pData) || (b.params && b.params.s3pData) || (b.params && b.params.snpData);
+    let sRaw = null;
+    let isThrowSpecific = false;
+    if (kThrow !== stNum && b.params && (b.params[`s2pData_st${kThrow}`] || b.params[`s3pData_st${kThrow}`])) {
+      // The inactive throw has its own dedicated measured Touchstone file
+      sRaw = b.params[`s2pData_st${kThrow}`] || b.params[`s3pData_st${kThrow}`];
+      isThrowSpecific = true;
+    } else {
+      sRaw = (b.params && b.params[`s3pData_st${stNum}`]) ||
+             (b.params && b.params[`s2pData_st${stNum}`]) ||
+             (b.params && b.params.s3pData) ||
+             (b.params && b.params.s2pData) ||
+             (b.params && b.params.snpData) ||
+             (b.params && b.params.s4pData) ||
+             (b.params && b.params.s3pData_st1) ||
+             (b.params && b.params.s2pData_st1);
+    }
 
     if (sRaw) {
       const parsed = parseTouchstone(sRaw);
       if (parsed) {
         let dstPortIdx = 1;
         if (parsed.numPorts >= 3) {
-          // Multi-port S(N+1)P Touchstone file: Throw k = Port k+1 (row index k in sMat)
-          dstPortIdx = kThrow;
+          // Multi-port S(N+1)P Touchstone file:
+          const hasDedicatedState = Boolean(b.params && (b.params[`s3pData_st${stNum}`] || b.params[`s2pData_st${stNum}`]));
+          if (stNum > 1 && !hasDedicatedState) {
+            // Auto-permuted: Throw stNum is through (Port 1), Throw 1 is isolated (Port stNum)
+            dstPortIdx = (kThrow === stNum) ? 1 : ((kThrow === 1) ? stNum : kThrow);
+          } else {
+            dstPortIdx = kThrow;
+          }
         } else {
           // 2-port Touchstone file:
-          if (kThrow !== stNum) {
+          if (kThrow !== stNum && !isThrowSpecific) {
             for (let k = 0; k < N; k++) tDb[k] = isoDb;
             return tDb;
           }
@@ -344,8 +365,8 @@ function getStageTransmissionDb(b, freqs, warnings, path, isReverse = false, inP
     return tDb;
   }
 
-  // Standard component Touchstone S2P or ideal gain/loss
-  const sRaw = b.params && b.params.s2pData;
+  // Standard component Touchstone S2P/S3P/SNP or ideal gain/loss
+  const sRaw = b.params && (b.params.s2pData || b.params.s3pData || b.params.s4pData || b.params.snpData);
   if (sRaw) {
     const parsed = parseTouchstone(sRaw);
     if (parsed) {

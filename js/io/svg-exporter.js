@@ -273,6 +273,7 @@ function buildExportSVG(scale = 1) {
 
   return `<?xml version="1.0" encoding="UTF-8"?>\n`
     + `<svg xmlns="http://www.w3.org/2000/svg" width="${svgW}" height="${svgH}" viewBox="0 0 ${W} ${H}" font-family="${fontSans}" text-rendering="geometricPrecision">\n`
+    + `  <rect x="0" y="0" width="${W}" height="${H}" fill="#ffffff"/>\n`
     + `  <g id="diagram" transform="translate(${-minx} ${-miny})">\n`
     + `    ${wiresBody}\n`
     + `    ${blocksBody}\n`

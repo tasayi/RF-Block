@@ -107,17 +107,29 @@ function renderInspector() {
         </div>
       </div>`;
     } else if (b.type === "switch") {
-      // Per-throw upload for SPnT Switches
+      // Full Switch Multi-Port and Per-Throw upload for SPnT Switches
       const numThrows = parseInt(b.params.throws) || 2;
+      const swMultiFn = b.params.s3pFileName || b.params.s2pFileName;
       h += `<div class="insp-sec" style="margin-top:10px; padding-top:10px; border-top:1px solid var(--border,#e2e8f0)">
-        <label style="font-weight:600; font-size:12px; display:block; margin-bottom:6px">Per-Throw Touchstone Files (.s2p / .sNp)</label>`;
+        <label style="font-weight:600; font-size:12px; display:block; margin-bottom:6px">Switch Touchstone Files (.s3p / .s2p / .sNp)</label>
+        
+        <div style="margin-bottom:8px">
+          <div style="font-size:11px; font-weight:600; color:var(--txt2,#64748b)">Full Switch Multi-Port (.s3p / .sNp):</div>
+          <div style="display:flex; gap:6px; align-items:center; margin-top:2px">
+            <button class="btn btn-sm" id="ibSwMultiBtn" style="flex:1">${swMultiFn ? "📄 " + esc(swMultiFn) : "📁 Attach Switch (.s3p / .sNp)"}</button>
+            ${swMultiFn ? `<button class="btn btn-sm btn-del" id="ibSwMultiClr">✕</button>` : ""}
+          </div>
+          <input type="file" id="ibSwMultiFile" accept=".s1p,.s2p,.s3p,.s4p,.snp,.ts" style="display:none"/>
+        </div>
+
+        <div style="font-size:11px; font-weight:600; color:var(--txt2,#64748b); margin-top:6px; margin-bottom:4px">Per-Throw / Position Files:</div>`;
       for (let t = 1; t <= numThrows; t++) {
         const fnKey = `s2pFileName_st${t}`;
         const fn = b.params[fnKey];
         h += `<div style="margin-bottom:6px">
-          <div style="font-size:11px; font-weight:600; color:var(--txt2,#64748b)">Throw ${t} (Path ${t}) S2P:</div>
+          <div style="font-size:11px; font-weight:600; color:var(--txt2,#64748b)">Throw ${t} (Path ${t}):</div>
           <div style="display:flex; gap:6px; align-items:center; margin-top:2px">
-            <button class="btn btn-sm ib-sw-s2p-btn" data-throw="${t}" style="flex:1">${fn ? "📄 " + esc(fn) : `📁 Attach Throw ${t} (.s2p)`}</button>
+            <button class="btn btn-sm ib-sw-s2p-btn" data-throw="${t}" style="flex:1">${fn ? "📄 " + esc(fn) : `📁 Attach Throw ${t} (.s2p / .s3p)`}</button>
             ${fn ? `<button class="btn btn-sm btn-del ib-sw-s2p-clr" data-throw="${t}">✕</button>` : ""}
           </div>
           <input type="file" class="ib-sw-s2p-file" data-throw="${t}" accept=".s1p,.s2p,.s3p,.s4p,.snp,.ts" style="display:none"/>
@@ -179,6 +191,38 @@ function renderInspector() {
     bindS2pSlot("ibS2pAmpBtn", "ibS2pAmpFile", "ibS2pAmpClr", "s2pFileName_amp", "s2pData_amp");
     bindS2pSlot("ibS2pBypBtn", "ibS2pBypFile", "ibS2pBypClr", "s2pFileName_byp", "s2pData_byp");
   } else if (b.type === "switch") {
+    const swMultiBtn = $("ibSwMultiBtn"), swMultiFile = $("ibSwMultiFile"), swMultiClr = $("ibSwMultiClr");
+    if (swMultiBtn && swMultiFile) {
+      swMultiBtn.onclick = () => swMultiFile.click();
+      swMultiFile.onchange = e => {
+        const f = e.target.files && e.target.files[0];
+        if (!f) return;
+        const rd = new FileReader();
+        rd.onload = ev => {
+          pushHistory();
+          b.params.s3pFileName = f.name;
+          b.params.s3pData = ev.target.result;
+          b.params.s2pFileName = f.name;
+          b.params.s2pData = ev.target.result;
+          renderAll();
+          if (typeof renderLinearAnalysis === "function") renderLinearAnalysis();
+          hint(`Attached switch multi-port file '${f.name}'`);
+        };
+        rd.readAsText(f);
+      };
+    }
+    if (swMultiClr) {
+      swMultiClr.onclick = () => {
+        pushHistory();
+        delete b.params.s3pFileName;
+        delete b.params.s3pData;
+        delete b.params.s2pFileName;
+        delete b.params.s2pData;
+        renderAll();
+        if (typeof renderLinearAnalysis === "function") renderLinearAnalysis();
+        hint("Removed switch multi-port file.");
+      };
+    }
     box.querySelectorAll(".ib-sw-s2p-btn").forEach(btn => {
       const t = btn.getAttribute("data-throw");
       const fileEl = box.querySelector(`.ib-sw-s2p-file[data-throw="${t}"]`);

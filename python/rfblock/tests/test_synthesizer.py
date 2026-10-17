@@ -239,6 +239,151 @@ class TestPiNetworkSynthesizer(unittest.TestCase):
         self.assertAlmostEqual(p2_st2["s21_db"][0], -20.5, delta=0.2)
         self.assertTrue(p2_st2["is_active"])
 
+    def test_switch_with_s3p_touchstone_file(self):
+        """
+        Verify that an SPDT switch with an attached .s3p Touchstone file uses the exact
+        measured S-parameters for BOTH the active through-path and the isolated path,
+        strictly overriding manually entered il and iso scalar values.
+        """
+        # 3-Port Touchstone in dB format (f S11 S12 S13 \n S21 S22 S23 \n S31 S32 S33)
+        # Port 1: RFC, Port 2: RF1, Port 3: RF2
+        # In State 1: S21 = -0.7 dB (IL), S31 = -52.0 dB (ISO)
+        sw_s3p = """# GHz S DB R 50
+1.0  -25 0  -0.7 0  -52 0
+     -0.7 0  -24 0  -58 0
+     -52 0  -58 0  -20 0
+2.0  -25 0  -0.7 0  -52 0
+     -0.7 0  -24 0  -58 0
+     -52 0  -58 0  -20 0
+"""
+        def make_sw_circuit(sw_state):
+            return {
+                "band": {"startFreq": 1.0, "stopFreq": 2.0, "startUnit": "GHz", "points": 3},
+                "blocks": [
+                    {"id": "src", "type": "source", "params": {"label": "Source"}},
+                    {"id": "sw", "type": "switch", "params": {
+                        "label": "SPDT",
+                        "throws": 2,
+                        "state": str(sw_state),
+                        "il": 3.0,     # Manual parameter deliberately different from S3P (0.7 dB)
+                        "iso": 20.0,   # Manual parameter deliberately different from S3P (52.0 dB)
+                        "s3pData": sw_s3p
+                    }},
+                    {"id": "out1", "type": "rfout", "params": {"label": "Out1"}},
+                    {"id": "out2", "type": "rfout", "params": {"label": "Out2"}},
+                ],
+                "conns": [
+                    {"from": {"block": "src", "port": "out"}, "to": {"block": "sw", "port": "in"}},
+                    {"from": {"block": "sw", "port": "o1"}, "to": {"block": "out1", "port": "in"}},
+                    {"from": {"block": "sw", "port": "o2"}, "to": {"block": "out2", "port": "in"}},
+                ]
+            }
+
+        # Case 1: Switch in State 1
+        res1 = analyze_schematic_cascade(make_sw_circuit(1))
+        self.assertEqual(res1.get("status"), "success")
+        p1 = next(p for p in res1["paths"] if "out1" in p["block_ids"])
+        p2 = next(p for p in res1["paths"] if "out2" in p["block_ids"])
+
+        # Path 1 (Throw 1) must be measured IL ~ -0.7 dB (NOT manual 3.0 dB!)
+        self.assertAlmostEqual(p1["s21_db"][0], -0.7, delta=0.2)
+        self.assertTrue(p1["is_active"])
+
+        # Path 2 (Throw 2, isolated) must be measured ISO ~ -52.0 dB (NOT manual 20.0 dB!)
+        self.assertAlmostEqual(p2["s21_db"][0], -52.0, delta=0.5)
+        self.assertFalse(p2["is_active"])
+
+        # Case 2: Switch shifted to State 2 (auto-permuted for symmetric switch)
+        res2 = analyze_schematic_cascade(make_sw_circuit(2))
+        p1_st2 = next(p for p in res2["paths"] if "out1" in p["block_ids"])
+        p2_st2 = next(p for p in res2["paths"] if "out2" in p["block_ids"])
+
+        # Path 1 is now isolated: ~ -52.0 dB
+        self.assertAlmostEqual(p1_st2["s21_db"][0], -52.0, delta=0.5)
+        self.assertFalse(p1_st2["is_active"])
+
+        # Path 2 is now active: ~ -0.7 dB
+        self.assertAlmostEqual(p2_st2["s21_db"][0], -0.7, delta=0.2)
+        self.assertTrue(p2_st2["is_active"])
+
+    def test_switch_with_per_throw_s2p_files(self):
+        """
+        Verify that when per-throw .s2p files are attached to an SPDT switch,
+        the active throw uses its S2P and the inactive throw uses its S2P for isolation.
+        """
+        thru_s2p = """# GHz S DB R 50
+1.0  -20 0  -0.9 0  -0.9 0  -20 0
+2.0  -20 0  -0.9 0  -0.9 0  -20 0
+"""
+        iso_s2p = """# GHz S DB R 50
+1.0  -15 0  -48.0 0  -48.0 0  -15 0
+2.0  -15 0  -48.0 0  -48.0 0  -15 0
+"""
+        schematic = {
+            "band": {"startFreq": 1.0, "stopFreq": 2.0, "startUnit": "GHz", "points": 3},
+            "blocks": [
+                {"id": "src", "type": "source", "params": {"label": "Source"}},
+                {"id": "sw", "type": "switch", "params": {
+                    "label": "SPDT",
+                    "throws": 2,
+                    "state": "1",
+                    "il": 2.5,
+                    "iso": 25.0,
+                    "s2pData_st1": thru_s2p,
+                    "s2pData_st2": iso_s2p
+                }},
+                {"id": "out1", "type": "rfout", "params": {"label": "Out1"}},
+                {"id": "out2", "type": "rfout", "params": {"label": "Out2"}},
+            ],
+            "conns": [
+                {"from": {"block": "src", "port": "out"}, "to": {"block": "sw", "port": "in"}},
+                {"from": {"block": "sw", "port": "o1"}, "to": {"block": "out1", "port": "in"}},
+                {"from": {"block": "sw", "port": "o2"}, "to": {"block": "out2", "port": "in"}},
+            ]
+        }
+        res = analyze_schematic_cascade(schematic)
+        p1 = next(p for p in res["paths"] if "out1" in p["block_ids"])
+        p2 = next(p for p in res["paths"] if "out2" in p["block_ids"])
+
+        # Throw 1 uses thru_s2p (~ -0.9 dB)
+        self.assertAlmostEqual(p1["s21_db"][0], -0.9, delta=0.2)
+        # Throw 2 uses iso_s2p (~ -48.0 dB, NOT manual 25.0 dB!)
+        self.assertAlmostEqual(p2["s21_db"][0], -48.0, delta=0.5)
+
+    def test_universal_touchstone_precedence(self):
+        """
+        Verify that for any component (e.g. amp, attenuator), attached Touchstone data
+        always strictly overrides manually entered gain, loss, and isolation values.
+        """
+        amp_s2p = """# GHz S DB R 50
+1.0  -20 0  12.0 0  -30.0 0  -20 0
+2.0  -20 0  12.0 0  -30.0 0  -20 0
+"""
+        att_s2p = """# GHz S DB R 50
+1.0  -25 0  -4.0 0  -4.0 0  -25 0
+2.0  -25 0  -4.0 0  -4.0 0  -25 0
+"""
+        schematic = {
+            "band": {"startFreq": 1.0, "stopFreq": 2.0, "startUnit": "GHz", "points": 3},
+            "blocks": [
+                {"id": "src", "type": "source", "params": {"label": "Source"}},
+                # Manual gain: 40.0 dB, but Touchstone provides 12.0 dB
+                {"id": "amp", "type": "amp", "params": {"label": "LNA", "gain": 40.0, "s2pData": amp_s2p}},
+                # Manual atten: 25.0 dB, but Touchstone provides 4.0 dB
+                {"id": "att", "type": "attenuator", "params": {"label": "Pad", "atten": 25.0, "s2pData": att_s2p}},
+                {"id": "out", "type": "rfout", "params": {"label": "Out"}},
+            ],
+            "conns": [
+                {"from": {"block": "src", "port": "out"}, "to": {"block": "amp", "port": "in"}},
+                {"from": {"block": "amp", "port": "out"}, "to": {"block": "att", "port": "in"}},
+                {"from": {"block": "att", "port": "out"}, "to": {"block": "out", "port": "in"}},
+            ]
+        }
+        res = analyze_schematic_cascade(schematic)
+        p0 = res["paths"][0]
+        # Expected: +12.0 dB - 4.0 dB = +8.0 dB (NOT 40 - 25 = 15 dB!)
+        self.assertAlmostEqual(p0["s21_db"][0], 8.0, delta=0.2)
+
 
 if __name__ == "__main__":
     unittest.main()

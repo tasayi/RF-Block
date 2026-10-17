@@ -92,12 +92,16 @@ def synthesize_switch_network(
     freq: skrf.Frequency,
     z0: float = 50.0,
     return_loss_db: float = -20.0,
-    name: str = "switch"
+    name: str = "switch",
+    throw_networks: Optional[Dict[int, skrf.Network]] = None
 ) -> skrf.Network:
     """
     Synthesizes an (N+1)-port behavioral skrf.Network for an SPnT switch.
     Port 0: Common ('in')
     Port k (1 <= k <= throws): Throw k ('ok')
+
+    If throw_networks is provided, measured Touchstone data is embedded for the
+    respective throws, taking strict precedence over scalar il_db/iso_db.
     """
     throws = max(1, int(throws))
     state = int(state)
@@ -125,6 +129,21 @@ def synthesize_switch_network(
         for k in range(j + 1, num_ports):
             s_mat[:, j, k] = iso_mag
             s_mat[:, k, j] = iso_mag
+
+    # Embed measured Touchstone networks where present
+    if throw_networks:
+        for k, t_net in throw_networks.items():
+            if 1 <= k <= throws and t_net is not None and t_net.nports >= 2:
+                if k == state and state > 0:
+                    s_mat[:, 0, 0] = t_net.s[:, 0, 0]
+                    s_mat[:, 0, k] = t_net.s[:, 0, 1]
+                    s_mat[:, k, 0] = t_net.s[:, 1, 0]
+                    s_mat[:, k, k] = t_net.s[:, 1, 1]
+                else:
+                    # Inactive / isolated throw: measured Touchstone provides true isolation
+                    s_mat[:, 0, k] = t_net.s[:, 0, 1]
+                    s_mat[:, k, 0] = t_net.s[:, 1, 0]
+                    s_mat[:, k, k] = t_net.s[:, 1, 1]
 
     net = skrf.Network(frequency=freq, s=s_mat, z0=z0, name=name)
     net.params = {

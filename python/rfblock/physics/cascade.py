@@ -481,5 +481,6 @@ def analyze_schematic_cascade(schematic: Dict[str, Any]) -> Dict[str, Any]:
         "num_paths": len(analyzed_paths),
         "paths": analyzed_paths,
         "portsList": ports_info,
-        "touchstone_s2p": primary_touchstone
+        "touchstone_s2p": primary_touchstone,
+        "touchstone_snp": primary_touchstone
     }

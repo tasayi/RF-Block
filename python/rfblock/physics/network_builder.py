@@ -231,16 +231,17 @@ def build_block_network(
     label = params.get("label", btype)
     n_pts = len(freq)
 
-    # Check for attached Touchstone data
+    # Check for attached Touchstone data (strict precedence over scalar parameters)
     s2p_text = None
     if btype == "bamp":
         is_byp = (params.get("mode") == "Bypass Mode")
         s2p_text = params.get("s2pData_byp") if is_byp else params.get("s2pData_amp")
-    elif btype == "switch" and out_port and out_port.startswith("o"):
-        throw_num = out_port[1:]
-        s2p_text = params.get(f"s2pData_st{throw_num}")
-
-    if not s2p_text:
+        if not s2p_text:
+            s2p_text = params.get("s2pData") or params.get("snpData")
+    elif btype == "switch":
+        # Handled in dedicated Switch section below to support multi-port .s3p and per-throw .s2p embedding
+        pass
+    else:
         s2p_text = params.get("s2pData") or params.get("s3pData") or params.get("snpData") or params.get("s4pData")
 
     if s2p_text:
@@ -273,11 +274,58 @@ def build_block_network(
         s_mat[:, 1, 1] = s11_mag
         return skrf.Network(frequency=freq, s=s_mat, z0=z0, name=label)
 
-    # SPnT Switch
+    # SPnT Switch with Full Multi-Port (.s3p/.sNp) and Per-Throw (.s2p) Touchstone Support
     if btype == "switch":
-        throws = int(params.get("throws", 2))
+        throws = max(1, int(params.get("throws", 2)))
         st_raw = params.get("state", "1")
-        state = int(st_raw) if str(st_raw).isdigit() else 1
+        state = int(st_raw) if str(st_raw).isdigit() else (0 if str(st_raw).lower() in ("open", "0") else 1)
+
+        # 1. Check for multi-port Touchstone (.s3p for SPDT, etc.)
+        # Check active state Touchstone first, then global / state 1 Touchstone
+        s_multi = (
+            params.get(f"s3pData_st{state}") or
+            params.get(f"snpData_st{state}") or
+            params.get(f"s2pData_st{state}") or
+            params.get("s3pData") or
+            params.get("snpData") or
+            params.get("s4pData") or
+            params.get("s2pData") or
+            params.get("s3pData_st1") or
+            params.get("s2pData_st1")
+        )
+        if s_multi:
+            loaded_multi = load_touchstone_network(s_multi, freq=freq, label=label)
+            if loaded_multi is not None and loaded_multi.nports == (throws + 1):
+                # Multi-port switch network matched: Port 0=in, Port 1=o1, Port 2=o2...
+                # If switch is switched to state > 1 and this file was from state 1 or global, permute ports 1 and state
+                has_state_specific = bool(params.get(f"s3pData_st{state}") or params.get(f"snpData_st{state}"))
+                if state > 1 and not has_state_specific and state <= throws:
+                    perm = list(range(loaded_multi.nports))
+                    perm[1], perm[state] = perm[state], perm[1]
+                    perm_s = loaded_multi.s[:, perm, :][:, :, perm]
+                    loaded_multi = skrf.Network(frequency=freq, s=perm_s, z0=loaded_multi.z0, name=label)
+
+                if full_ports or (in_port is None and out_port is None):
+                    return loaded_multi
+                idx_a = get_block_port_index(btype, in_port, params)
+                idx_b = get_block_port_index(btype, out_port, params)
+                return extract_subnetwork_2port(loaded_multi, idx_a, idx_b)
+
+        # 2. Check for per-throw 2-port Touchstone files (.s2p)
+        throw_nets = {}
+        for t in range(1, throws + 1):
+            t_text = (
+                params.get(f"s2pData_st{t}") or
+                params.get(f"s3pData_st{t}") or
+                params.get(f"snpData_st{t}")
+            )
+            if not t_text and t == state:
+                t_text = params.get("s2pData") or params.get("snpData")
+            if t_text:
+                t_net = load_touchstone_network(t_text, freq=freq, label=f"{label}_st{t}")
+                if t_net is not None:
+                    throw_nets[t] = t_net
+
         il_db = float(params.get("il", 0.8))
         iso_db = float(params.get("iso", 40.0))
         full_net = synthesize_switch_network(
@@ -288,7 +336,8 @@ def build_block_network(
             freq=freq,
             z0=z0,
             return_loss_db=rl_db,
-            name=label
+            name=label,
+            throw_networks=throw_nets if throw_nets else None
         )
         if full_ports or (in_port is None and out_port is None):
             return full_net

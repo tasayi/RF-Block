@@ -384,15 +384,42 @@ function renderSvgPlot(res, metric = "mag", yScaleChoice = "auto") {
 function exportSParamsCsv(res) {
   if (!res || !res.freqs || !res.matrix) return;
   const freqs = res.freqs;
-  const invKeys = Array.from(invokedTraces);
-  let csv = "Frequency_Hz," + invKeys.join(",") + "\n";
+  let invKeys = Array.from(invokedTraces);
+  if (!invKeys.length) {
+    invKeys = Object.keys(res.matrix).filter(k => /^S\d+$/.test(k) || ["S21", "S11", "S22", "S12"].includes(k));
+    if (!invKeys.length) invKeys = Object.keys(res.matrix);
+  }
+
+  // Construct CSV Header
+  const headers = ["Frequency_Hz", "Frequency_GHz"];
+  invKeys.forEach(sKey => {
+    headers.push(`${sKey}_dB`);
+    if (res.matrix_phase && res.matrix_phase[sKey]) {
+      headers.push(`${sKey}_Phase_deg`);
+    }
+  });
+  if (res.group_delay_ns && res.group_delay_ns.length) headers.push("Group_Delay_ns");
+  if (res.k_factor && res.k_factor.length) headers.push("Stability_Factor_K");
+
+  let csv = headers.join(",") + "\n";
 
   for (let k = 0; k < freqs.length; k++) {
-    const row = [freqs[k].toFixed(0)];
+    const f = freqs[k];
+    const row = [f.toFixed(0), (f / 1e9).toFixed(6)];
     invKeys.forEach(sKey => {
-      const arr = res.matrix[sKey];
-      row.push(arr ? arr[k].toFixed(4) : "-120.0000");
+      const arrMag = res.matrix[sKey];
+      row.push(arrMag ? arrMag[k].toFixed(4) : "-120.0000");
+      if (res.matrix_phase && res.matrix_phase[sKey]) {
+        const arrPhase = res.matrix_phase[sKey];
+        row.push(arrPhase ? arrPhase[k].toFixed(2) : "0.00");
+      }
     });
+    if (res.group_delay_ns && res.group_delay_ns.length) {
+      row.push(res.group_delay_ns[k] != null ? res.group_delay_ns[k].toFixed(4) : "0.0000");
+    }
+    if (res.k_factor && res.k_factor.length) {
+      row.push(res.k_factor[k] != null ? res.k_factor[k].toFixed(4) : "1.0000");
+    }
     csv += row.join(",") + "\n";
   }
 
@@ -405,13 +432,66 @@ function exportSParamsCsv(res) {
   URL.revokeObjectURL(url);
 }
 
+/* Helper to resolve standalone CSS styles for self-contained SVG export */
+function buildStandaloneSvg(container) {
+  const svgEl = container.querySelector("svg");
+  if (!svgEl) return null;
+  const clone = svgEl.cloneNode(true);
+  clone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+
+  // Determine computed colors from container/document
+  const cs = window.getComputedStyle(container);
+  const bg = cs.getPropertyValue("--canvas").trim() || "#0f172a";
+  const ink = cs.getPropertyValue("--ink").trim() || "#f8fafc";
+  const inkDim = cs.getPropertyValue("--ink-dim").trim() || "#94a3b8";
+  const lineCol = cs.getPropertyValue("--line").trim() || "#334155";
+  const gridMaj = cs.getPropertyValue("--grid-maj").trim() || "#1e293b";
+  const monoFont = "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace";
+  const sansFont = "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+
+  // Create embedded style definition
+  const styleEl = document.createElementNS("http://www.w3.org/2000/svg", "style");
+  styleEl.textContent = `
+    svg { font-family: ${sansFont}; background: ${bg}; }
+    text { font-family: ${monoFont}; fill: ${inkDim}; }
+    .title-text { fill: ${ink}; font-family: ${sansFont}; }
+  `;
+  clone.insertBefore(styleEl, clone.firstChild);
+
+  // Add solid background rect to ensure non-transparent rendering in all external viewers
+  const bgRect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+  bgRect.setAttribute("width", "100%");
+  bgRect.setAttribute("height", "100%");
+  bgRect.setAttribute("fill", bg);
+  clone.insertBefore(bgRect, clone.children[1] || null);
+
+  // Replace CSS variable references in cloned attributes with explicit colors
+  const replaceVarAttrs = el => {
+    ["fill", "stroke", "font-family"].forEach(attr => {
+      const v = el.getAttribute(attr);
+      if (v && v.includes("var(")) {
+        if (v.includes("--canvas")) el.setAttribute(attr, bg);
+        else if (v.includes("--ink-dim")) el.setAttribute(attr, inkDim);
+        else if (v.includes("--ink")) el.setAttribute(attr, ink);
+        else if (v.includes("--grid-maj")) el.setAttribute(attr, gridMaj);
+        else if (v.includes("--line")) el.setAttribute(attr, lineCol);
+        else if (v.includes("--mono")) el.setAttribute(attr, monoFont);
+        else if (v.includes("--sans")) el.setAttribute(attr, sansFont);
+      }
+    });
+    for (let c of el.children) replaceVarAttrs(c);
+  };
+  replaceVarAttrs(clone);
+
+  return new XMLSerializer().serializeToString(clone);
+}
+
 /* Export SVG Vector Graph File */
 function exportSParamsSvg() {
   const container = $("spChartContainer");
   if (!container) return;
-  const svgEl = container.querySelector("svg");
-  if (!svgEl) return;
-  const svgText = new XMLSerializer().serializeToString(svgEl);
+  const svgText = buildStandaloneSvg(container);
+  if (!svgText) return;
   const blob = new Blob([svgText], { type: "image/svg+xml;charset=utf-8" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
@@ -425,17 +505,20 @@ function exportSParamsSvg() {
 function exportSParamsPng() {
   const container = $("spChartContainer");
   if (!container) return;
-  const svgEl = container.querySelector("svg");
-  if (!svgEl) return;
-  const svgText = new XMLSerializer().serializeToString(svgEl);
+  const svgText = buildStandaloneSvg(container);
+  if (!svgText) return;
   const img = new Image();
   const url = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svgText);
   img.onload = () => {
     const cv = document.createElement("canvas");
+    const scale = 2; // High-DPI 2x supersampling
     cv.width = 1800; cv.height = 720;
     const g = cv.getContext("2d");
-    g.fillStyle = "#ffffff";
+    const cs = window.getComputedStyle(container);
+    g.fillStyle = cs.getPropertyValue("--canvas").trim() || "#0f172a";
     g.fillRect(0, 0, cv.width, cv.height);
+    g.imageSmoothingEnabled = true;
+    g.imageSmoothingQuality = "high";
     g.drawImage(img, 0, 0, cv.width, cv.height);
     cv.toBlob(blob => {
       const u = URL.createObjectURL(blob);
@@ -453,47 +536,59 @@ function exportSParamsPng() {
 function exportTouchstoneS2p(res) {
   if (!res || !res.freqs || !res.matrix) return;
   const P = (res.portsList && res.portsList.length) || 2;
+  const ext = P === 2 ? ".s2p" : `.s${P}p`;
 
-  // If backend provided verified Touchstone s2p string, use it directly for 2-port export
-  if (P === 2 && res.touchstone_s2p) {
-    const blob = new Blob([res.touchstone_s2p], { type: "text/plain;charset=utf-8;" });
+  // 1. If backend provided verified Touchstone string, use it directly for authentic N-port complex data
+  const tsText = res.touchstone_snp || res.touchstone_s2p;
+  if (tsText && typeof tsText === "string" && !tsText.startsWith("! Touchstone export error")) {
+    const blob = new Blob([tsText], { type: "text/plain;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "system_linear_analysis.s2p";
+    a.download = `system_linear_analysis${ext}`;
     a.click();
     URL.revokeObjectURL(url);
     return;
   }
 
+  // 2. Client-side fallback Touchstone generation with exact Touchstone V1.1 matrix layout
   const freqs = res.freqs;
   let sNp = `! RF Chain System Multi-Port S-Parameters (${P}-Port Export)\n`;
   sNp += `! Date: ${new Date().toISOString()}\n`;
   sNp += `# Hz S DB R 50\n`;
 
   for (let k = 0; k < freqs.length; k++) {
-    let line = `${freqs[k].toFixed(0)}`;
+    const fHz = freqs[k].toFixed(0);
     if (P === 2) {
-      // Touchstone 2-port specification requires: S11 S21 S12 S22
+      // Touchstone 2-port specification standard order: S11 S21 S12 S22
       const sOrder = ["S11", "S21", "S12", "S22"];
+      let line = fHz;
       for (const sk of sOrder) {
-        const arr = res.matrix[sk];
-        const db = arr ? arr[k].toFixed(3) : "-120.000";
-        line += ` ${db} 0.00`;
+        const arrMag = res.matrix[sk];
+        const db = arrMag ? arrMag[k].toFixed(3) : "-120.000";
+        const arrPhase = res.matrix_phase && res.matrix_phase[sk];
+        const ph = arrPhase ? arrPhase[k].toFixed(2) : "0.00";
+        line += ` ${db} ${ph}`;
       }
+      sNp += line + "\n";
     } else {
+      // Touchstone N-port (N >= 3) matrix specification layout:
+      // Row 1 starts with frequency, subsequent rows are indented
       for (let i = 1; i <= P; i++) {
+        let line = (i === 1) ? fHz : "           ";
         for (let j = 1; j <= P; j++) {
-          const arr = res.matrix[`S${i}${j}`];
-          const db = arr ? arr[k].toFixed(3) : "-120.000";
-          line += ` ${db} 0.00`;
+          const sk = `S${i}${j}`;
+          const arrMag = res.matrix[sk];
+          const db = arrMag ? arrMag[k].toFixed(3) : "-120.000";
+          const arrPhase = res.matrix_phase && res.matrix_phase[sk];
+          const ph = arrPhase ? arrPhase[k].toFixed(2) : "0.00";
+          line += ` ${db} ${ph}`;
         }
+        sNp += line + "\n";
       }
     }
-    sNp += line + "\n";
   }
 
-  const ext = P === 2 ? ".s2p" : `.s${P}p`;
   const blob = new Blob([sNp], { type: "text/plain;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
