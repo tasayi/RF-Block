@@ -143,6 +143,106 @@ class TestPhysicsEngine(unittest.TestCase):
         self.assertIn("group_delay_ns", pdata)
         self.assertIn("k_factor", pdata)
 
+    def test_split_and_combine_constructive_and_destructive(self):
+        """Test true multi-port vector wave superposition in split-and-combine topologies."""
+        # 1. In-phase constructive interference (0 dB excess loss -> ~ 0 dB net gain)
+        schematic_constructive = {
+            "band": {"startFreq": 1.0, "stopFreq": 2.0, "startUnit": "GHz", "points": 3},
+            "blocks": [
+                {"id": "src", "type": "source", "params": {"label": "Source"}},
+                {"id": "spl", "type": "splitter", "params": {"ways": 2, "exloss": 0.0, "s11": -60.0}},
+                {"id": "pad1", "type": "attenuator", "params": {"atten": 0.0, "s11": -60.0}},
+                {"id": "pad2", "type": "attenuator", "params": {"atten": 0.0, "s11": -60.0}},
+                {"id": "cmb", "type": "combiner", "params": {"ways": 2, "exloss": 0.0, "s11": -60.0}},
+                {"id": "out", "type": "rfout", "params": {"label": "Out"}}
+            ],
+            "conns": [
+                {"from": {"block": "src", "port": "out"}, "to": {"block": "spl", "port": "in"}},
+                {"from": {"block": "spl", "port": "o1"}, "to": {"block": "pad1", "port": "in"}},
+                {"from": {"block": "spl", "port": "o2"}, "to": {"block": "pad2", "port": "in"}},
+                {"from": {"block": "pad1", "port": "out"}, "to": {"block": "cmb", "port": "i1"}},
+                {"from": {"block": "pad2", "port": "out"}, "to": {"block": "cmb", "port": "i2"}},
+                {"from": {"block": "cmb", "port": "out"}, "to": {"block": "out", "port": "in"}},
+            ]
+        }
+        res_c = analyze_schematic_cascade(schematic_constructive)
+        self.assertEqual(res_c.get("status"), "success")
+        s21_c = res_c["matrix"]["S21"][0]
+        self.assertAlmostEqual(s21_c, 0.0, delta=0.1)
+
+        # 2. Out-of-phase destructive interference with 180° phase shifter in arm 2
+        schematic_destructive = {
+            "band": {"startFreq": 1.0, "stopFreq": 2.0, "startUnit": "GHz", "points": 3},
+            "blocks": [
+                {"id": "src", "type": "source", "params": {"label": "Source"}},
+                {"id": "spl", "type": "splitter", "params": {"ways": 2, "exloss": 0.0, "s11": -60.0}},
+                {"id": "pad1", "type": "attenuator", "params": {"atten": 0.0, "s11": -60.0}},
+                {"id": "ps", "type": "phase", "params": {"phase": 180.0, "il": 0.0, "s11": -60.0}},
+                {"id": "cmb", "type": "combiner", "params": {"ways": 2, "exloss": 0.0, "s11": -60.0}},
+                {"id": "out", "type": "rfout", "params": {"label": "Out"}}
+            ],
+            "conns": [
+                {"from": {"block": "src", "port": "out"}, "to": {"block": "spl", "port": "in"}},
+                {"from": {"block": "spl", "port": "o1"}, "to": {"block": "pad1", "port": "in"}},
+                {"from": {"block": "spl", "port": "o2"}, "to": {"block": "ps", "port": "in"}},
+                {"from": {"block": "pad1", "port": "out"}, "to": {"block": "cmb", "port": "i1"}},
+                {"from": {"block": "ps", "port": "out"}, "to": {"block": "cmb", "port": "i2"}},
+                {"from": {"block": "cmb", "port": "out"}, "to": {"block": "out", "port": "in"}},
+            ]
+        }
+        res_d = analyze_schematic_cascade(schematic_destructive)
+        self.assertEqual(res_d.get("status"), "success")
+        s21_d = res_d["matrix"]["S21"][0]
+        # Destructive cancellation should be at least -60 dB down
+        self.assertLess(s21_d, -60.0)
+
+    def test_isolator_cascade_non_reciprocal(self):
+        """Test that an isolator block provides low forward insertion loss and high reverse isolation."""
+        schematic = {
+            "band": {"startFreq": 1.0, "stopFreq": 2.0, "startUnit": "GHz", "points": 3},
+            "blocks": [
+                {"id": "src", "type": "source", "params": {"label": "Source"}},
+                {"id": "iso", "type": "isolator", "params": {"label": "Isolator", "il": 0.4, "iso": 35.0}},
+                {"id": "out", "type": "rfout", "params": {"label": "Out"}}
+            ],
+            "conns": [
+                {"from": {"block": "src", "port": "out"}, "to": {"block": "iso", "port": "in"}},
+                {"from": {"block": "iso", "port": "out"}, "to": {"block": "out", "port": "in"}},
+            ]
+        }
+        res = analyze_schematic_cascade(schematic)
+        self.assertEqual(res.get("status"), "success")
+        p0 = res["paths"][0]
+        # Forward transmission ~ -0.4 dB
+        self.assertAlmostEqual(p0["s21_db"][0], -0.4, places=1)
+        # Reverse transmission ~ -35.0 dB
+        self.assertAlmostEqual(p0["s12_db"][0], -35.0, places=1)
+        self.assertNotEqual(p0["s21_db"][0], p0["s12_db"][0])
+
+    def test_touchstone_out_of_bounds_extrapolation(self):
+        """Test that Touchstone data defined over 2.0-3.0 GHz extrapolates gracefully to 1.0-4.0 GHz."""
+        s2p_data = """# GHz S DB R 50
+2.0  -20 0  12 0  -30 0  -20 0
+3.0  -20 0  10 0  -30 0  -20 0
+"""
+        schematic = {
+            "band": {"startFreq": 1.0, "stopFreq": 4.0, "startUnit": "GHz", "points": 4},
+            "blocks": [
+                {"id": "src", "type": "source", "params": {"label": "Source"}},
+                {"id": "amp", "type": "amp", "params": {"label": "Amp", "s2pData": s2p_data}},
+                {"id": "out", "type": "rfout", "params": {"label": "Out"}}
+            ],
+            "conns": [
+                {"from": {"block": "src", "port": "out"}, "to": {"block": "amp", "port": "in"}},
+                {"from": {"block": "amp", "port": "out"}, "to": {"block": "out", "port": "in"}},
+            ]
+        }
+        # Should not raise any extrapolation or out-of-bounds error
+        res = analyze_schematic_cascade(schematic)
+        self.assertEqual(res.get("status"), "success")
+        self.assertEqual(len(res["paths"][0]["s21_db"]), 4)
+
+
 if __name__ == "__main__":
     unittest.main()
 

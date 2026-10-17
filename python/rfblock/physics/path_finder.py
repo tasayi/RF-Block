@@ -19,6 +19,10 @@ def get_block_internal_connections(block: Dict[str, Any], include_all_throws: bo
     if btype in SOURCE_TYPES or btype in SINK_TYPES:
         return []
 
+    # Handle Mixer (RF <-> IF, LO -> IF/RF)
+    if btype == "mixer":
+        return [("rf", "if"), ("if", "rf"), ("lo", "if"), ("lo", "rf")]
+
     # Handle SPnT Switch positions (bidirectional: forward demux and reverse mux)
     if btype == "switch":
         throws = int(params.get("throws", 2))
@@ -30,13 +34,17 @@ def get_block_internal_connections(block: Dict[str, Any], include_all_throws: bo
             return res
         state = str(params.get("state", "1"))
         if state == "open" or state == "0":
-            return [] # Isolated / open state
+            return []  # Isolated / open state
         selected_throw = int(state) if state.isdigit() else 1
         return [("in", f"o{selected_throw}"), (f"o{selected_throw}", "in")]
 
     # Handle 3-Port Circulator (P1 -> P2, P2 -> P3, P3 -> P1)
     if btype == "circulator":
         return [("p1", "p2"), ("p2", "p3"), ("p3", "p1")]
+
+    # Handle Isolator (unidirectional: In -> Out only)
+    if btype == "isolator":
+        return [("in", "out")]
 
     # Handle Splitter (in -> o1..oN, and o1..oN -> in)
     if btype == "splitter":
@@ -60,20 +68,20 @@ def get_block_internal_connections(block: Dict[str, Any], include_all_throws: bo
     if btype == "coupler":
         ctype = params.get("ctype", "Directional")
         if ctype == "Bi-directional":
-            return [("in", "thru"), ("in", "fwd"), ("thru", "rev")]
+            return [("in", "thru"), ("in", "fwd"), ("thru", "rev"), ("thru", "in"), ("fwd", "in"), ("rev", "thru")]
         if ctype == "Power tap":
-            return [("in", "thru"), ("in", "tap")]
+            return [("in", "thru"), ("in", "tap"), ("thru", "in"), ("tap", "in")]
         if ctype == "Resistive":
-            return [("in", "o1"), ("in", "o2")]
+            return [("in", "o1"), ("in", "o2"), ("o1", "in"), ("o2", "in")]
         if ctype in ("90° hybrid", "90\u00b0 hybrid"):
-            return [("in", "out0"), ("in", "out90")]
+            return [("in", "out0"), ("in", "out90"), ("out0", "in"), ("out90", "in")]
         if ctype in ("180° hybrid", "180\u00b0 hybrid"):
-            return [("sum", "o1"), ("sum", "o2")]
+            return [("sum", "o1"), ("sum", "o2"), ("o1", "sum"), ("o2", "sum")]
         # Standard Directional
-        return [("in", "thru"), ("in", "cpl")]
+        return [("in", "thru"), ("in", "cpl"), ("thru", "in")]
 
-    # Default 2-port component (In -> Out)
-    return [("in", "out")]
+    # Default 2-port reciprocal component (In <-> Out)
+    return [("in", "out"), ("out", "in")]
 
 
 def find_all_signal_paths(schematic: Dict[str, Any]) -> List[Dict[str, Any]]:
@@ -95,18 +103,25 @@ def find_all_signal_paths(schematic: Dict[str, Any]) -> List[Dict[str, Any]]:
         wire_map.setdefault(src, []).append(dst)
         wire_map.setdefault(dst, []).append(src)
 
-    # Identify source start nodes: (block_id, out_port_id)
+    # Identify source start nodes: (block_id, port_id)
     start_nodes: List[Tuple[str, str]] = []
     for bid, b in blocks.items():
-        if b.get("type") in SOURCE_TYPES:
-            out_port = "out" if b.get("type") != "lo" else "out"
-            start_nodes.append((bid, out_port))
+        btype = b.get("type", "")
+        is_src = (btype in SOURCE_TYPES) or (b.get("params", {}).get("anaPort") == "P1")
+        if is_src:
+            # Find which port is connected in wire_map
+            connected_ports = [p for (b_id, p) in wire_map.keys() if b_id == bid]
+            if connected_ports:
+                for cp in set(connected_ports):
+                    start_nodes.append((bid, cp))
+            else:
+                out_p = "ant" if btype == "antenna" else "out"
+                start_nodes.append((bid, out_p))
 
     # Identify sink blocks
-    sink_block_ids: Set[str] = {bid for bid, b in blocks.items() if b.get("type") in SINK_TYPES}
+    sink_block_ids: Set[str] = {bid for bid, b in blocks.items() if (b.get("type") in SINK_TYPES) or (b.get("params", {}).get("anaPort") in ["P2", "P3", "P4", "P5", "P6", "P7", "P8"])}
 
     discovered_paths: List[Dict[str, Any]] = []
-    path_counter = 1
 
     def dfs(current_node: Tuple[str, str], current_path: List[Tuple[str, str]], visited_blocks: Set[str]):
         cb_id, cp_id = current_node

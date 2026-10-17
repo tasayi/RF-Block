@@ -205,19 +205,42 @@ function exportSParamsPng() {
 /* Export System Touchstone (.s2p / .sNp) File */
 function exportTouchstoneS2p(res) {
   if (!res || !res.freqs || !res.matrix) return;
-  const freqs = res.freqs;
   const P = (res.portsList && res.portsList.length) || 2;
+
+  // If backend provided verified Touchstone s2p string, use it directly for 2-port export
+  if (P === 2 && res.touchstone_s2p) {
+    const blob = new Blob([res.touchstone_s2p], { type: "text/plain;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "system_linear_analysis.s2p";
+    a.click();
+    URL.revokeObjectURL(url);
+    return;
+  }
+
+  const freqs = res.freqs;
   let sNp = `! RF Chain System Multi-Port S-Parameters (${P}-Port Export)\n`;
   sNp += `! Date: ${new Date().toISOString()}\n`;
   sNp += `# Hz S DB R 50\n`;
 
   for (let k = 0; k < freqs.length; k++) {
     let line = `${freqs[k].toFixed(0)}`;
-    for (let i = 1; i <= P; i++) {
-      for (let j = 1; j <= P; j++) {
-        const arr = res.matrix[`S${i}${j}`];
+    if (P === 2) {
+      // Touchstone 2-port specification requires: S11 S21 S12 S22
+      const sOrder = ["S11", "S21", "S12", "S22"];
+      for (const sk of sOrder) {
+        const arr = res.matrix[sk];
         const db = arr ? arr[k].toFixed(3) : "-120.000";
         line += ` ${db} 0.00`;
+      }
+    } else {
+      for (let i = 1; i <= P; i++) {
+        for (let j = 1; j <= P; j++) {
+          const arr = res.matrix[`S${i}${j}`];
+          const db = arr ? arr[k].toFixed(3) : "-120.000";
+          line += ` ${db} 0.00`;
+        }
       }
     }
     sNp += line + "\n";
