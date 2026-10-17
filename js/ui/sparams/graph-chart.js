@@ -423,13 +423,7 @@ function exportSParamsCsv(res) {
     csv += row.join(",") + "\n";
   }
 
-  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "rf_multi_port_linear_analysis.csv";
-  a.click();
-  URL.revokeObjectURL(url);
+  downloadFile(csv, "rf_multi_port_linear_analysis.csv", "text/csv");
 }
 
 /* Helper to resolve standalone CSS styles for self-contained SVG export */
@@ -492,13 +486,7 @@ function exportSParamsSvg() {
   if (!container) return;
   const svgText = buildStandaloneSvg(container);
   if (!svgText) return;
-  const blob = new Blob([svgText], { type: "image/svg+xml;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "multi_port_s_parameters.svg";
-  a.click();
-  URL.revokeObjectURL(url);
+  downloadFile(svgText, "multi_port_s_parameters.svg", "image/svg+xml");
 }
 
 /* Export PNG Raster Graph Image File */
@@ -521,12 +509,7 @@ function exportSParamsPng() {
     g.imageSmoothingQuality = "high";
     g.drawImage(img, 0, 0, cv.width, cv.height);
     cv.toBlob(blob => {
-      const u = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = u;
-      a.download = "multi_port_s_parameters.png";
-      a.click();
-      URL.revokeObjectURL(u);
+      downloadFile(blob, "multi_port_s_parameters.png", "image/png");
     });
   };
   img.src = url;
@@ -541,13 +524,7 @@ function exportTouchstoneS2p(res) {
   // 1. If backend provided verified Touchstone string, use it directly for authentic N-port complex data
   const tsText = res.touchstone_snp || res.touchstone_s2p;
   if (tsText && typeof tsText === "string" && !tsText.startsWith("! Touchstone export error")) {
-    const blob = new Blob([tsText], { type: "text/plain;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `system_linear_analysis${ext}`;
-    a.click();
-    URL.revokeObjectURL(url);
+    downloadFile(tsText, `system_linear_analysis${ext}`, "text/plain");
     return;
   }
 
@@ -589,13 +566,7 @@ function exportTouchstoneS2p(res) {
     }
   }
 
-  const blob = new Blob([sNp], { type: "text/plain;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `system_linear_analysis${ext}`;
-  a.click();
-  URL.revokeObjectURL(url);
+  downloadFile(sNp, `system_linear_analysis${ext}`, "text/plain");
 }
 
 if (typeof module !== "undefined" && module.exports) {

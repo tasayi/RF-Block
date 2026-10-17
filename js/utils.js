@@ -149,3 +149,71 @@ const normHex = v => {
   return m ? ("#" + m[1].toLowerCase()) : null;
 };
 
+/**
+ * Universal file download handler compatible with browsers, PySide6 QWebEngineView, and PyWebView.
+ * Supports Blobs, Uint8Arrays, and strings.
+ * Prevents premature blob revocation and supports modern File System Access API.
+ */
+async function downloadFile(content, filename, mimeType = "application/octet-stream") {
+  try {
+    let blob;
+    if (content instanceof Blob) {
+      blob = content;
+    } else if (content instanceof Uint8Array || content instanceof ArrayBuffer) {
+      blob = new Blob([content], { type: mimeType });
+    } else {
+      blob = new Blob([content], { type: mimeType.includes("charset") ? mimeType : (mimeType + ";charset=utf-8") });
+    }
+
+    // 1. Try modern File System Access API (window.showSaveFilePicker) if available
+    if (typeof window !== "undefined" && typeof window.showSaveFilePicker === "function") {
+      try {
+        const ext = filename.includes(".") ? filename.split(".").pop().toLowerCase() : "";
+        const pickerOpts = { suggestedName: filename };
+        if (ext) {
+          pickerOpts.types = [{
+            description: `${ext.toUpperCase()} File`,
+            accept: { [mimeType]: [`.${ext}`] }
+          }];
+        }
+        const fileHandle = await window.showSaveFilePicker(pickerOpts);
+        const writable = await fileHandle.createWritable();
+        await writable.write(blob);
+        await writable.close();
+        if (typeof hint === "function") hint(`Saved: ${filename}`);
+        return;
+      } catch (err) {
+        if (err && err.name === "AbortError") return; // User cancelled picker
+      }
+    }
+
+    // 2. Standard anchor download with 60s blob retention for PySide6/QWebEngine/pywebview
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.style.display = "none";
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+      if (a.parentNode) a.parentNode.removeChild(a);
+      URL.revokeObjectURL(url);
+    }, 60000); // 60s retention ensures QWebEngine asynchronous download thread completes
+
+    if (typeof hint === "function") {
+      hint(`Exported '${filename}' (check your Downloads folder)`);
+    }
+  } catch (err) {
+    console.error("Export download failed:", err);
+    if (typeof hint === "function") hint(`Export error: ${err.message || err}`);
+  }
+}
+
+if (typeof module !== "undefined" && module.exports) {
+  module.exports = {
+    $, uid, clamp, esc, fmt, dsp, dbm, gsign, nfDb, cint, cflt, swState,
+    icSend, isSubTag, subTagPort, icTagFont, icTagText,
+    L, sumDbm, hsl2hex, hex2hsl, normHex, downloadFile
+  };
+}
+

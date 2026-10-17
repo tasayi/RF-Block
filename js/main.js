@@ -528,8 +528,7 @@ function initEvents() {
 
   if ($("btnSvg")) $("btnSvg").onclick = () => {
     const s = buildExportSVG(1); if (!s) { hint("Nothing to export yet."); return; }
-    const blob = new Blob([s], { type: "image/svg+xml" }), url = URL.createObjectURL(blob), a = document.createElement("a");
-    a.href = url; a.download = "rf-chain.svg"; a.click(); URL.revokeObjectURL(url); hint("Exported rf-chain.svg");
+    downloadFile(s, "rf-chain.svg", "image/svg+xml");
   };
 
   if ($("btnPng")) $("btnPng").onclick = async () => {
@@ -544,7 +543,9 @@ function initEvents() {
       g.fillStyle = "#ffffff"; g.fillRect(0, 0, cv.width, cv.height);
       g.imageSmoothingEnabled = true; g.imageSmoothingQuality = "high";
       g.drawImage(img, 0, 0);
-      cv.toBlob(b => { const u = URL.createObjectURL(b), a = document.createElement("a"); a.href = u; a.download = "rf-chain.png"; a.click(); URL.revokeObjectURL(u); hint("Exported rf-chain.png"); });
+      cv.toBlob(b => {
+        downloadFile(b, "rf-chain.png", "image/png");
+      });
     };
     img.onerror = () => hint("PNG export failed in this browser — try SVG."); img.src = url;
   };
@@ -561,9 +562,7 @@ function initEvents() {
       rows.push([b.params.label || c.name, c.name, b.params.mpn || "", sh ? sh.name : "", paramsText]);
     });
     const blob = xlsxBlob(rows, widths, "BOM");
-    const u = URL.createObjectURL(blob), a = document.createElement("a");
-    a.href = u; a.download = "bom.xlsx"; a.click(); URL.revokeObjectURL(u);
-    hint("Exported bom.xlsx");
+    downloadFile(blob, "bom.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
   };
 
   if ($("btnBudget")) $("btnBudget").onclick = toggleBudget;

@@ -96,8 +96,6 @@ function exportBudgetCsv() {
     const q = s => `"${String(s || "").replace(/"/g, '""')}"`;
     csv += [q(r.name), q(r.type), r.gain ?? "", r.lvl ?? "", r.nfStage ?? "", r.cumNF ?? "", r.oip3 ?? "", r.p1db ?? "", r.head ?? ""].join(",") + "\n";
   }
-  const blob = new Blob([csv], { type: "text/csv" }), url = URL.createObjectURL(blob), a = document.createElement("a");
-  a.href = url; a.download = "cascade-budget.csv"; a.click(); URL.revokeObjectURL(url);
-  hint("Exported cascade-budget.csv");
+  downloadFile(csv, "cascade-budget.csv", "text/csv");
 }
 
