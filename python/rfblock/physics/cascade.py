@@ -319,6 +319,8 @@ def analyze_schematic_cascade(schematic: Dict[str, Any]) -> Dict[str, Any]:
 
     # Extract multi-port matrix from global solution
     global_matrix: Dict[str, List[float]] = {}
+    global_phase_matrix: Dict[str, List[float]] = {}
+    global_gd_matrix: Dict[str, List[float]] = {}
     primary_touchstone = ""
 
     if circuit_net is not None:
@@ -334,12 +336,19 @@ def analyze_schematic_cascade(schematic: Dict[str, Any]) -> Dict[str, Any]:
                 p_in_num = int(p_in_name[1:]) if p_in_name.startswith("P") and p_in_name[1:].isdigit() else (j + 1)
                 s_key = f"S{p_out_num}{p_in_num}"
                 db_vals = (20.0 * np.log10(np.maximum(1e-12, np.abs(circuit_net.s[:, i, j])))).tolist()
+                phase_vals = (np.rad2deg(np.angle(circuit_net.s[:, i, j]))).tolist()
+                gd_vals = compute_group_delay_ns(circuit_net, port_out=i, port_in=j)
+
                 global_matrix[s_key] = db_vals
+                global_phase_matrix[s_key] = phase_vals
+                global_gd_matrix[s_key] = gd_vals
 
                 # Also ensure 1-based matrix index keys exist
                 std_key = f"S{i+1}{j+1}"
                 if std_key not in global_matrix:
                     global_matrix[std_key] = db_vals
+                    global_phase_matrix[std_key] = phase_vals
+                    global_gd_matrix[std_key] = gd_vals
 
     analyzed_paths: List[Dict[str, Any]] = []
 
@@ -461,6 +470,8 @@ def analyze_schematic_cascade(schematic: Dict[str, Any]) -> Dict[str, Any]:
         "freq_ghz": (freq.f / 1e9).tolist(),
         "freqs": (freq.f).tolist(),
         "matrix": global_matrix if global_matrix else first_p.get("matrix", {}),
+        "matrix_phase": global_phase_matrix,
+        "matrix_gd": global_gd_matrix,
         "s11_db": first_p.get("s11_db", []),
         "s21_db": first_p.get("s21_db", []),
         "s12_db": first_p.get("s12_db", []),

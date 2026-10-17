@@ -109,7 +109,7 @@ function renderAnalyserSettings() {
 }
 
 /* Render Table for Markers and Invoked S-Parameters */
-function renderMarkerTable(res) {
+function renderMarkerTable(res, activeMetric = "mag") {
   const box = $("spMarkerTable");
   if (!box || !res || !res.freqs || !res.matrix) return;
 
@@ -121,12 +121,26 @@ function renderMarkerTable(res) {
 
   const invKeys = Array.from(invokedTraces);
 
+  const getMetricData = (sKey) => {
+    if (activeMetric === "phase") return res.matrix_phase && res.matrix_phase[sKey];
+    if (activeMetric === "delay") return res.matrix_gd && res.matrix_gd[sKey];
+    if (activeMetric === "k") return res.k_factor;
+    return res.matrix[sKey];
+  };
+
+  const getUnitSuffix = () => {
+    if (activeMetric === "phase") return "°";
+    if (activeMetric === "delay") return " ns";
+    if (activeMetric === "k") return "";
+    return " dB";
+  };
+
   const getValAt = (arr, targetF) => {
     if (!arr) return "-";
     let idx = 0;
     while (idx < freqs.length - 1 && freqs[idx + 1] < targetF) idx++;
     const v = arr[idx];
-    return isFinite(v) ? v.toFixed(2) + " dB" : "-";
+    return isFinite(v) ? v.toFixed(2) + getUnitSuffix() : "-";
   };
 
   let h = `<table style="width:100%; border-collapse:collapse; font-size:12px; text-align:left; color:var(--ink)">
@@ -135,10 +149,14 @@ function renderMarkerTable(res) {
         <th style="padding:6px">Marker</th>
         <th style="padding:6px">Frequency (${fUnit})</th>`;
 
-  invKeys.forEach(sKey => {
-    const col = getTraceColor(sKey);
-    h += `<th style="padding:6px; color:${col}">${sKey}</th>`;
-  });
+  if (activeMetric === "k") {
+    h += `<th style="padding:6px; color:#10b981">Stability Factor K</th>`;
+  } else {
+    invKeys.forEach(sKey => {
+      const col = getTraceColor(sKey);
+      h += `<th style="padding:6px; color:${col}">${sKey}</th>`;
+    });
+  }
 
   h += `<th style="padding:6px">Action</th>
       </tr>
@@ -157,11 +175,17 @@ function renderMarkerTable(res) {
         ${idx > 0 ? `<span style="font-size:10px; color:var(--ink-dim); margin-left:4px">(Δ ${deltaF > 0 ? '+'+deltaF : deltaF})</span>` : ""}
       </td>`;
 
-    invKeys.forEach(sKey => {
-      const v = getValAt(res.matrix[sKey], m.f);
-      const col = getTraceColor(sKey);
-      h += `<td style="padding:6px; color:${col}; font-weight:600">${v}</td>`;
-    });
+    if (activeMetric === "k") {
+      const v = getValAt(res.k_factor, m.f);
+      h += `<td style="padding:6px; color:#10b981; font-weight:600">${v}</td>`;
+    } else {
+      invKeys.forEach(sKey => {
+        const dArr = getMetricData(sKey);
+        const v = getValAt(dArr, m.f);
+        const col = getTraceColor(sKey);
+        h += `<td style="padding:6px; color:${col}; font-weight:600">${v}</td>`;
+      });
+    }
 
     h += `<td style="padding:6px">
         ${idx > 0 ? `<button class="btn btn-sm btn-del sp-del-mkr" data-midx="${idx}">✕</button>` : `<span style="color:#64748b">Ref</span>`}
@@ -178,8 +202,9 @@ function renderMarkerTable(res) {
       const newF = parseFloat(e.target.value) * fDiv;
       if (isFinite(newF) && newF >= fMin && newF <= fMax) {
         linearMarkers[idx].f = newF;
-        renderSvgPlot(res);
-        renderMarkerTable(res);
+        if (typeof renderSvgPlot === "function") renderSvgPlot(res, activeMetric);
+        renderMarkerTable(res, activeMetric);
+        if ($("spMatrixTableContainer")) renderSParamMatrixTable(res, "spMatrixTableContainer");
       }
     };
   });
@@ -188,8 +213,105 @@ function renderMarkerTable(res) {
     btn.onclick = e => {
       const idx = parseInt(e.target.getAttribute("data-midx"));
       linearMarkers.splice(idx, 1);
-      renderSvgPlot(res);
-      renderMarkerTable(res);
+      if (typeof renderSvgPlot === "function") renderSvgPlot(res, activeMetric);
+      renderMarkerTable(res, activeMetric);
+      if ($("spMatrixTableContainer")) renderSParamMatrixTable(res, "spMatrixTableContainer");
+    };
+  });
+}
+
+/* Render Interactive N x N S-Parameter Matrix Table at Active Marker Frequency */
+function renderSParamMatrixTable(res, boxId = "spMatrixTableContainer", onToggleTrace = null) {
+  const box = $(boxId);
+  if (!box || !res || !res.freqs || !res.matrix) return;
+
+  const freqs = res.freqs;
+  const portsList = res.portsList || [];
+  let P = portsList.length;
+  if (P < 2) {
+    let maxP = 2;
+    for (const k in res.matrix) {
+      if (k.startsWith("S") && k.length >= 3) {
+        const outP = parseInt(k[1]), inP = parseInt(k[2]);
+        if (outP > maxP) maxP = outP;
+        if (inP > maxP) maxP = inP;
+      }
+    }
+    P = maxP;
+  }
+
+  // Find index corresponding to M1
+  const m1 = (typeof linearMarkers !== "undefined" && linearMarkers.length) ? linearMarkers[0] : null;
+  const targetF = m1 ? m1.f : freqs[Math.floor(freqs.length / 2)];
+  let k = 0;
+  while (k < freqs.length - 1 && freqs[k + 1] < targetF) k++;
+
+  const useGhz = freqs[freqs.length - 1] >= 1e8;
+  const fDiv = useGhz ? 1e9 : 1e6;
+  const fUnit = useGhz ? "GHz" : "MHz";
+  const curFStr = `${(targetF / fDiv).toFixed(3)} ${fUnit}`;
+
+  let html = `<div style="background:var(--chrome); border:1px solid var(--line); border-radius:8px; padding:12px 14px; margin-bottom:14px">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:8px">
+      <div style="display:flex; align-items:center; gap:8px">
+        <h4 style="margin:0; font-size:12.5px; font-weight:700; color:var(--accent,#f59e0b); display:flex; align-items:center; gap:6px">
+          <span>🔢</span> Global ${P}×${P} Scattering Matrix at Marker M₁ (${curFStr})
+        </h4>
+        <span style="font-size:11px; color:var(--ink-dim); opacity:0.85">(Click cell to toggle trace on plot)</span>
+      </div>
+    </div>
+    <div style="overflow-x:auto">
+      <table class="sp-mat-table" style="margin:0 auto">
+        <thead>
+          <tr>
+            <th class="sp-mat-th" style="background:transparent; border:none; color:var(--ink-dim); font-size:10px">Out \\ In</th>`;
+
+  for (let j = 1; j <= P; j++) {
+    const pObj = portsList.find(p => p.num === j);
+    const pName = pObj && pObj.label ? pObj.label : `Port ${j}`;
+    html += `<th class="sp-mat-th" title="Input Port ${j}: ${pName}">P${j}<br/><span style="font-size:9.5px; font-weight:500; opacity:0.85; max-width:80px; display:inline-block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap">${pName}</span></th>`;
+  }
+  html += `</tr></thead><tbody>`;
+
+  for (let i = 1; i <= P; i++) {
+    const pOutObj = portsList.find(p => p.num === i);
+    const pOutName = pOutObj && pOutObj.label ? pOutObj.label : `Port ${i}`;
+    html += `<tr><th class="sp-mat-th" title="Output Port ${i}: ${pOutName}">P${i}<br/><span style="font-size:9.5px; font-weight:500; opacity:0.85; max-width:80px; display:inline-block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap">${pOutName}</span></th>`;
+
+    for (let j = 1; j <= P; j++) {
+      const sKey = `S${i}${j}`;
+      const arr = res.matrix[sKey];
+      const valStr = arr && arr[k] !== undefined && isFinite(arr[k]) ? `${arr[k].toFixed(2)} dB` : "—";
+      const phArr = res.matrix_phase && res.matrix_phase[sKey];
+      const phStr = phArr && phArr[k] !== undefined && isFinite(phArr[k]) ? `${phArr[k].toFixed(0)}°` : "";
+      const isActive = typeof invokedTraces !== "undefined" && invokedTraces.has(sKey);
+      const traceCol = isActive ? getTraceColor(sKey) : "";
+
+      html += `<td class="sp-mat-cell ${isActive ? "active-trace" : ""}" data-skey="${sKey}" style="${isActive ? `border-color:${traceCol}; background:${traceCol}22;` : ""}" title="Click to toggle ${sKey}">
+        <div style="font-weight:700; font-size:11px; ${isActive ? `color:${traceCol}` : "color:var(--ink)"}">${sKey}</div>
+        <div style="font-size:11.5px; font-weight:600; color:${isActive ? "#ffffff" : "var(--ink)"}">${valStr}</div>
+        ${phStr ? `<div style="font-size:9.5px; color:var(--ink-dim)">${phStr}</div>` : ""}
+      </td>`;
+    }
+    html += `</tr>`;
+  }
+
+  html += `</tbody></table></div></div>`;
+  box.innerHTML = html;
+
+  box.querySelectorAll(".sp-mat-cell").forEach(td => {
+    td.onclick = () => {
+      const sKey = td.getAttribute("data-skey");
+      if (sKey && typeof invokedTraces !== "undefined") {
+        if (invokedTraces.has(sKey)) {
+          invokedTraces.delete(sKey);
+        } else {
+          invokedTraces.add(sKey);
+        }
+        if (typeof onToggleTrace === "function") {
+          onToggleTrace(sKey);
+        }
+      }
     };
   });
 }
@@ -198,6 +320,7 @@ if (typeof module !== "undefined" && module.exports) {
   module.exports = {
     toggleAnalyserDrawer,
     renderAnalyserSettings,
-    renderMarkerTable
+    renderMarkerTable,
+    renderSParamMatrixTable
   };
 }
