@@ -126,15 +126,16 @@ function renderBudget() {
 /* =====================================================================
  * Cascade Stage Plotter: Dual Y-Axis SVG Chart with Interactive Controls
  * ===================================================================== */
-function renderBudgetPlot(rows, bwHz, bwMHz, P, container) {
+function generateBudgetPlotSvg(rows, bwHz, isStandalone = false) {
   const numStages = rows.length;
-  const W = Math.max(680, container.clientWidth - 24) || 920;
-  const H = budgetIsMaximized ? 420 : 280;
-  const margin = { top: 28, right: 65, bottom: 60, left: 65 };
+  const container = $("bgBody");
+  const W = isStandalone ? 960 : ((container && container.clientWidth ? Math.max(680, container.clientWidth - 24) : 920) || 920);
+  const H = isStandalone ? 460 : (budgetIsMaximized ? 420 : 280);
+  const margin = { top: isStandalone ? 40 : 28, right: 65, bottom: 65, left: 65 };
   const pw = Math.max(120, W - margin.left - margin.right);
   const ph = Math.max(100, H - margin.top - margin.bottom);
 
-  // 1. Gather all active Left Axis data points and Right Axis data points
+  // 1. Gather active Left and Right Axis data points
   let leftVals = [];
   let rightVals = [];
 
@@ -184,60 +185,40 @@ function renderBudgetPlot(rows, bwHz, bwMHz, P, container) {
   const getYLeft = val => margin.top + ph - ((val - yLeftMin) / (yLeftMax - yLeftMin || 1)) * ph;
   const getYRight = val => margin.top + ph - ((val - yRightMin) / (yRightMax - yRightMin || 1)) * ph;
 
-  // 2. Build Interactive Metric Pills and Scale Controls Toolbar
-  let topBarHtml = `<div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:10px; padding:6px 0; border-bottom:1px solid var(--line);">
-    <div style="display:flex; align-items:center; flex-wrap:wrap; gap:6px;">
-      <span style="font-size:11.5px; font-weight:600; color:var(--ink-dim); margin-right:4px;">Plot Traces:</span>`;
+  const sansFont = "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
 
-  for (const mKey in BUDGET_METRICS) {
-    const m = BUDGET_METRICS[mKey];
-    const isAct = budgetPlotMetrics.has(mKey);
-    topBarHtml += `<button class="bg-metric-pill ${isAct ? "active" : ""}" data-mkey="${mKey}" style="${isAct ? `border-color:${m.color}; color:#f8fafc;` : ""}">
-      <span style="width:7px; height:7px; border-radius:50%; background:${m.color}; display:inline-block;"></span>
-      <span>${esc(m.label)}</span>
-      <span style="font-size:10px; opacity:0.7">(${m.axis === "right" ? "Rt" : "Lt"})</span>
-    </button>`;
+  // Construct SVG Plot
+  let svg = `<svg id="bgPlotSvg" width="100%" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="display:block; overflow:visible; font-family:${sansFont};">`;
+
+  if (isStandalone) {
+    svg += `<style>
+      svg { font-family: ${sansFont}; background: transparent; }
+      text { font-family: ${sansFont}; fill: #000000; }
+    </style>`;
+  } else {
+    // In-drawer dark background rect
+    svg += `<rect x="0" y="0" width="${W}" height="${H}" fill="var(--chrome-2,#1e293b)" rx="6"/>`;
   }
-
-  topBarHtml += `</div>
-    <div style="display:flex; align-items:center; gap:8px;">
-      <button class="btn btn-sm" id="bgToggleScaleOpt">⚙️ ${budgetCustomScaling.showScaleOptions ? "Hide Scales" : "Axis Scales"}</button>
-    </div>
-  </div>`;
-
-  // Scale Options Panel (Collapsible)
-  let scalePanelHtml = "";
-  if (budgetCustomScaling.showScaleOptions) {
-    scalePanelHtml = `<div style="display:flex; gap:16px; align-items:center; flex-wrap:wrap; background:rgba(0,0,0,0.25); border:1px solid var(--line); border-radius:6px; padding:8px 12px; margin-bottom:10px; font-size:11.5px;">
-      <div style="display:flex; align-items:center; gap:6px;">
-        <b style="color:var(--accent)">Left Axis (Power/Gain):</b>
-        <label><input type="checkbox" id="bgScaleLeftAuto" ${budgetCustomScaling.leftAuto ? "checked" : ""}/> Auto</label>
-        ${!budgetCustomScaling.leftAuto ? `
-          <span>Min:</span><input type="number" id="bgScaleLeftMin" value="${budgetCustomScaling.leftMin}" style="width:55px; padding:2px 4px; font-size:11px; background:#192231; border:1px solid var(--line); color:var(--ink);"/>
-          <span>Max:</span><input type="number" id="bgScaleLeftMax" value="${budgetCustomScaling.leftMax}" style="width:55px; padding:2px 4px; font-size:11px; background:#192231; border:1px solid var(--line); color:var(--ink);"/>
-        ` : ""}
-      </div>
-      <div style="display:flex; align-items:center; gap:6px;">
-        <b style="color:#f43f5e">Right Axis (Noise Figure):</b>
-        <label><input type="checkbox" id="bgScaleRightAuto" ${budgetCustomScaling.rightAuto ? "checked" : ""}/> Auto</label>
-        ${!budgetCustomScaling.rightAuto ? `
-          <span>Min:</span><input type="number" id="bgScaleRightMin" value="${budgetCustomScaling.rightMin}" style="width:55px; padding:2px 4px; font-size:11px; background:#192231; border:1px solid var(--line); color:var(--ink);"/>
-          <span>Max:</span><input type="number" id="bgScaleRightMax" value="${budgetCustomScaling.rightMax}" style="width:55px; padding:2px 4px; font-size:11px; background:#192231; border:1px solid var(--line); color:var(--ink);"/>
-        ` : ""}
-      </div>
-    </div>`;
-  }
-
-  // 3. Construct SVG Plot
-  let svg = `<svg width="100%" height="${H}" viewBox="0 0 ${W} ${H}" style="display:block; overflow:visible; font-family:var(--sans);">`;
-
-  // Background rect
-  svg += `<rect x="0" y="0" width="${W}" height="${H}" fill="var(--chrome-2,#1e293b)" rx="6"/>`;
 
   // Plot area rect
-  svg += `<rect x="${margin.left}" y="${margin.top}" width="${pw}" height="${ph}" fill="rgba(15,23,42,0.45)" stroke="var(--line,#334155)" stroke-width="1"/>`;
+  if (isStandalone) {
+    svg += `<rect x="${margin.left}" y="${margin.top}" width="${pw}" height="${ph}" fill="none" stroke="#334155" stroke-width="1.2"/>`;
+  } else {
+    svg += `<rect x="${margin.left}" y="${margin.top}" width="${pw}" height="${ph}" fill="rgba(15,23,42,0.45)" stroke="var(--line,#334155)" stroke-width="1"/>`;
+  }
 
-  // Horizontal Grid Lines & Left Axis Ticks (6 divisions)
+  // Colors based on standalone vs dark mode
+  const gridStroke = isStandalone ? "#e2e8f0" : "rgba(255,255,255,0.08)";
+  const leftTickColor = isStandalone ? "#000000" : "var(--ink-dim,#94a3b8)";
+  const rightTickColor = isStandalone ? "#000000" : "#f43f5e";
+  const leftTitleColor = isStandalone ? "#000000" : "var(--ink,#f8fafc)";
+  const rightTitleColor = isStandalone ? "#000000" : "#f43f5e";
+  const stageGridStroke = isStandalone ? "#e2e8f0" : "rgba(255,255,255,0.06)";
+  const stageNameColor = isStandalone ? "#000000" : "var(--ink,#f8fafc)";
+  const stageTypeColor = isStandalone ? "#475569" : "var(--ink-dim,#94a3b8)";
+  const dotStroke = isStandalone ? "#ffffff" : "#0f172a";
+
+  // Horizontal Grid Lines & Left/Right Axis Ticks (6 divisions)
   const numGridTicks = 6;
   for (let k = 0; k <= numGridTicks; k++) {
     const frac = k / numGridTicks;
@@ -246,30 +227,30 @@ function renderBudgetPlot(rows, bwHz, bwMHz, P, container) {
     const valR = yRightMax - frac * (yRightMax - yRightMin);
 
     // Gridline
-    svg += `<line x1="${margin.left}" y1="${y}" x2="${margin.left + pw}" y2="${y}" stroke="rgba(255,255,255,0.08)" stroke-dasharray="3,3"/>`;
+    svg += `<line x1="${margin.left}" y1="${y}" x2="${margin.left + pw}" y2="${y}" stroke="${gridStroke}" stroke-dasharray="3,3"/>`;
 
     // Left Axis Label
-    svg += `<text x="${margin.left - 8}" y="${y + 3.5}" fill="var(--ink-dim,#94a3b8)" font-size="10.5" text-anchor="end">${valL.toFixed(0)}</text>`;
+    svg += `<text x="${margin.left - 8}" y="${y + 3.5}" fill="${leftTickColor}" font-size="10.5" font-weight="${isStandalone ? '600' : '400'}" text-anchor="end">${valL.toFixed(0)}</text>`;
 
-    // Right Axis Label (colored for NF)
-    svg += `<text x="${margin.left + pw + 8}" y="${y + 3.5}" fill="#f43f5e" font-size="10.5" text-anchor="start">${valR.toFixed(1)}</text>`;
+    // Right Axis Label
+    svg += `<text x="${margin.left + pw + 8}" y="${y + 3.5}" fill="${rightTickColor}" font-size="10.5" font-weight="${isStandalone ? '600' : '400'}" text-anchor="start">${valR.toFixed(1)}</text>`;
   }
 
   // Axis Labels
-  svg += `<text transform="rotate(-90)" x="${-(margin.top + ph / 2)}" y="${margin.left - 42}" fill="var(--ink,#f8fafc)" font-size="11" font-weight="600" text-anchor="middle">Power &amp; Gain (dB / dBm)</text>`;
-  svg += `<text transform="rotate(90)" x="${(margin.top + ph / 2)}" y="${-(margin.left + pw + 44)}" fill="#f43f5e" font-size="11" font-weight="600" text-anchor="middle">Noise Figure (dB)</text>`;
+  svg += `<text transform="rotate(-90)" x="${-(margin.top + ph / 2)}" y="${margin.left - 42}" fill="${leftTitleColor}" font-size="11" font-weight="700" text-anchor="middle">Power &amp; Gain (dB / dBm)</text>`;
+  svg += `<text transform="rotate(90)" x="${(margin.top + ph / 2)}" y="${-(margin.left + pw + 44)}" fill="${rightTitleColor}" font-size="11" font-weight="700" text-anchor="middle">Noise Figure (dB)</text>`;
 
   // Vertical Stage Gridlines and X-Axis Labels
   rows.forEach((r, idx) => {
     const x = getX(idx);
-    svg += `<line x1="${x}" y1="${margin.top}" x2="${x}" y2="${margin.top + ph}" stroke="rgba(255,255,255,0.06)"/>`;
-    svg += `<line x1="${x}" y1="${margin.top + ph}" x2="${x}" y2="${margin.top + ph + 5}" stroke="var(--line,#334155)" stroke-width="1"/>`;
+    svg += `<line x1="${x}" y1="${margin.top}" x2="${x}" y2="${margin.top + ph}" stroke="${stageGridStroke}"/>`;
+    svg += `<line x1="${x}" y1="${margin.top + ph}" x2="${x}" y2="${margin.top + ph + 5}" stroke="${isStandalone ? '#334155' : 'var(--line,#334155)'}" stroke-width="1"/>`;
 
     // Rotated Stage Label
     const stageName = r.name || `Stage ${idx + 1}`;
     svg += `<g transform="translate(${x}, ${margin.top + ph + 16}) rotate(28)">
-      <text x="0" y="0" fill="var(--ink,#f8fafc)" font-size="10.5" font-weight="500" text-anchor="start">${esc(stageName)}</text>
-      <text x="0" y="11" fill="var(--ink-dim,#94a3b8)" font-size="9" text-anchor="start">${esc(r.type)}</text>
+      <text x="0" y="0" fill="${stageNameColor}" font-size="10.5" font-weight="600" text-anchor="start">${esc(stageName)}</text>
+      <text x="0" y="11" fill="${stageTypeColor}" font-size="9" font-weight="500" text-anchor="start">${esc(r.type)}</text>
     </g>`;
   });
 
@@ -300,16 +281,84 @@ function renderBudgetPlot(rows, bwHz, bwMHz, P, container) {
 
       // Stage dots
       pts.forEach(pt => {
-        svg += `<circle cx="${pt.x.toFixed(1)}" cy="${pt.y.toFixed(1)}" r="4.5" fill="${m.color}" stroke="#0f172a" stroke-width="1.5" class="bg-stage-dot" data-bid="${esc(pt.stage.id)}" data-mkey="${mKey}" style="cursor:pointer; transition:r 0.15s ease;">
+        svg += `<circle cx="${pt.x.toFixed(1)}" cy="${pt.y.toFixed(1)}" r="4.5" fill="${m.color}" stroke="${dotStroke}" stroke-width="1.5" class="bg-stage-dot" data-bid="${esc(pt.stage.id)}" data-mkey="${mKey}" style="cursor:pointer; transition:r 0.15s ease;">
           <title>${esc(pt.stage.name)}: ${m.label} = ${fmt(pt.v)} ${m.unit}</title>
         </circle>`;
       });
     }
   }
 
-  svg += `</svg>`;
+  // Top Legend for standalone export
+  if (isStandalone) {
+    let legX = margin.left + 8;
+    const legY = 18;
+    for (const mKey of budgetPlotMetrics) {
+      const m = BUDGET_METRICS[mKey];
+      if (!m) continue;
+      svg += `<g transform="translate(${legX}, ${legY})">
+        <circle cx="0" cy="-3.5" r="4.5" fill="${m.color}"/>
+        <text x="8" y="0" font-size="10.5" font-weight="600" fill="#000000">${esc(m.label)} (${m.unit || (m.axis === 'right' ? 'dB' : 'dB/dBm')})</text>
+      </g>`;
+      legX += (m.label.length * 7 + 65);
+    }
+  }
 
-  // 4. Stage Summary Footer & Warnings
+  svg += `</svg>`;
+  return { svg, W, H, margin, pw, ph, getX, getYLeft, getYRight, yLeftMin, yLeftMax, yRightMin, yRightMax };
+}
+
+function renderBudgetPlot(rows, bwHz, bwMHz, P, container) {
+  // 1. Build Interactive Metric Pills, Export Buttons, and Scale Controls Toolbar
+  let topBarHtml = `<div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:10px; padding:6px 0; border-bottom:1px solid var(--line);">
+    <div style="display:flex; align-items:center; flex-wrap:wrap; gap:6px;">
+      <span style="font-size:11.5px; font-weight:600; color:var(--ink-dim); margin-right:4px;">Plot Traces:</span>`;
+
+  for (const mKey in BUDGET_METRICS) {
+    const m = BUDGET_METRICS[mKey];
+    const isAct = budgetPlotMetrics.has(mKey);
+    topBarHtml += `<button class="bg-metric-pill ${isAct ? "active" : ""}" data-mkey="${mKey}" style="${isAct ? `border-color:${m.color}; color:#f8fafc;` : ""}">
+      <span style="width:7px; height:7px; border-radius:50%; background:${m.color}; display:inline-block;"></span>
+      <span>${esc(m.label)}</span>
+      <span style="font-size:10px; opacity:0.7">(${m.axis === "right" ? "Rt" : "Lt"})</span>
+    </button>`;
+  }
+
+  topBarHtml += `</div>
+    <div style="display:flex; align-items:center; gap:6px;">
+      <button class="btn btn-sm" id="bgPlotExportSvg" title="Export stage plot as standalone transparent SVG">📊 Export SVG</button>
+      <button class="btn btn-sm" id="bgPlotExportPng" title="Export stage plot as high-resolution transparent PNG">🖼️ Export PNG</button>
+      <button class="btn btn-sm" id="bgPlotExportVsdx" title="Export stage plot as native Microsoft Visio (.vsdx) document">📐 Export VSDX</button>
+      <button class="btn btn-sm" id="bgToggleScaleOpt">⚙️ ${budgetCustomScaling.showScaleOptions ? "Hide Scales" : "Axis Scales"}</button>
+    </div>
+  </div>`;
+
+  // Scale Options Panel (Collapsible)
+  let scalePanelHtml = "";
+  if (budgetCustomScaling.showScaleOptions) {
+    scalePanelHtml = `<div style="display:flex; gap:16px; align-items:center; flex-wrap:wrap; background:rgba(0,0,0,0.25); border:1px solid var(--line); border-radius:6px; padding:8px 12px; margin-bottom:10px; font-size:11.5px;">
+      <div style="display:flex; align-items:center; gap:6px;">
+        <b style="color:var(--accent)">Left Axis (Power/Gain):</b>
+        <label><input type="checkbox" id="bgScaleLeftAuto" ${budgetCustomScaling.leftAuto ? "checked" : ""}/> Auto</label>
+        ${!budgetCustomScaling.leftAuto ? `
+          <span>Min:</span><input type="number" id="bgScaleLeftMin" value="${budgetCustomScaling.leftMin}" style="width:55px; padding:2px 4px; font-size:11px; background:#192231; border:1px solid var(--line); color:var(--ink);"/>
+          <span>Max:</span><input type="number" id="bgScaleLeftMax" value="${budgetCustomScaling.leftMax}" style="width:55px; padding:2px 4px; font-size:11px; background:#192231; border:1px solid var(--line); color:var(--ink);"/>
+        ` : ""}
+      </div>
+      <div style="display:flex; align-items:center; gap:6px;">
+        <b style="color:#f43f5e">Right Axis (Noise Figure):</b>
+        <label><input type="checkbox" id="bgScaleRightAuto" ${budgetCustomScaling.rightAuto ? "checked" : ""}/> Auto</label>
+        ${!budgetCustomScaling.rightAuto ? `
+          <span>Min:</span><input type="number" id="bgScaleRightMin" value="${budgetCustomScaling.rightMin}" style="width:55px; padding:2px 4px; font-size:11px; background:#192231; border:1px solid var(--line); color:var(--ink);"/>
+          <span>Max:</span><input type="number" id="bgScaleRightMax" value="${budgetCustomScaling.rightMax}" style="width:55px; padding:2px 4px; font-size:11px; background:#192231; border:1px solid var(--line); color:var(--ink);"/>
+        ` : ""}
+      </div>
+    </div>`;
+  }
+
+  // 2. Render SVG plot inside drawer
+  const { svg } = generateBudgetPlotSvg(rows, bwHz, false);
+
+  // 3. Stage Summary Footer & Warnings
   const last = rows[rows.length - 1];
   const nfFinal = last.cumNF;
   const sens = noiseFloor(nfFinal, bwHz);
@@ -326,7 +375,7 @@ function renderBudgetPlot(rows, bwHz, bwMHz, P, container) {
 
   container.innerHTML = topBarHtml + scalePanelHtml + svg + footerHtml;
 
-  // 5. Attach Plot Event Listeners
+  // 4. Attach Plot Event Listeners
   container.querySelectorAll(".bg-metric-pill").forEach(pill => {
     pill.onclick = () => {
       const k = pill.getAttribute("data-mkey");
@@ -346,6 +395,14 @@ function renderBudgetPlot(rows, bwHz, bwMHz, P, container) {
       renderBudget();
     };
   }
+
+  // Export Buttons
+  const btnSvg = $("bgPlotExportSvg");
+  if (btnSvg) btnSvg.onclick = exportBudgetPlotSvg;
+  const btnPng = $("bgPlotExportPng");
+  if (btnPng) btnPng.onclick = exportBudgetPlotPng;
+  const btnVsdx = $("bgPlotExportVsdx");
+  if (btnVsdx) btnVsdx.onclick = exportBudgetPlotVsdx;
 
   // Scale inputs
   const chkLeftAuto = $("bgScaleLeftAuto");
@@ -368,12 +425,257 @@ function renderBudgetPlot(rows, bwHz, bwMHz, P, container) {
   container.querySelectorAll(".bg-stage-dot").forEach(dot => {
     dot.onclick = () => {
       const bid = dot.getAttribute("data-bid");
-      const sh = sheetOfBlock(bid);
-      if (sh && sh !== sheets[cur]) gotoSheet(sheets.indexOf(sh));
-      selectOnly(bid);
-      renderAll();
+      const sh = typeof sheetOfBlock === "function" ? sheetOfBlock(bid) : null;
+      if (sh && typeof sheets !== "undefined" && typeof cur !== "undefined" && sh !== sheets[cur] && typeof gotoSheet === "function") {
+        gotoSheet(sheets.indexOf(sh));
+      }
+      if (typeof selectOnly === "function") selectOnly(bid);
+      if (typeof renderAll === "function") renderAll();
     };
   });
+}
+
+/* =====================================================================
+ * Cascade Stage Plot Exporters (SVG, PNG, VSDX)
+ * ===================================================================== */
+
+/* Export Budget Plot as Standalone Transparent SVG */
+function exportBudgetPlotSvg() {
+  const sel = $("bgStart");
+  const startId = sel ? sel.value : null;
+  const { rows } = buildBudget(startId);
+  if (!rows || !rows.length) { hint("No budget plot data to export."); return; }
+  const bwHz = (settings.bandwidthHz && settings.bandwidthHz > 0) ? settings.bandwidthHz : 1e6;
+  const { svg } = generateBudgetPlotSvg(rows, bwHz, true);
+  downloadFile(svg, "cascade_budget_plot.svg", "image/svg+xml");
+  hint("Exported Stage Plot as transparent SVG.");
+}
+
+/* Export Budget Plot as High-Resolution Transparent PNG */
+function exportBudgetPlotPng() {
+  const sel = $("bgStart");
+  const startId = sel ? sel.value : null;
+  const { rows } = buildBudget(startId);
+  if (!rows || !rows.length) { hint("No budget plot data to export."); return; }
+  const bwHz = (settings.bandwidthHz && settings.bandwidthHz > 0) ? settings.bandwidthHz : 1e6;
+  const { svg, W, H } = generateBudgetPlotSvg(rows, bwHz, true);
+
+  const img = new Image();
+  const url = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
+  img.onload = () => {
+    const cv = document.createElement("canvas");
+    const scale = 2; // High-DPI 2x supersampling
+    cv.width = W * scale;
+    cv.height = H * scale;
+    const g = cv.getContext("2d");
+    g.clearRect(0, 0, cv.width, cv.height);
+    g.imageSmoothingEnabled = true;
+    g.imageSmoothingQuality = "high";
+    g.drawImage(img, 0, 0, cv.width, cv.height);
+    cv.toBlob(blob => {
+      downloadFile(blob, "cascade_budget_plot.png", "image/png");
+      hint("Exported Stage Plot as high-resolution transparent PNG.");
+    });
+  };
+  img.src = url;
+}
+
+/* Export Budget Plot as Native Microsoft Visio (.vsdx) Document */
+function exportBudgetPlotVsdx() {
+  const sel = $("bgStart");
+  const startId = sel ? sel.value : null;
+  const { rows } = buildBudget(startId);
+  if (!rows || !rows.length) { hint("No budget plot data to export."); return; }
+  if (typeof zipStore !== "function" || typeof getVsdxDocXml !== "function") {
+    hint("Visio packager is unavailable.");
+    return;
+  }
+
+  const bwHz = (settings.bandwidthHz && settings.bandwidthHz > 0) ? settings.bandwidthHz : 1e6;
+  const numStages = rows.length;
+
+  const W_px = 1000, H_px = 560;
+  const dpi = 96;
+  const toInX = x => x / dpi, toInY = y => (H_px - y) / dpi, toInLen = len => len / dpi;
+  const pageWidthIn = W_px / dpi, pageHeightIn = H_px / dpi;
+
+  const margin = { top: 60, right: 80, bottom: 90, left: 80 };
+  const pw = W_px - margin.left - margin.right;
+  const ph = H_px - margin.top - margin.bottom;
+
+  // Compute Left and Right axis ranges
+  let leftVals = [], rightVals = [];
+  for (const mKey of budgetPlotMetrics) {
+    const m = BUDGET_METRICS[mKey];
+    if (!m) continue;
+    rows.forEach(r => {
+      const v = m.getVal(r, bwHz);
+      if (v !== null && v !== undefined && isFinite(v)) {
+        if (m.axis === "right") rightVals.push(v);
+        else leftVals.push(v);
+      }
+    });
+  }
+
+  let yLeftMin = -40, yLeftMax = 40;
+  if (budgetCustomScaling.leftAuto) {
+    if (leftVals.length) {
+      const minV = Math.min(...leftVals), maxV = Math.max(...leftVals);
+      const span = maxV - minV || 20;
+      yLeftMin = Math.floor(minV - span * 0.12);
+      yLeftMax = Math.ceil(maxV + span * 0.12);
+      if (yLeftMin === yLeftMax) { yLeftMin -= 5; yLeftMax += 5; }
+    }
+  } else {
+    yLeftMin = budgetCustomScaling.leftMin;
+    yLeftMax = budgetCustomScaling.leftMax;
+  }
+
+  let yRightMin = 0, yRightMax = 15;
+  if (budgetCustomScaling.rightAuto) {
+    if (rightVals.length) {
+      const minV = Math.min(...rightVals), maxV = Math.max(...rightVals);
+      yRightMin = Math.max(0, Math.floor(minV - 0.5));
+      yRightMax = Math.max(yRightMin + 3, Math.ceil(maxV + 1.5));
+    }
+  } else {
+    yRightMin = budgetCustomScaling.rightMin;
+    yRightMax = budgetCustomScaling.rightMax;
+  }
+
+  const getX = idx => margin.left + (idx / Math.max(1, numStages - 1)) * pw;
+  const getYLeft = val => margin.top + ph - ((val - yLeftMin) / (yLeftMax - yLeftMin || 1)) * ph;
+  const getYRight = val => margin.top + ph - ((val - yRightMin) / (yRightMax - yRightMin || 1)) * ph;
+
+  let nextShapeId = 1;
+  let shapesXml = "";
+
+  // Title shape
+  shapesXml += buildTextShapeXml(nextShapeId++, "Cascade Stage Budget Analysis", W_px / 2, 25, 450, 30, 18, "#000000", true, "middle", dpi, toInX, toInY);
+
+  // Plot Area Border
+  const plotRectPts = [
+    { x: 0, y: toInLen(ph) },
+    { x: toInLen(pw), y: toInLen(ph) },
+    { x: toInLen(pw), y: 0 },
+    { x: 0, y: 0 }
+  ];
+  const plotGeom = makeGeometrySection(plotRectPts, 0, true, true);
+  shapesXml += buildShapeXml(nextShapeId++, "Plot Area", toInX(margin.left + pw / 2), toInY(margin.top + ph / 2), toInLen(pw), toInLen(ph), plotGeom, { stroke: true, strokeColor: "#334155", lineWidth: 1.5, fill: false });
+
+  // Horizontal Grid Lines & Y-axis labels (6 divisions)
+  const numGridTicks = 6;
+  for (let k = 0; k <= numGridTicks; k++) {
+    const frac = k / numGridTicks;
+    const y = margin.top + frac * ph;
+    const valL = yLeftMax - frac * (yLeftMax - yLeftMin);
+    const valR = yRightMax - frac * (yRightMax - yRightMin);
+
+    // Horizontal line
+    const linePts = [{ x: 0, y: 0 }, { x: toInLen(pw), y: 0 }];
+    const lineGeom = makeGeometrySection(linePts, 0, true, false);
+    shapesXml += buildShapeXml(nextShapeId++, "Gridline", toInX(margin.left + pw / 2), toInY(y), toInLen(pw), 0.01, lineGeom, { stroke: true, strokeColor: "#e2e8f0", lineWidth: 1, linePattern: 2, fill: false });
+
+    // Left tick text
+    shapesXml += buildTextShapeXml(nextShapeId++, valL.toFixed(0), margin.left - 26, y, 40, 16, 11, "#000000", true, "end", dpi, toInX, toInY);
+
+    // Right tick text
+    shapesXml += buildTextShapeXml(nextShapeId++, valR.toFixed(1), margin.left + pw + 26, y, 40, 16, 11, "#000000", true, "start", dpi, toInX, toInY);
+  }
+
+  // Axis Titles
+  shapesXml += buildTextShapeXml(nextShapeId++, "Power & Gain (dB / dBm)", margin.left - 55, margin.top + ph / 2, 220, 20, 12, "#000000", true, "middle", dpi, toInX, toInY, -Math.PI / 2);
+  shapesXml += buildTextShapeXml(nextShapeId++, "Noise Figure (dB)", margin.left + pw + 55, margin.top + ph / 2, 220, 20, 12, "#000000", true, "middle", dpi, toInX, toInY, Math.PI / 2);
+
+  // Vertical Stage Lines and Stage Labels
+  rows.forEach((r, idx) => {
+    const x = getX(idx);
+    const vLinePts = [{ x: 0, y: toInLen(ph) }, { x: 0, y: 0 }];
+    const vGeom = makeGeometrySection(vLinePts, 0, true, false);
+    shapesXml += buildShapeXml(nextShapeId++, `Stage Line ${idx+1}`, toInX(x), toInY(margin.top + ph / 2), 0.01, toInLen(ph), vGeom, { stroke: true, strokeColor: "#e2e8f0", lineWidth: 1, linePattern: 1, fill: false });
+
+    const stageName = r.name || `Stage ${idx + 1}`;
+    shapesXml += buildTextShapeXml(nextShapeId++, stageName, x, margin.top + ph + 20, 110, 18, 11, "#000000", true, "middle", dpi, toInX, toInY);
+    shapesXml += buildTextShapeXml(nextShapeId++, r.type, x, margin.top + ph + 34, 110, 16, 9.5, "#475569", false, "middle", dpi, toInX, toInY);
+  });
+
+  // Plot Traces (Polylines) & Stage Points
+  for (const mKey of budgetPlotMetrics) {
+    const m = BUDGET_METRICS[mKey];
+    if (!m) continue;
+
+    const isRight = (m.axis === "right");
+    const getY = isRight ? getYRight : getYLeft;
+
+    const pts = [];
+    rows.forEach((r, idx) => {
+      const v = m.getVal(r, bwHz);
+      if (v !== null && v !== undefined && isFinite(v)) {
+        pts.push({ x: getX(idx), y: getY(v), v });
+      }
+    });
+
+    if (pts.length >= 2) {
+      let minX = pts[0].x, maxX = pts[0].x, minY = pts[0].y, maxY = pts[0].y;
+      pts.forEach(p => {
+        if (p.x < minX) minX = p.x; if (p.x > maxX) maxX = p.x;
+        if (p.y < minY) minY = p.y; if (p.y > maxY) maxY = p.y;
+      });
+      const tW = Math.max(1, maxX - minX), tH = Math.max(1, maxY - minY);
+      const localPts = pts.map(p => ({
+        x: toInLen(p.x - minX),
+        y: toInLen(maxY - p.y)
+      }));
+      const traceGeom = makeGeometrySection(localPts, 0, true, false);
+      const traceStyle = { stroke: true, strokeColor: m.color, lineWidth: 2.5, linePattern: 1, fill: false };
+      shapesXml += buildShapeXml(nextShapeId++, `Trace ${m.label}`, toInX((minX + maxX) / 2), toInY((minY + maxY) / 2), toInLen(tW), toInLen(tH), traceGeom, traceStyle);
+
+      // Points
+      pts.forEach(p => {
+        const d = 8;
+        const ptGeom = `<Section N="Geometry" IX="0"><Cell N="NoFill" V="0"/><Cell N="NoLine" V="0"/><Row T="Ellipse" IX="1"><Cell N="X" V="${toInLen(d/2)}"/><Cell N="Y" V="${toInLen(d/2)}"/><Cell N="A" V="${toInLen(d)}"/><Cell N="B" V="${toInLen(d/2)}"/><Cell N="C" V="${toInLen(d/2)}"/><Cell N="D" V="${toInLen(d)}"/></Row></Section>`;
+        const ptStyle = { stroke: true, strokeColor: "#ffffff", lineWidth: 1.2, fill: true, fillColor: m.color };
+        shapesXml += buildShapeXml(nextShapeId++, "Marker", toInX(p.x), toInY(p.y), toInLen(d), toInLen(d), ptGeom, ptStyle);
+      });
+    }
+  }
+
+  // Legend
+  let legX = margin.left + 20;
+  for (const mKey of budgetPlotMetrics) {
+    const m = BUDGET_METRICS[mKey];
+    if (!m) continue;
+    const d = 7;
+    const ptGeom = `<Section N="Geometry" IX="0"><Cell N="NoFill" V="0"/><Cell N="NoLine" V="0"/><Row T="Ellipse" IX="1"><Cell N="X" V="${toInLen(d/2)}"/><Cell N="Y" V="${toInLen(d/2)}"/><Cell N="A" V="${toInLen(d)}"/><Cell N="B" V="${toInLen(d/2)}"/><Cell N="C" V="${toInLen(d/2)}"/><Cell N="D" V="${toInLen(d)}"/></Row></Section>`;
+    shapesXml += buildShapeXml(nextShapeId++, "Legend Dot", toInX(legX), toInY(H_px - 20), toInLen(d), toInLen(d), ptGeom, { stroke: false, fill: true, fillColor: m.color });
+    shapesXml += buildTextShapeXml(nextShapeId++, `${m.label} (${m.unit || (m.axis === 'right' ? 'dB' : 'dB/dBm')})`, legX + 50, H_px - 20, 90, 16, 10.5, "#000000", true, "start", dpi, toInX, toInY);
+    legX += 115;
+  }
+
+  const page1Xml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n`
+    + `<PageContents xmlns="http://schemas.microsoft.com/office/visio/2012/main">\n`
+    + `  <Shapes>\n${shapesXml}  </Shapes>\n`
+    + `</PageContents>`;
+
+  const entries = [
+    { name: "[Content_Types].xml", data: getVsdxContentTypesXml() },
+    { name: "_rels/.rels", data: getVsdxRootRelsXml() },
+    { name: "docProps/app.xml", data: getVsdxAppXml() },
+    { name: "docProps/core.xml", data: getVsdxCoreXml() },
+    { name: "visio/document.xml", data: getVsdxDocXml() },
+    { name: "visio/_rels/document.xml.rels", data: getVsdxDocRelsXml() },
+    { name: "visio/pages/pages.xml", data: getVsdxPagesXml(pageWidthIn, pageHeightIn) },
+    { name: "visio/pages/_rels/pages.xml.rels", data: getVsdxPagesRelsXml() },
+    { name: "visio/pages/page1.xml", data: page1Xml },
+    { name: "visio/masters/masters.xml", data: getVsdxMastersXml() },
+    { name: "visio/windows.xml", data: getVsdxWindowsXml() }
+  ];
+
+  if (typeof validateVsdxPackage === "function") validateVsdxPackage(entries);
+  const res = zipStore(entries);
+  const blob = (typeof Blob !== "undefined" && res instanceof Blob) ? res : new Blob([res], { type: "application/vnd.ms-visio.drawing" });
+  downloadFile(blob, "cascade_budget_plot.vsdx", "application/vnd.ms-visio.drawing");
+  hint("Exported Stage Plot as native Microsoft Visio (.vsdx) drawing.");
 }
 
 /* =====================================================================
@@ -556,6 +858,10 @@ if (typeof module !== "undefined" && module.exports) {
     toggleBudget,
     toggleBudgetExpand,
     renderBudget,
+    generateBudgetPlotSvg,
+    exportBudgetPlotSvg,
+    exportBudgetPlotPng,
+    exportBudgetPlotVsdx,
     exportBudgetXlsx,
     exportBudgetCsv,
     BUDGET_METRICS

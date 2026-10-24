@@ -426,49 +426,49 @@ function exportSParamsCsv(res) {
   downloadFile(csv, "rf_multi_port_linear_analysis.csv", "text/csv");
 }
 
-/* Helper to resolve standalone CSS styles for self-contained SVG export */
+/* Helper to resolve standalone CSS styles for self-contained transparent SVG export */
 function buildStandaloneSvg(container) {
   const svgEl = container.querySelector("svg");
   if (!svgEl) return null;
   const clone = svgEl.cloneNode(true);
   clone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
 
-  // Determine computed colors from container/document
-  const cs = window.getComputedStyle(container);
-  const bg = cs.getPropertyValue("--canvas").trim() || "#0f172a";
-  const ink = cs.getPropertyValue("--ink").trim() || "#f8fafc";
-  const inkDim = cs.getPropertyValue("--ink-dim").trim() || "#94a3b8";
-  const lineCol = cs.getPropertyValue("--line").trim() || "#334155";
-  const gridMaj = cs.getPropertyValue("--grid-maj").trim() || "#1e293b";
   const monoFont = "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace";
   const sansFont = "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
 
-  // Create embedded style definition
+  // Create embedded style definition without solid background and with solid black text
   const styleEl = document.createElementNS("http://www.w3.org/2000/svg", "style");
   styleEl.textContent = `
-    svg { font-family: ${sansFont}; background: ${bg}; }
-    text { font-family: ${monoFont}; fill: ${inkDim}; }
-    .title-text { fill: ${ink}; font-family: ${sansFont}; }
+    svg { font-family: ${sansFont}; background: transparent; }
+    text { font-family: ${monoFont}; fill: #000000 !important; font-weight: 500; }
+    .title-text { fill: #000000 !important; font-family: ${sansFont}; font-weight: 700; }
   `;
   clone.insertBefore(styleEl, clone.firstChild);
 
-  // Add solid background rect to ensure non-transparent rendering in all external viewers
-  const bgRect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-  bgRect.setAttribute("width", "100%");
-  bgRect.setAttribute("height", "100%");
-  bgRect.setAttribute("fill", bg);
-  clone.insertBefore(bgRect, clone.children[1] || null);
-
-  // Replace CSS variable references in cloned attributes with explicit colors
+  // Replace CSS variable references in cloned attributes with explicit export colors (black text & neutral grid)
   const replaceVarAttrs = el => {
+    const tag = el.tagName.toLowerCase();
+    if (tag === "rect") {
+      const f = el.getAttribute("fill");
+      if (f && f.includes("var(--canvas)")) {
+        el.setAttribute("fill", "none");
+        el.setAttribute("stroke", "#334155");
+      }
+    }
+    if (tag === "text") {
+      const curFill = el.getAttribute("fill");
+      if (!curFill || curFill.includes("var(") || curFill === "#f8fafc" || curFill === "#94a3b8" || curFill === "#ffffff") {
+        el.setAttribute("fill", "#000000");
+      }
+    }
+
     ["fill", "stroke", "font-family"].forEach(attr => {
       const v = el.getAttribute(attr);
       if (v && v.includes("var(")) {
-        if (v.includes("--canvas")) el.setAttribute(attr, bg);
-        else if (v.includes("--ink-dim")) el.setAttribute(attr, inkDim);
-        else if (v.includes("--ink")) el.setAttribute(attr, ink);
-        else if (v.includes("--grid-maj")) el.setAttribute(attr, gridMaj);
-        else if (v.includes("--line")) el.setAttribute(attr, lineCol);
+        if (v.includes("--canvas")) el.setAttribute(attr, "none");
+        else if (v.includes("--ink-dim") || v.includes("--ink")) el.setAttribute(attr, "#000000");
+        else if (v.includes("--grid-maj")) el.setAttribute(attr, "#e2e8f0");
+        else if (v.includes("--line")) el.setAttribute(attr, "#334155");
         else if (v.includes("--mono")) el.setAttribute(attr, monoFont);
         else if (v.includes("--sans")) el.setAttribute(attr, sansFont);
       }
@@ -499,12 +499,9 @@ function exportSParamsPng() {
   const url = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svgText);
   img.onload = () => {
     const cv = document.createElement("canvas");
-    const scale = 2; // High-DPI 2x supersampling
     cv.width = 1800; cv.height = 720;
     const g = cv.getContext("2d");
-    const cs = window.getComputedStyle(container);
-    g.fillStyle = cs.getPropertyValue("--canvas").trim() || "#0f172a";
-    g.fillRect(0, 0, cv.width, cv.height);
+    g.clearRect(0, 0, cv.width, cv.height);
     g.imageSmoothingEnabled = true;
     g.imageSmoothingQuality = "high";
     g.drawImage(img, 0, 0, cv.width, cv.height);
