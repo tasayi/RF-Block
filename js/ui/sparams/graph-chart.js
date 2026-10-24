@@ -243,10 +243,25 @@ function renderSvgPlot(res, metric = "mag", yScaleChoice = "auto") {
     svgHtml += `<path d="${makePath(t.arr)}" fill="none" stroke="${t.color}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>`;
   });
 
-  // Frequency Markers
+  // Frequency Markers & Readout Overlay Card
   if (linearMarkers.length) {
     if (linearMarkers[0].f === 0) linearMarkers[0].f = (fMin + fMax) / 2;
 
+    const unitSuffix = (metric === "phase") ? "°" : (metric === "delay") ? " ns" : (metric === "k") ? "" : " dB";
+
+    const getValAt = (arr, targetF) => {
+      if (!arr || !arr.length) return null;
+      let idx = 0;
+      while (idx < freqs.length - 1 && freqs[idx + 1] < targetF) idx++;
+      if (idx < freqs.length - 1 && freqs[idx + 1] > freqs[idx]) {
+        const frac = (targetF - freqs[idx]) / (freqs[idx + 1] - freqs[idx]);
+        const v0 = arr[idx], v1 = arr[idx + 1];
+        if (isFinite(v0) && isFinite(v1)) return v0 + frac * (v1 - v0);
+      }
+      return isFinite(arr[idx]) ? arr[idx] : null;
+    };
+
+    // 1. Vertical Marker Line, Handle, and Trace Intersection Dots
     linearMarkers.forEach((m, mIdx) => {
       const mx = getX(m.f);
       svgHtml += `<g class="sp-mkr-handle" data-midx="${mIdx}" style="cursor:ew-resize">
@@ -255,7 +270,81 @@ function renderSvgPlot(res, metric = "mag", yScaleChoice = "auto") {
         <rect x="${mx-12}" y="${margin.top-16}" width="24" height="24" fill="transparent"/>
         <text x="${mx}" y="${margin.top - 5}" font-size="11" font-family="var(--mono)" font-weight="bold" fill="#f59e0b" text-anchor="middle">${m.id}</text>
       </g>`;
+
+      // Intersection dots on active curves
+      tracesToPlot.forEach(t => {
+        const v = getValAt(t.arr, m.f);
+        if (v !== null && isFinite(v)) {
+          const my = Math.max(margin.top, Math.min(H - margin.bottom, getY(v)));
+          svgHtml += `<circle cx="${mx.toFixed(1)}" cy="${my.toFixed(1)}" r="4" fill="${t.color}" stroke="#ffffff" stroke-width="1.2" style="pointer-events:none"/>`;
+        }
+      });
     });
+
+    // 2. Marker Readout Box in Top-Right of Plot Area
+    const numTraces = tracesToPlot.length;
+    const multiRow = numTraces > 3;
+    const subRowsPerMarker = multiRow ? 2 : 1;
+    const rowH = 17;
+    const cardH = linearMarkers.length * (subRowsPerMarker * rowH) + 12;
+    const cardW = multiRow ? 360 : Math.min(pw - 20, Math.max(260, 110 + numTraces * 95));
+    const cardX = W - margin.right - cardW - 8;
+    const cardY = margin.top + 8;
+
+    let cardBody = `<rect class="sp-mkr-card-bg" x="${cardX}" y="${cardY}" width="${cardW}" height="${cardH}" rx="4" fill="var(--canvas)" fill-opacity="0.88" stroke="var(--line)" stroke-width="1"/>`;
+
+    let curY = cardY + 12;
+    linearMarkers.forEach((m, mIdx) => {
+      const fStr = (m.f / fDiv).toFixed(3) + " " + fUnit;
+      let startX = cardX + 8;
+
+      // Marker badge: amber rectangle with M1/M2/etc
+      cardBody += `<rect x="${startX}" y="${curY - 9}" width="22" height="13" rx="2" fill="#f59e0b"/>`;
+      cardBody += `<text class="sp-mkr-badge-text" x="${startX + 11}" y="${curY + 1}" font-size="9" font-family="var(--sans)" font-weight="bold" fill="#ffffff" text-anchor="middle">${m.id}</text>`;
+      startX += 26;
+
+      // Marker Frequency
+      cardBody += `<text x="${startX}" y="${curY + 1}" font-size="10" font-family="var(--mono)" font-weight="bold" fill="var(--ink)">${fStr}</text>`;
+      startX += (fStr.length * 6.5 + 10);
+
+      if (multiRow) {
+        // Subrow 1: first 2 traces
+        let tX = startX;
+        for (let i = 0; i < Math.min(2, numTraces); i++) {
+          const t = tracesToPlot[i];
+          const v = getValAt(t.arr, m.f);
+          const vStr = v !== null && isFinite(v) ? (v >= 0 && metric === "mag" ? "+" : "") + v.toFixed(2) + unitSuffix : "—";
+          cardBody += `<circle cx="${tX + 3}" cy="${curY - 3}" r="3" fill="${t.color}"/>`;
+          cardBody += `<text x="${tX + 9}" y="${curY + 1}" font-size="9.5" font-family="var(--mono)" fill="var(--ink)">${t.key}: <tspan font-weight="bold">${vStr}</tspan></text>`;
+          tX += 95;
+        }
+        // Subrow 2: remaining traces
+        curY += rowH;
+        let tX2 = cardX + 34;
+        for (let i = 2; i < numTraces; i++) {
+          const t = tracesToPlot[i];
+          const v = getValAt(t.arr, m.f);
+          const vStr = v !== null && isFinite(v) ? (v >= 0 && metric === "mag" ? "+" : "") + v.toFixed(2) + unitSuffix : "—";
+          cardBody += `<circle cx="${tX2 + 3}" cy="${curY - 3}" r="3" fill="${t.color}"/>`;
+          cardBody += `<text x="${tX2 + 9}" y="${curY + 1}" font-size="9.5" font-family="var(--mono)" fill="var(--ink)">${t.key}: <tspan font-weight="bold">${vStr}</tspan></text>`;
+          tX2 += 95;
+        }
+        curY += rowH;
+      } else {
+        // Single row per marker
+        let tX = startX;
+        tracesToPlot.forEach(t => {
+          const v = getValAt(t.arr, m.f);
+          const vStr = v !== null && isFinite(v) ? (v >= 0 && metric === "mag" ? "+" : "") + v.toFixed(2) + unitSuffix : "—";
+          cardBody += `<circle cx="${tX + 3}" cy="${curY - 3}" r="3" fill="${t.color}"/>`;
+          cardBody += `<text x="${tX + 9}" y="${curY + 1}" font-size="9.5" font-family="var(--mono)" fill="var(--ink)">${t.key}: <tspan font-weight="bold">${vStr}</tspan></text>`;
+          tX += 95;
+        });
+        curY += rowH;
+      }
+    });
+
+    svgHtml += `<g id="spMarkerReadoutG" style="pointer-events:none">${cardBody}</g>`;
   }
 
   // Interactive Crosshair & Tooltip Overlay Elements
@@ -442,23 +531,36 @@ function buildStandaloneSvg(container) {
     svg { font-family: ${sansFont}; background: transparent; }
     text { font-family: ${monoFont}; fill: #000000 !important; font-weight: 500; }
     .title-text { fill: #000000 !important; font-family: ${sansFont}; font-weight: 700; }
+    .sp-mkr-badge-text { fill: #ffffff !important; font-family: ${sansFont}; font-weight: 700; }
   `;
   clone.insertBefore(styleEl, clone.firstChild);
 
   // Replace CSS variable references in cloned attributes with explicit export colors (black text & neutral grid)
   const replaceVarAttrs = el => {
     const tag = el.tagName.toLowerCase();
+    const cls = el.getAttribute("class") || "";
     if (tag === "rect") {
-      const f = el.getAttribute("fill");
-      if (f && f.includes("var(--canvas)")) {
-        el.setAttribute("fill", "none");
-        el.setAttribute("stroke", "#334155");
+      if (cls.includes("sp-mkr-card-bg")) {
+        el.setAttribute("fill", "#ffffff");
+        el.setAttribute("fill-opacity", "0.94");
+        el.setAttribute("stroke", "#cbd5e1");
+        el.setAttribute("stroke-width", "1");
+      } else {
+        const f = el.getAttribute("fill");
+        if (f && f.includes("var(--canvas)")) {
+          el.setAttribute("fill", "none");
+          el.setAttribute("stroke", "#334155");
+        }
       }
     }
     if (tag === "text") {
-      const curFill = el.getAttribute("fill");
-      if (!curFill || curFill.includes("var(") || curFill === "#f8fafc" || curFill === "#94a3b8" || curFill === "#ffffff") {
-        el.setAttribute("fill", "#000000");
+      if (cls.includes("sp-mkr-badge-text")) {
+        el.setAttribute("fill", "#ffffff");
+      } else {
+        const curFill = el.getAttribute("fill");
+        if (!curFill || curFill.includes("var(") || curFill === "#f8fafc" || curFill === "#94a3b8" || curFill === "#ffffff") {
+          el.setAttribute("fill", "#000000");
+        }
       }
     }
 

@@ -127,6 +127,13 @@ function buildBudget(startId) {
     }
     curB = nb; curIn = cn.to.port; curPort = outPort;
   }
+  const bwHz = (typeof settings !== "undefined" && settings.bandwidthHz && settings.bandwidthHz > 0) ? settings.bandwidthHz : 1e6;
+  const s0Lvl = rows.length ? rows[0].lvl : 0;
+  rows.forEach(r => {
+    r.nfloor = (typeof computeNoiseFloor === "function")
+      ? computeNoiseFloor(r.cumNF, r.lvl, s0Lvl, bwHz)
+      : (-173.98 + 10 * Math.log10(Math.max(1, bwHz)) + (r.cumNF || 0) + (r.cumG || 0));
+  });
   return { rows, P, N, start: s0 };
 }
 
@@ -183,5 +190,5 @@ function runChecks(P) {
   return w;
 }
 
-const noiseFloor = (nfDbv, bwHz) => (-174 + 10 * Math.log10(Math.max(1, bwHz)) + (nfDbv || 0));
+const noiseFloor = (nfDbv, bwHz, gCum = 0) => (-173.98 + 10 * Math.log10(Math.max(1, bwHz)) + (nfDbv || 0) + gCum);
 

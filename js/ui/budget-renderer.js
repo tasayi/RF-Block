@@ -28,7 +28,9 @@ const BUDGET_METRICS = {
     unit: "dBm",
     axis: "left",
     color: "#a855f7",
-    getVal: (r, bwHz) => -174 + 10 * Math.log10(Math.max(1, bwHz)) + (r.cumNF || 0)
+    getVal: (r, bwHz) => (r && r.nfloor !== undefined && isFinite(r.nfloor))
+      ? r.nfloor
+      : (-173.98 + 10 * Math.log10(Math.max(1, bwHz)) + (r.cumNF || 0) + (r.cumG || 0))
   },
   oip3: {
     key: "oip3",
@@ -362,11 +364,15 @@ function renderBudgetPlot(rows, bwHz, bwMHz, P, container) {
   const last = rows[rows.length - 1];
   const nfFinal = last.cumNF;
   const sens = noiseFloor(nfFinal, bwHz);
+  const lastNfloor = (last.nfloor !== undefined && isFinite(last.nfloor))
+    ? last.nfloor
+    : (-173.98 + 10 * Math.log10(Math.max(1, bwHz)) + (last.cumNF || 0) + (last.cumG || 0));
   const lastP1Cum = (last.cumP1db !== undefined && isFinite(last.cumP1db)) ? last.cumP1db : last.p1db;
 
   let footerHtml = `<div class="bg-sum" style="margin-top:10px;">
     <div><span>Total Gain:</span><b>${gsign(last.cumG)}</b></div>
     <div><span>Cascade NF:</span><b>${last.cumNF !== undefined ? fmt(last.cumNF) + " dB" : "\u2014"}</b></div>
+    <div><span>Noise Floor:</span><b style="color:#a855f7">${fmt(lastNfloor)} dBm</b></div>
     <div><span>Sens. (${fmt(bwMHz)} MHz):</span><b>${fmt(sens)} dBm</b></div>
     <div><span>Cascade OIP3:</span><b>${(last.oip3 !== undefined && isFinite(last.oip3)) ? fmt(last.oip3) + " dBm" : "\u2014"}</b></div>
     <div><span>Cascade P1dB:</span><b>${(lastP1Cum !== undefined && isFinite(lastP1Cum)) ? fmt(lastP1Cum) + " dBm" : "\u2014"}</b></div>
@@ -684,14 +690,23 @@ function exportBudgetPlotVsdx() {
 function renderBudgetTable(rows, bwHz, bwMHz, P, body) {
   const nfFinal = rows[rows.length - 1].cumNF;
   const sens = noiseFloor(nfFinal, bwHz);
+  const last = rows[rows.length - 1];
+  const lastNfloor = (last.nfloor !== undefined && isFinite(last.nfloor))
+    ? last.nfloor
+    : (-173.98 + 10 * Math.log10(Math.max(1, bwHz)) + (last.cumNF || 0) + (last.cumG || 0));
+  const lastP1Cum = (last.cumP1db !== undefined && isFinite(last.cumP1db)) ? last.cumP1db : last.p1db;
+
   let h = `<table class="bg"><thead><tr>
     <th>Stage</th><th>Type</th><th>Gain</th><th>Level</th>
-    <th>NF stage</th><th>NF cum.</th><th>OIP3 cum.</th><th>P1dB stage</th><th>P1dB cum.</th><th>Headroom</th>
+    <th>NF stage</th><th>NF cum.</th><th>Noise Floor</th><th>OIP3 cum.</th><th>P1dB stage</th><th>P1dB cum.</th><th>Headroom</th>
   </tr></thead><tbody>`;
 
   rows.forEach(r => {
     const isHot = r.over;
     const p1CumVal = (r.cumP1db !== undefined && isFinite(r.cumP1db)) ? r.cumP1db : r.p1db;
+    const nfl = (r.nfloor !== undefined && isFinite(r.nfloor))
+      ? r.nfloor
+      : (-173.98 + 10 * Math.log10(Math.max(1, bwHz)) + (r.cumNF || 0) + (r.cumG || 0));
     h += `<tr class="${isHot ? "hot" : ""}" data-bid="${r.id}">
       <td>${esc(r.name)}</td>
       <td style="color:var(--ink-dim)">${esc(r.type)}</td>
@@ -699,6 +714,7 @@ function renderBudgetTable(rows, bwHz, bwMHz, P, body) {
       <td style="font-weight:600;color:var(--accent)">${dbm(r.lvl)}</td>
       <td>${r.nfStage ? fmt(r.nfStage) + " dB" : "\u2014"}</td>
       <td>${r.cumNF !== undefined ? fmt(r.cumNF) + " dB" : "\u2014"}</td>
+      <td style="color:#a855f7;font-weight:500">${nfl !== undefined && isFinite(nfl) ? fmt(nfl) + " dBm" : "\u2014"}</td>
       <td>${(r.oip3 !== undefined && isFinite(r.oip3)) ? fmt(r.oip3) + " dBm" : "\u2014"}</td>
       <td>${(r.p1dbStage !== undefined && isFinite(r.p1dbStage)) ? fmt(r.p1dbStage) + " dBm" : "\u2014"}</td>
       <td style="font-weight:600;color:#ec4899">${(p1CumVal !== undefined && isFinite(p1CumVal)) ? fmt(p1CumVal) + " dBm" : "\u2014"}</td>
@@ -707,11 +723,10 @@ function renderBudgetTable(rows, bwHz, bwMHz, P, body) {
   });
   h += `</tbody></table>`;
 
-  const last = rows[rows.length - 1];
-  const lastP1Cum = (last.cumP1db !== undefined && isFinite(last.cumP1db)) ? last.cumP1db : last.p1db;
   h += `<div class="bg-sum">
     <div><span>Total gain:</span><b>${gsign(last.cumG)}</b></div>
     <div><span>Cascade NF:</span><b>${last.cumNF !== undefined ? fmt(last.cumNF) + " dB" : "\u2014"}</b></div>
+    <div><span>Noise Floor:</span><b style="color:#a855f7">${fmt(lastNfloor)} dBm</b></div>
     <div><span>Sens. (${fmt(bwMHz)} MHz):</span><b>${fmt(sens)} dBm</b></div>
     <div><span>Cascade OIP3:</span><b>${(last.oip3 !== undefined && isFinite(last.oip3)) ? fmt(last.oip3) + " dBm" : "\u2014"}</b></div>
     <div><span>Cascade P1dB:</span><b>${(lastP1Cum !== undefined && isFinite(lastP1Cum)) ? fmt(lastP1Cum) + " dBm" : "\u2014"}</b></div>
@@ -765,7 +780,9 @@ function exportBudgetXlsx() {
 
   rows.forEach((r, idx) => {
     const nfCum = r.cumNF || 0;
-    const nFloor = -174 + 10 * Math.log10(Math.max(1, bwHz)) + nfCum;
+    const nFloor = (r.nfloor !== undefined && isFinite(r.nfloor))
+      ? r.nfloor
+      : (-173.98 + 10 * Math.log10(Math.max(1, bwHz)) + nfCum + (r.cumG || 0));
     const status = r.over ? "OVERDRIVEN" : (r.head !== undefined && r.head < 3 ? "LOW HEADROOM" : "NORMAL");
     const p1Cum = (r.cumP1db !== undefined && isFinite(r.cumP1db)) ? r.cumP1db : r.p1db;
 
@@ -791,6 +808,9 @@ function exportBudgetXlsx() {
   const last = rows[rows.length - 1];
   const lastNf = last.cumNF || 0;
   const sens = noiseFloor(lastNf, bwHz);
+  const lastNfloor = (last.nfloor !== undefined && isFinite(last.nfloor))
+    ? last.nfloor
+    : (-173.98 + 10 * Math.log10(Math.max(1, bwHz)) + lastNf + (last.cumG || 0));
   const lastP1Cum = (last.cumP1db !== undefined && isFinite(last.cumP1db)) ? last.cumP1db : last.p1db;
   sheet1Rows.push([]);
   sheet1Rows.push([
@@ -798,7 +818,7 @@ function exportBudgetXlsx() {
     "", parseFloat(last.cumG.toFixed(2)),
     parseFloat(last.lvl.toFixed(2)), "",
     parseFloat(lastNf.toFixed(2)),
-    parseFloat(sens.toFixed(2)),
+    parseFloat(lastNfloor.toFixed(2)),
     (last.oip3 !== undefined && isFinite(last.oip3)) ? parseFloat(last.oip3.toFixed(2)) : "",
     "",
     (lastP1Cum !== undefined && isFinite(lastP1Cum)) ? parseFloat(lastP1Cum.toFixed(2)) : "",
@@ -815,8 +835,9 @@ function exportBudgetXlsx() {
     ["Signal Source", startName, "Chain origin"],
     ["Analysis Bandwidth", bwHz, "Hz"],
     ["Analysis Bandwidth (MHz)", bwMHz, "MHz"],
-    ["Thermal Noise Reference", -174.0, "dBm/Hz (k*T at 290 K)"],
-    ["System Sensitivity", parseFloat(sens.toFixed(2)), `dBm at ${bwMHz.toFixed(3)} MHz BW`],
+    ["Thermal Noise Reference", -173.98, "dBm/Hz (k*T at 290 K)"],
+    ["Output Noise Floor", parseFloat(lastNfloor.toFixed(2)), "dBm at chain output"],
+    ["System Sensitivity (MDS)", parseFloat(sens.toFixed(2)), `dBm at ${bwMHz.toFixed(3)} MHz BW`],
     ["Total Cascaded Gain", parseFloat(last.cumG.toFixed(2)), "dB"],
     ["Total Cascaded NF", parseFloat(lastNf.toFixed(2)), "dB"],
     ["Total Cascaded OIP3", (last.oip3 !== undefined && isFinite(last.oip3)) ? parseFloat(last.oip3.toFixed(2)) : "", "dBm"],
@@ -843,11 +864,15 @@ function exportBudgetCsv() {
   const startId = sel ? sel.value : null;
   const { rows } = buildBudget(startId);
   if (!rows.length) { hint("No budget to export."); return; }
-  let csv = "Stage,Type,Gain_dB,Level_dBm,NF_stage_dB,NF_cum_dB,OIP3_cum_dBm,P1dB_stage_dBm,P1dB_cum_dBm,Headroom_dB\n";
+  const bwHz = (typeof settings !== "undefined" && settings.bandwidthHz && settings.bandwidthHz > 0) ? settings.bandwidthHz : 1e6;
+  let csv = "Stage,Type,Gain_dB,Level_dBm,NF_stage_dB,NF_cum_dB,Noise_Floor_dBm,OIP3_cum_dBm,P1dB_stage_dBm,P1dB_cum_dBm,Headroom_dB\n";
   for (const r of rows) {
     const q = s => `"${String(s || "").replace(/"/g, '""')}"`;
     const p1Cum = (r.cumP1db !== undefined && isFinite(r.cumP1db)) ? r.cumP1db : r.p1db;
-    csv += [q(r.name), q(r.type), r.gain ?? "", r.lvl ?? "", r.nfStage ?? "", r.cumNF ?? "", (r.oip3 !== undefined && isFinite(r.oip3)) ? r.oip3 : "", (r.p1dbStage !== undefined && isFinite(r.p1dbStage)) ? r.p1dbStage : "", (p1Cum !== undefined && isFinite(p1Cum)) ? p1Cum : "", r.head ?? ""].join(",") + "\n";
+    const nFloor = (r.nfloor !== undefined && isFinite(r.nfloor))
+      ? r.nfloor
+      : (-173.98 + 10 * Math.log10(Math.max(1, bwHz)) + (r.cumNF || 0) + (r.cumG || 0));
+    csv += [q(r.name), q(r.type), r.gain ?? "", r.lvl ?? "", r.nfStage ?? "", r.cumNF ?? "", nFloor !== undefined ? nFloor.toFixed(2) : "", (r.oip3 !== undefined && isFinite(r.oip3)) ? r.oip3 : "", (r.p1dbStage !== undefined && isFinite(r.p1dbStage)) ? r.p1dbStage : "", (p1Cum !== undefined && isFinite(p1Cum)) ? p1Cum : "", r.head ?? ""].join(",") + "\n";
   }
   downloadFile(csv, "cascade-budget.csv", "text/csv");
 }
