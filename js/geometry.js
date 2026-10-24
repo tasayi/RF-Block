@@ -119,9 +119,12 @@ function bboxOf(b) {
   let maxY = b.y + s.h + extraY;
 
   // Include top label (val)
-  minX = Math.min(minX, b.x + s.w / 2 + valOffX - 40);
-  maxX = Math.max(maxX, b.x + s.w / 2 + valOffX + 40);
-  minY = Math.min(minY, b.y + lblY.valY + valOffY - 12);
+  const v = c.val ? c.val(p) : "";
+  const valLines = Array.isArray(v) ? v : (v ? String(v).split("\n").filter(Boolean) : []);
+  const extraValH = valLines.length > 1 ? (valLines.length - 1) * 15 : 0;
+  minX = Math.min(minX, b.x + s.w / 2 + valOffX - 45);
+  maxX = Math.max(maxX, b.x + s.w / 2 + valOffX + 45);
+  minY = Math.min(minY, b.y + lblY.valY + valOffY - 12 - extraValH);
 
   // Include name label
   minX = Math.min(minX, b.x + s.w / 2 + nameOffX - 40);

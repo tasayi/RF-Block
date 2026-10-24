@@ -221,7 +221,8 @@ class TestVsdxExporter(unittest.TestCase):
             power_labels = ["".join(shape.find("./v:Text", ns).itertext()) for shape in shapes
                             if shape.attrib.get("NameU") == "Text annotation"
                             and shape.find("./v:Text", ns) is not None
-                            and "".join(shape.find("./v:Text", ns).itertext()).endswith("dBm")]
+                            and "".join(shape.find("./v:Text", ns).itertext()).endswith("dBm")
+                            and "\n" not in "".join(shape.find("./v:Text", ns).itertext())]
             expected_width = max(32, max(map(len, power_labels)) * 7.6 + 10)
             for badge in badges:
                 cells = self._parse_cells(badge, ns)

@@ -1877,7 +1877,16 @@ def({
   params: { label: "AMP", gain: 15, nf: 2, p1db: 20, oip3: 30 },
   fields: [{ key: "gain", label: "Gain", unit: "dB", step: 0.5 }, { key: "nf", label: "Noise figure", unit: "dB", step: 0.1 },
            { key: "p1db", label: "Output P1dB", unit: "dBm", step: 0.5 }, { key: "oip3", label: "Output IP3", unit: "dBm", step: 0.5 }],
-  out: p => ({ out: +p.gain }), val: p => { const nfv = Math.abs(p.nf || 0); return gsign(p.gain) + (nfv > 0 ? ' · NF ' + fmt(nfv) + ' dB' : ''); }, nf: p => Math.abs(p.nf || 0),
+  out: p => ({ out: +p.gain }),
+  val: p => {
+    const lines = ["Gain: " + gsign(p.gain)];
+    const nfv = Math.abs(p.nf || 0);
+    if (p.nf !== undefined && p.nf !== "" && !isNaN(p.nf)) lines.push("NF: " + fmt(nfv) + " dB");
+    const p1v = num(p.p1db);
+    if (p1v !== undefined) lines.push("P1dB: " + fmt(p1v) + " dBm");
+    return lines.join("\n");
+  },
+  nf: p => Math.abs(p.nf || 0),
   p1db: p => num(p.p1db), oip3: p => num(p.oip3),
   sym() { return `<path class="blk-shape" d="M0 3L60 30L0 57Z"/>`; }
 });
@@ -1896,7 +1905,17 @@ def({
   nf: p => (p.mode === "Bypass Mode" ? Math.abs(+p.bypLoss || 0) : Math.abs(+p.nf || 0)),
   p1db: p => (p.mode === "Bypass Mode" ? undefined : num(p.p1db)),
   oip3: p => (p.mode === "Bypass Mode" ? undefined : num(p.oip3)),
-  val: p => { const isByp = p.mode === 'Bypass Mode'; const gainStr = isByp ? ('BYP \u2212' + fmt(Math.abs(+p.bypLoss||0)) + ' dB') : gsign(p.gain); const nfv = isByp ? Math.abs(+p.bypLoss||0) : Math.abs(+p.nf||0); return gainStr + (nfv > 0 ? ' · NF ' + fmt(nfv) + ' dB' : ''); },
+  val: p => {
+    if (p.mode === "Bypass Mode") {
+      return "Loss: \u2212" + fmt(Math.abs(+p.bypLoss || 0)) + " dB";
+    }
+    const lines = ["Gain: " + gsign(p.gain)];
+    const nfv = Math.abs(p.nf || 0);
+    if (p.nf !== undefined && p.nf !== "" && !isNaN(p.nf)) lines.push("NF: " + fmt(nfv) + " dB");
+    const p1v = num(p.p1db);
+    if (p1v !== undefined) lines.push("P1dB: " + fmt(p1v) + " dBm");
+    return lines.join("\n");
+  },
   sym(p) {
     const isByp = (p && p.mode === "Bypass Mode");
     const topSw = isByp ? `<path class="blk-line" d="M18 15H39"/>` : `<path class="blk-line" d="M18 15L36 6"/>`;
@@ -2986,9 +3005,12 @@ function bboxOf(b) {
   let maxY = b.y + s.h + extraY;
 
   // Include top label (val)
-  minX = Math.min(minX, b.x + s.w / 2 + valOffX - 40);
-  maxX = Math.max(maxX, b.x + s.w / 2 + valOffX + 40);
-  minY = Math.min(minY, b.y + lblY.valY + valOffY - 12);
+  const v = c.val ? c.val(p) : "";
+  const valLines = Array.isArray(v) ? v : (v ? String(v).split("\n").filter(Boolean) : []);
+  const extraValH = valLines.length > 1 ? (valLines.length - 1) * 15 : 0;
+  minX = Math.min(minX, b.x + s.w / 2 + valOffX - 45);
+  maxX = Math.max(maxX, b.x + s.w / 2 + valOffX + 45);
+  minY = Math.min(minY, b.y + lblY.valY + valOffY - 12 - extraValH);
 
   // Include name label
   minX = Math.min(minX, b.x + s.w / 2 + nameOffX - 40);
@@ -6459,6 +6481,7 @@ function buildVsdxBlob(blocksList, connsList, Pdict, NFdict, PSecondaryDict, com
         name = `${owner ? (owner.params.label || "Section") : "Section"} · ${subTagPort(b.params.tag)}`;
       }
       const value = typeof c.val === "function" ? c.val(b.params || {}) : "";
+      const valLines = Array.isArray(value) ? value : (value ? String(value).split("\n").filter(Boolean) : []);
       const info = typeof c.info === "function" ? c.info(b.params || {}) : "";
       const fontSizes = (typeof DESIGN_TOKENS !== "undefined" && DESIGN_TOKENS.fontSizes) || { normal: 13.33, large: 14, small: 12 };
 
@@ -6471,8 +6494,12 @@ function buildVsdxBlob(blocksList, connsList, Pdict, NFdict, PSecondaryDict, com
       const infoOffY = Number(p._infoOffY != null ? p._infoOffY : p._lblOffY) || 0;
 
       const lblY = (typeof blockLabelY === "function") ? blockLabelY(b, f, effectiveSettings) : { valY: -13, nameY: f.h + 18, infoY: f.h + 33 };
-      if (value) {
-        addText(value, b.x + f.w / 2 + valOffX, b.y + lblY.valY + valOffY, Math.max(f.w + 32, value.length * 9.5 + 16), 18, fontSizes.normal || 13.33, "#1e293b", true, "middle");
+      if (valLines.length) {
+        const textVal = valLines.join("\n");
+        const boxH = Math.max(18, valLines.length * 16);
+        const shiftY = valLines.length > 1 ? -((valLines.length - 1) * 8) : 0;
+        const maxLen = Math.max(...valLines.map(l => l.length));
+        addText(textVal, b.x + f.w / 2 + valOffX, b.y + lblY.valY + valOffY + shiftY, Math.max(f.w + 32, maxLen * 9.5 + 16), boxH, fontSizes.normal || 13.33, "#1e293b", true, "middle");
       }
       if (name) {
         addText(name, b.x + f.w / 2 + nameOffX, b.y + lblY.nameY + nameOffY, Math.max(f.w + 32, name.length * 10 + 16), 20, fontSizes.large || 14, "#000000", true, "middle");
@@ -7201,6 +7228,7 @@ function buildExportSVG(scale = 1) {
       }
       const nm = c.isInterconnect ? "" : (b.params.label || c.name);
       const v = c.val ? c.val(b.params) : "";
+      const valLines = Array.isArray(v) ? v : (v ? String(v).split("\n").filter(Boolean) : []);
       const lblY = (typeof blockLabelY === "function") ? blockLabelY(b, f, settings) : { valY: -13, nameY: f.h + 18, infoY: f.h + 33 };
       const valOffX = Number(b.params._valOffX != null ? b.params._valOffX : b.params._lblOffX) || 0;
       const valOffY = Number(b.params._valOffY != null ? b.params._valOffY : b.params._lblOffY) || 0;
@@ -7209,7 +7237,17 @@ function buildExportSVG(scale = 1) {
       const infoOffX = Number(b.params._infoOffX != null ? b.params._infoOffX : b.params._lblOffX) || 0;
       const infoOffY = Number(b.params._infoOffY != null ? b.params._infoOffY : b.params._lblOffY) || 0;
       const info = c.info ? c.info(b.params) : "";
-      if (v)    blocksBody += `<text x="${f.w / 2 + valOffX}" y="${lblY.valY + valOffY}" text-anchor="middle" fill="#000000" font-family="${fontSans}" font-size="${fontSizes.normal}px" font-weight="600">${esc(v)}</text>`;
+      if (valLines.length === 1) {
+        blocksBody += `<text x="${f.w / 2 + valOffX}" y="${lblY.valY + valOffY}" text-anchor="middle" fill="#000000" font-family="${fontSans}" font-size="${fontSizes.normal}px" font-weight="600">${esc(valLines[0])}</text>`;
+      } else if (valLines.length > 1) {
+        const lineH = 15;
+        const startY = lblY.valY + valOffY - (valLines.length - 1) * lineH;
+        blocksBody += `<text x="${f.w / 2 + valOffX}" y="${startY}" text-anchor="middle" fill="#000000" font-family="${fontSans}" font-size="${fontSizes.normal}px" font-weight="600">`;
+        for (let i = 0; i < valLines.length; i++) {
+          blocksBody += `<tspan x="${f.w / 2 + valOffX}" dy="${i === 0 ? 0 : lineH + 'px'}">${esc(valLines[i])}</tspan>`;
+        }
+        blocksBody += `</text>`;
+      }
       if (nm)   blocksBody += `<text x="${f.w / 2 + nameOffX}" y="${lblY.nameY + nameOffY}" text-anchor="middle" fill="#000000" font-family="${fontSans}" font-size="${fontSizes.large}px" font-weight="700">${esc(nm)}</text>`;
       if (info) blocksBody += `<text x="${f.w / 2 + infoOffX}" y="${lblY.infoY + infoOffY}" text-anchor="middle" fill="#000000" font-family="${fontSans}" font-size="${fontSizes.small}px" font-weight="500">${esc(info)}</text>`;
     }
@@ -7399,6 +7437,7 @@ function renderCanvas() {
         if (psh && psh !== sheets[cur]) nm = (icRecv(b.params) ? "\u2190 " : "\u2192 ") + psh.name;
       }
       const v = c.val ? c.val(b.params) : "";
+      const valLines = Array.isArray(v) ? v : (v ? String(v).split("\n").filter(Boolean) : []);
       /* Universal label layout with independent floating offsets:
          val  (gain/loss)         → ABOVE symbol at y = -13
          nm   (name/label)        → BELOW symbol at y = f.h + 18
@@ -7411,7 +7450,17 @@ function renderCanvas() {
       const infoOffX = Number(b.params._infoOffX != null ? b.params._infoOffX : b.params._lblOffX) || 0;
       const infoOffY = Number(b.params._infoOffY != null ? b.params._infoOffY : b.params._lblOffY) || 0;
       const info = c.info ? c.info(b.params) : "";
-      if (v)    bh += `<text class="lbl-val"  x="${f.w / 2 + valOffX}" y="${lblY.valY + valOffY}" data-block="${b.id}" data-lbl="val">${esc(v)}</text>`;
+      if (valLines.length === 1) {
+        bh += `<text class="lbl-val" x="${f.w / 2 + valOffX}" y="${lblY.valY + valOffY}" data-block="${b.id}" data-lbl="val">${esc(valLines[0])}</text>`;
+      } else if (valLines.length > 1) {
+        const lineH = 15;
+        const startY = lblY.valY + valOffY - (valLines.length - 1) * lineH;
+        bh += `<text class="lbl-val" x="${f.w / 2 + valOffX}" y="${startY}" data-block="${b.id}" data-lbl="val">`;
+        for (let i = 0; i < valLines.length; i++) {
+          bh += `<tspan x="${f.w / 2 + valOffX}" dy="${i === 0 ? 0 : lineH + 'px'}">${esc(valLines[i])}</tspan>`;
+        }
+        bh += `</text>`;
+      }
       if (nm)   bh += `<text class="lbl-name" x="${f.w / 2 + nameOffX}" y="${lblY.nameY + nameOffY}" data-block="${b.id}" data-lbl="name">${esc(nm)}</text>`;
       if (info) bh += `<text class="lbl-info" x="${f.w / 2 + infoOffX}" y="${lblY.infoY + infoOffY}" data-block="${b.id}" data-lbl="info">${esc(info)}</text>`;
       for (const p of getPorts(b)) {

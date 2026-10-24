@@ -8,7 +8,16 @@ def({
   params: { label: "AMP", gain: 15, nf: 2, p1db: 20, oip3: 30 },
   fields: [{ key: "gain", label: "Gain", unit: "dB", step: 0.5 }, { key: "nf", label: "Noise figure", unit: "dB", step: 0.1 },
            { key: "p1db", label: "Output P1dB", unit: "dBm", step: 0.5 }, { key: "oip3", label: "Output IP3", unit: "dBm", step: 0.5 }],
-  out: p => ({ out: +p.gain }), val: p => { const nfv = Math.abs(p.nf || 0); return gsign(p.gain) + (nfv > 0 ? ' · NF ' + fmt(nfv) + ' dB' : ''); }, nf: p => Math.abs(p.nf || 0),
+  out: p => ({ out: +p.gain }),
+  val: p => {
+    const lines = ["Gain: " + gsign(p.gain)];
+    const nfv = Math.abs(p.nf || 0);
+    if (p.nf !== undefined && p.nf !== "" && !isNaN(p.nf)) lines.push("NF: " + fmt(nfv) + " dB");
+    const p1v = num(p.p1db);
+    if (p1v !== undefined) lines.push("P1dB: " + fmt(p1v) + " dBm");
+    return lines.join("\n");
+  },
+  nf: p => Math.abs(p.nf || 0),
   p1db: p => num(p.p1db), oip3: p => num(p.oip3),
   sym() { return `<path class="blk-shape" d="M0 3L60 30L0 57Z"/>`; }
 });
@@ -27,7 +36,17 @@ def({
   nf: p => (p.mode === "Bypass Mode" ? Math.abs(+p.bypLoss || 0) : Math.abs(+p.nf || 0)),
   p1db: p => (p.mode === "Bypass Mode" ? undefined : num(p.p1db)),
   oip3: p => (p.mode === "Bypass Mode" ? undefined : num(p.oip3)),
-  val: p => { const isByp = p.mode === 'Bypass Mode'; const gainStr = isByp ? ('BYP \u2212' + fmt(Math.abs(+p.bypLoss||0)) + ' dB') : gsign(p.gain); const nfv = isByp ? Math.abs(+p.bypLoss||0) : Math.abs(+p.nf||0); return gainStr + (nfv > 0 ? ' · NF ' + fmt(nfv) + ' dB' : ''); },
+  val: p => {
+    if (p.mode === "Bypass Mode") {
+      return "Loss: \u2212" + fmt(Math.abs(+p.bypLoss || 0)) + " dB";
+    }
+    const lines = ["Gain: " + gsign(p.gain)];
+    const nfv = Math.abs(p.nf || 0);
+    if (p.nf !== undefined && p.nf !== "" && !isNaN(p.nf)) lines.push("NF: " + fmt(nfv) + " dB");
+    const p1v = num(p.p1db);
+    if (p1v !== undefined) lines.push("P1dB: " + fmt(p1v) + " dBm");
+    return lines.join("\n");
+  },
   sym(p) {
     const isByp = (p && p.mode === "Bypass Mode");
     const topSw = isByp ? `<path class="blk-line" d="M18 15H39"/>` : `<path class="blk-line" d="M18 15L36 6"/>`;

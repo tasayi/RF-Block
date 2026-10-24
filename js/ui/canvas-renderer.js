@@ -149,6 +149,7 @@ function renderCanvas() {
         if (psh && psh !== sheets[cur]) nm = (icRecv(b.params) ? "\u2190 " : "\u2192 ") + psh.name;
       }
       const v = c.val ? c.val(b.params) : "";
+      const valLines = Array.isArray(v) ? v : (v ? String(v).split("\n").filter(Boolean) : []);
       /* Universal label layout with independent floating offsets:
          val  (gain/loss)         → ABOVE symbol at y = -13
          nm   (name/label)        → BELOW symbol at y = f.h + 18
@@ -161,7 +162,17 @@ function renderCanvas() {
       const infoOffX = Number(b.params._infoOffX != null ? b.params._infoOffX : b.params._lblOffX) || 0;
       const infoOffY = Number(b.params._infoOffY != null ? b.params._infoOffY : b.params._lblOffY) || 0;
       const info = c.info ? c.info(b.params) : "";
-      if (v)    bh += `<text class="lbl-val"  x="${f.w / 2 + valOffX}" y="${lblY.valY + valOffY}" data-block="${b.id}" data-lbl="val">${esc(v)}</text>`;
+      if (valLines.length === 1) {
+        bh += `<text class="lbl-val" x="${f.w / 2 + valOffX}" y="${lblY.valY + valOffY}" data-block="${b.id}" data-lbl="val">${esc(valLines[0])}</text>`;
+      } else if (valLines.length > 1) {
+        const lineH = 15;
+        const startY = lblY.valY + valOffY - (valLines.length - 1) * lineH;
+        bh += `<text class="lbl-val" x="${f.w / 2 + valOffX}" y="${startY}" data-block="${b.id}" data-lbl="val">`;
+        for (let i = 0; i < valLines.length; i++) {
+          bh += `<tspan x="${f.w / 2 + valOffX}" dy="${i === 0 ? 0 : lineH + 'px'}">${esc(valLines[i])}</tspan>`;
+        }
+        bh += `</text>`;
+      }
       if (nm)   bh += `<text class="lbl-name" x="${f.w / 2 + nameOffX}" y="${lblY.nameY + nameOffY}" data-block="${b.id}" data-lbl="name">${esc(nm)}</text>`;
       if (info) bh += `<text class="lbl-info" x="${f.w / 2 + infoOffX}" y="${lblY.infoY + infoOffY}" data-block="${b.id}" data-lbl="info">${esc(info)}</text>`;
       for (const p of getPorts(b)) {
