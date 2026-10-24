@@ -191,56 +191,108 @@ function getStageTransmissionDb(b, freqs, warnings, path, isReverse = false, inP
     const ilDb = -Math.abs(+b.params.il || 0.4);
 
     if (stNum === 0) {
-      // Off / Open state
+      // Off / Open state: check for positional Open state Touchstone file
+      const openRaw = b.params && (b.params.snpData_pos_open || b.params.s3pData_st0 || b.params.snpData_st0);
+      if (openRaw) {
+        const parsedOpen = parseTouchstone(openRaw);
+        if (parsedOpen) {
+          const dstPortIdx = (parsedOpen.numPorts >= 3 && kThrow < parsedOpen.numPorts) ? kThrow : 1;
+          const rowIdx = isReverse ? 0 : dstPortIdx;
+          const colIdx = isReverse ? dstPortIdx : 0;
+          const pts = parsedOpen.pts, numPts = pts.length;
+          for (let k = 0; k < N; k++) {
+            const f = freqs[k];
+            let cVal = CMath.zero();
+            if (f <= pts[0].f) {
+              const row = pts[0].s[rowIdx];
+              cVal = row ? row[colIdx] : CMath.zero();
+            } else if (f >= pts[numPts - 1].f) {
+              const row = pts[numPts - 1].s[rowIdx];
+              cVal = row ? row[colIdx] : CMath.zero();
+            } else {
+              let idx = 0;
+              while (idx < numPts - 1 && pts[idx + 1].f < f) idx++;
+              const p0 = pts[idx], p1 = pts[idx + 1];
+              const t = (f - p0.f) / (p1.f - p0.f);
+              const r0 = (p0.s[rowIdx] && p0.s[rowIdx][colIdx]) || CMath.zero();
+              const r1 = (p1.s[rowIdx] && p1.s[rowIdx][colIdx]) || CMath.zero();
+              cVal = CMath.fromRI(r0.r + t * (r1.r - r0.r), r0.i + t * (r1.i - r0.i));
+            }
+            tDb[k] = CMath.dB(cVal);
+          }
+          if ((freqs[0] < parsedOpen.minFreq || freqs[N - 1] > parsedOpen.maxFreq) && warnings) {
+            warnings.push(`Warning: Touchstone data for '${lbl}' (${(parsedOpen.minFreq/1e9).toFixed(2)}–${(parsedOpen.maxFreq/1e9).toFixed(2)} GHz) was extrapolated to match the analysis band.`);
+          }
+          return tDb;
+        }
+      }
       for (let k = 0; k < N; k++) tDb[k] = isoDb;
       return tDb;
     }
 
     const isThrough = (kThrow === stNum);
 
-    // 1. Determine Touchstone source file for current switch state:
-    let sRaw = (b.params && (b.params[`s3pData_st${stNum}`] || b.params[`s2pData_st${stNum}`] || b.params[`snpData_st${stNum}`])) ||
-               (b.params && (b.params.s3pData || b.params.s2pData || b.params.snpData || b.params.s4pData || b.params.s3pData_st1 || b.params.s2pData_st1));
+    // 1. Determine Touchstone source file for current switch state (stNum >= 1):
+    let sRaw = b.params && (
+      b.params[`snpData_pos_${stNum}`] ||
+      b.params[`s3pData_st${stNum}`] ||
+      b.params[`snpData_st${stNum}`]
+    );
+    let isPositional = !!sRaw;
+    if (!sRaw) {
+      sRaw = b.params && (
+        b.params[`s2pData_st${stNum}`] ||
+        b.params.snpData ||
+        b.params.s3pData ||
+        b.params.s4pData ||
+        b.params.s2pData ||
+        b.params.s3pData_st1 ||
+        b.params.s2pData_st1
+      );
+    }
 
     let parsed = sRaw ? parseTouchstone(sRaw) : null;
 
     if (parsed) {
-      let dstPortIdx = 1;
+      let rowIdx = 1, colIdx = 0;
       if (parsed.numPorts >= 3) {
-        // Multi-port S(N+1)P Touchstone file:
-        const midIdx = Math.floor(parsed.pts.length / 2);
-        const midPt = parsed.pts[midIdx];
-
-        // Find which port in the parsed file has the highest transmission from Port 0 (through port in this file)
-        let maxPortIdx = 1;
-        let maxDb = -999;
-        for (let p = 1; p < parsed.numPorts; p++) {
-          const rowVal = midPt.s[p] ? midPt.s[p][0] : null;
-          const dbVal = rowVal ? CMath.dB(rowVal) : -999;
-          if (dbVal > maxDb) {
-            maxDb = dbVal;
-            maxPortIdx = p;
-          }
-        }
-
-        if (isThrough) {
-          // For active throw: use the detected through port in this state's file
-          dstPortIdx = maxPortIdx;
+        if (isPositional) {
+          // Positional file characterizes the switch in position stNum directly:
+          // Port 0 is Common 'in', Port j is Throw j.
+          const dstPortIdx = (kThrow < parsed.numPorts) ? kThrow : 1;
+          rowIdx = isReverse ? 0 : dstPortIdx;
+          colIdx = isReverse ? dstPortIdx : 0;
         } else {
-          // For inactive throw:
-          // If the file uses physical pin mapping (Port 1=RF1, Port 2=RF2...), use kThrow if it's not the through port
-          if (kThrow < parsed.numPorts && kThrow !== maxPortIdx) {
-            dstPortIdx = kThrow;
-          } else {
-            // Otherwise use the isolated port
-            dstPortIdx = (maxPortIdx === 1) ? 2 : 1;
+          // Legacy multi-port file: detect through port vs isolated port
+          const midIdx = Math.floor(parsed.pts.length / 2);
+          const midPt = parsed.pts[midIdx];
+          let maxPortIdx = 1;
+          let maxDb = -999;
+          for (let p = 1; p < parsed.numPorts; p++) {
+            const rowVal = midPt.s[p] ? midPt.s[p][0] : null;
+            const dbVal = rowVal ? CMath.dB(rowVal) : -999;
+            if (dbVal > maxDb) {
+              maxDb = dbVal;
+              maxPortIdx = p;
+            }
           }
+          let dstPortIdx = 1;
+          if (isThrough) {
+            dstPortIdx = maxPortIdx;
+          } else {
+            if (kThrow < parsed.numPorts && kThrow !== maxPortIdx) {
+              dstPortIdx = kThrow;
+            } else {
+              dstPortIdx = (maxPortIdx === 1) ? 2 : 1;
+            }
+          }
+          rowIdx = isReverse ? 0 : dstPortIdx;
+          colIdx = isReverse ? dstPortIdx : 0;
         }
       } else {
         // 2-port Touchstone file:
         if (!isThrough) {
-          // Inactive throw: check if dedicated isolation file exists for kThrow
-          const isoRaw = b.params && (b.params[`s2pData_st${kThrow}`] || b.params[`s3pData_st${kThrow}`]);
+          const isoRaw = b.params && (b.params[`s2pData_st${kThrow}`] || b.params[`s3pData_st${kThrow}`] || b.params[`snpData_pos_${kThrow}`]);
           if (isoRaw) {
             const isoParsed = parseTouchstone(isoRaw);
             if (isoParsed) {
@@ -248,7 +300,8 @@ function getStageTransmissionDb(b, freqs, warnings, path, isReverse = false, inP
               const midDb = midPt && midPt.s[1] ? CMath.dB(midPt.s[1][0]) : 0;
               if (midDb < -15.0) {
                 parsed = isoParsed;
-                dstPortIdx = 1;
+                rowIdx = isReverse ? 0 : 1;
+                colIdx = isReverse ? 1 : 0;
               } else {
                 for (let k = 0; k < N; k++) tDb[k] = isoDb;
                 return tDb;
@@ -262,7 +315,8 @@ function getStageTransmissionDb(b, freqs, warnings, path, isReverse = false, inP
             return tDb;
           }
         }
-        dstPortIdx = 1;
+        rowIdx = isReverse ? 0 : 1;
+        colIdx = isReverse ? 1 : 0;
       }
 
       const pts = parsed.pts, numPts = pts.length;
@@ -271,18 +325,18 @@ function getStageTransmissionDb(b, freqs, warnings, path, isReverse = false, inP
         const f = freqs[k];
         let cVal = CMath.zero();
         if (f <= pts[0].f) {
-          const row = pts[0].s[dstPortIdx];
-          cVal = row ? row[0] : CMath.zero();
+          const row = pts[0].s[rowIdx];
+          cVal = row ? row[colIdx] : CMath.zero();
         } else if (f >= pts[numPts - 1].f) {
-          const row = pts[numPts - 1].s[dstPortIdx];
-          cVal = row ? row[0] : CMath.zero();
+          const row = pts[numPts - 1].s[rowIdx];
+          cVal = row ? row[colIdx] : CMath.zero();
         } else {
           let idx = 0;
           while (idx < numPts - 1 && pts[idx + 1].f < f) idx++;
           const p0 = pts[idx], p1 = pts[idx + 1];
           const t = (f - p0.f) / (p1.f - p0.f);
-          const r0 = p0.s[dstPortIdx] ? p0.s[dstPortIdx][0] : CMath.zero();
-          const r1 = p1.s[dstPortIdx] ? p1.s[dstPortIdx][0] : CMath.zero();
+          const r0 = (p0.s[rowIdx] && p0.s[rowIdx][colIdx]) || CMath.zero();
+          const r1 = (p1.s[rowIdx] && p1.s[rowIdx][colIdx]) || CMath.zero();
           cVal = CMath.fromRI(r0.r + t * (r1.r - r0.r), r0.i + t * (r1.i - r0.i));
         }
         tDb[k] = CMath.dB(cVal);
@@ -307,35 +361,56 @@ function getStageTransmissionDb(b, freqs, warnings, path, isReverse = false, inP
       kBranch = parseInt(outPort.slice(1)) || 1;
     } else if (inPort && inPort.startsWith("i")) {
       kBranch = parseInt(inPort.slice(1)) || 1;
+    } else if (outPort && outPort.startsWith("i")) {
+      kBranch = parseInt(outPort.slice(1)) || 1;
+    } else if (inPort && inPort.startsWith("o")) {
+      kBranch = parseInt(inPort.slice(1)) || 1;
     } else {
       kBranch = getBlockBranchIndex(b, path);
     }
     const exLoss = Math.abs(+b.params.exloss || 0);
     const pathLossDb = -(10 * Math.log10(Math.max(1, nWays)) + exLoss);
 
-    const sRaw = b.params && (b.params.s2pData || b.params.s3pData || b.params.snpData);
+    const sRaw = b.params && (b.params.snpData || b.params.s3pData || b.params.s4pData || b.params.s2pData);
     if (sRaw) {
       const parsed = parseTouchstone(sRaw);
       if (parsed) {
-        const dstPortIdx = (parsed.numPorts >= 3) ? kBranch : 1;
+        // Port 1 (0-based index 0) is the Common port:
+        // For splitter: Port 0 = Common input 'in', Port kBranch = Output branch 'ok'
+        // For combiner: Port 0 = Common output 'out', Port kBranch = Input branch 'ik'
+        let rowIdx = 1, colIdx = 0;
+        if (parsed.numPorts >= 3) {
+          const branchIdx = (kBranch < parsed.numPorts) ? kBranch : 1;
+          if (b.type === "splitter") {
+            rowIdx = isReverse ? 0 : branchIdx;
+            colIdx = isReverse ? branchIdx : 0;
+          } else {
+            rowIdx = isReverse ? branchIdx : 0;
+            colIdx = isReverse ? 0 : branchIdx;
+          }
+        } else {
+          rowIdx = isReverse ? 0 : 1;
+          colIdx = isReverse ? 1 : 0;
+        }
+
         const pts = parsed.pts, numPts = pts.length;
 
         for (let k = 0; k < N; k++) {
           const f = freqs[k];
           let cVal = CMath.zero();
           if (f <= pts[0].f) {
-            const row = pts[0].s[dstPortIdx];
-            cVal = row ? row[0] : CMath.zero();
+            const row = pts[0].s[rowIdx];
+            cVal = row ? row[colIdx] : CMath.zero();
           } else if (f >= pts[numPts - 1].f) {
-            const row = pts[numPts - 1].s[dstPortIdx];
-            cVal = row ? row[0] : CMath.zero();
+            const row = pts[numPts - 1].s[rowIdx];
+            cVal = row ? row[colIdx] : CMath.zero();
           } else {
             let idx = 0;
             while (idx < numPts - 1 && pts[idx + 1].f < f) idx++;
             const p0 = pts[idx], p1 = pts[idx + 1];
             const t = (f - p0.f) / (p1.f - p0.f);
-            const r0 = p0.s[dstPortIdx] ? p0.s[dstPortIdx][0] : CMath.zero();
-            const r1 = p1.s[dstPortIdx] ? p1.s[dstPortIdx][0] : CMath.zero();
+            const r0 = (p0.s[rowIdx] && p0.s[rowIdx][colIdx]) || CMath.zero();
+            const r1 = (p1.s[rowIdx] && p1.s[rowIdx][colIdx]) || CMath.zero();
             cVal = CMath.fromRI(r0.r + t * (r1.r - r0.r), r0.i + t * (r1.i - r0.i));
           }
           tDb[k] = CMath.dB(cVal);
@@ -394,20 +469,48 @@ function getStageTransmissionDb(b, freqs, warnings, path, isReverse = false, inP
   }
 
   // Standard component Touchstone S2P/S3P/SNP or ideal gain/loss
-  const sRaw = b.params && (b.params.s2pData || b.params.s3pData || b.params.s4pData || b.params.snpData);
+  const sRaw = b.params && (b.params.snpData || b.params.s3pData || b.params.s4pData || b.params.s2pData);
   if (sRaw) {
     const parsed = parseTouchstone(sRaw);
     if (parsed) {
       const pts = parsed.pts, numPts = pts.length;
-      const rowIdx = isReverse ? 0 : 1;
-      const colIdx = isReverse ? 1 : 0;
+      let rowIdx = isReverse ? 0 : 1;
+      let colIdx = isReverse ? 1 : 0;
+
+      if (parsed.numPorts >= 3) {
+        if (b.type === "circulator") {
+          const circMap = { "p1": 0, "in": 0, "p2": 1, "out": 1, "p3": 2 };
+          const pSrc = (inPort || "p1").toLowerCase();
+          const pDst = (outPort || (isReverse ? "p1" : "p2")).toLowerCase();
+          const sIdx = (circMap[pSrc] !== undefined) ? circMap[pSrc] : 0;
+          const dIdx = (circMap[pDst] !== undefined) ? circMap[pDst] : 1;
+          rowIdx = (dIdx < parsed.numPorts) ? dIdx : 1;
+          colIdx = (sIdx < parsed.numPorts) ? sIdx : 0;
+        } else if (b.type === "coupler") {
+          const getCplrIdx = p => {
+            const s = (p || "").toLowerCase();
+            if (s === "in" || s === "p1") return 0;
+            if (s === "thru" || s === "out" || s === "out0" || s === "o1" || s === "p2") return 1;
+            if (s === "cpl" || s === "tap" || s === "out90" || s === "fwd" || s === "o2" || s === "p3") return 2;
+            if (s === "iso" || s === "rev" || s === "p4") return 3;
+            return 0;
+          };
+          const sIdx = getCplrIdx(inPort || (isReverse ? "thru" : "in"));
+          const dIdx = getCplrIdx(outPort || (isReverse ? "in" : "thru"));
+          rowIdx = (dIdx < parsed.numPorts) ? dIdx : 1;
+          colIdx = (sIdx < parsed.numPorts) ? sIdx : 0;
+        }
+      }
+
       for (let k = 0; k < N; k++) {
         const f = freqs[k];
         let cVal = CMath.zero();
         if (f <= pts[0].f) {
-          cVal = (pts[0].s[rowIdx] && pts[0].s[rowIdx][colIdx]) || CMath.zero();
+          const row = pts[0].s[rowIdx];
+          cVal = row ? row[colIdx] : CMath.zero();
         } else if (f >= pts[numPts - 1].f) {
-          cVal = (pts[numPts - 1].s[rowIdx] && pts[numPts - 1].s[rowIdx][colIdx]) || CMath.zero();
+          const row = pts[numPts - 1].s[rowIdx];
+          cVal = row ? row[colIdx] : CMath.zero();
         } else {
           let idx = 0;
           while (idx < numPts - 1 && pts[idx + 1].f < f) idx++;

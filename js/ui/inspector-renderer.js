@@ -107,46 +107,53 @@ function renderInspector() {
         </div>
       </div>`;
     } else if (b.type === "switch") {
-      // Full Switch Multi-Port and Per-Throw upload for SPnT Switches
+      // Positional .sNp Touchstone upload for SPnT Switch (Total ports = throws + 1)
       const numThrows = parseInt(b.params.throws) || 2;
-      const swMultiFn = b.params.s3pFileName || b.params.s2pFileName;
+      const numPorts = (typeof getPorts === "function") ? getPorts(b).length : (numThrows + 1);
+      const fnOpen = b.params.snpFileName_pos_open || b.params.s3pFileName_st0 || b.params.snpFileName_st0;
+
       h += `<div class="insp-sec" style="margin-top:10px; padding-top:10px; border-top:1px solid var(--border,#e2e8f0)">
-        <label style="font-weight:600; font-size:12px; display:block; margin-bottom:6px">Switch Touchstone Files (.s3p / .s2p / .sNp)</label>
+        <label style="font-weight:600; font-size:12px; display:block; margin-bottom:6px">Positional Touchstone Files (.s${numPorts}p)</label>
         
         <div style="margin-bottom:8px">
-          <div style="font-size:11px; font-weight:600; color:var(--txt2,#64748b)">Full Switch Multi-Port (.s3p / .sNp):</div>
+          <div style="font-size:11px; font-weight:600; color:var(--txt2,#64748b)">Position: Open (Off) (.s${numPorts}p):</div>
           <div style="display:flex; gap:6px; align-items:center; margin-top:2px">
-            <button class="btn btn-sm" id="ibSwMultiBtn" style="flex:1">${swMultiFn ? "📄 " + esc(swMultiFn) : "📁 Attach Switch (.s3p / .sNp)"}</button>
-            ${swMultiFn ? `<button class="btn btn-sm btn-del" id="ibSwMultiClr">✕</button>` : ""}
+            <button class="btn btn-sm ib-sw-pos-btn" data-pos="open" style="flex:1">${fnOpen ? "📄 " + esc(fnOpen) : `📁 Attach Open State (.s${numPorts}p)`}</button>
+            ${fnOpen ? `<button class="btn btn-sm btn-del ib-sw-pos-clr" data-pos="open">✕</button>` : ""}
           </div>
-          <input type="file" id="ibSwMultiFile" accept=".s1p,.s2p,.s3p,.s4p,.snp,.ts" style="display:none"/>
-        </div>
+          <input type="file" class="ib-sw-pos-file" data-pos="open" accept=".s${numPorts}p,.snp,.ts" style="display:none"/>
+        </div>`;
 
-        <div style="font-size:11px; font-weight:600; color:var(--txt2,#64748b); margin-top:6px; margin-bottom:4px">Per-Throw / Position Files:</div>`;
       for (let t = 1; t <= numThrows; t++) {
-        const fn = b.params[`s3pFileName_st${t}`] || b.params[`s2pFileName_st${t}`] || b.params[`snpFileName_st${t}`];
+        const fn = b.params[`snpFileName_pos_${t}`] || b.params[`s3pFileName_st${t}`] || b.params[`snpFileName_st${t}`] || b.params[`s2pFileName_st${t}`];
         h += `<div style="margin-bottom:6px">
-          <div style="font-size:11px; font-weight:600; color:var(--txt2,#64748b)">Throw ${t} (Path ${t}):</div>
+          <div style="font-size:11px; font-weight:600; color:var(--txt2,#64748b)">Position ${t} (.s${numPorts}p):</div>
           <div style="display:flex; gap:6px; align-items:center; margin-top:2px">
-            <button class="btn btn-sm ib-sw-s2p-btn" data-throw="${t}" style="flex:1">${fn ? "📄 " + esc(fn) : `📁 Attach Throw ${t} (.s2p / .s3p)`}</button>
-            ${fn ? `<button class="btn btn-sm btn-del ib-sw-s2p-clr" data-throw="${t}">✕</button>` : ""}
+            <button class="btn btn-sm ib-sw-pos-btn" data-pos="${t}" style="flex:1">${fn ? "📄 " + esc(fn) : `📁 Attach Position ${t} (.s${numPorts}p)`}</button>
+            ${fn ? `<button class="btn btn-sm btn-del ib-sw-pos-clr" data-pos="${t}">✕</button>` : ""}
           </div>
-          <input type="file" class="ib-sw-s2p-file" data-throw="${t}" accept=".s1p,.s2p,.s3p,.s4p,.snp,.ts" style="display:none"/>
+          <input type="file" class="ib-sw-pos-file" data-pos="${t}" accept=".s${numPorts}p,.snp,.ts" style="display:none"/>
         </div>`;
       }
       h += `</div>`;
     } else {
-      // Standard single component Touchstone S2P upload
+      // Component Touchstone upload: .sNp for >2 ports, .s2p for 2 ports
+      const numPorts = (typeof getPorts === "function") ? getPorts(b).length : ((c.ports && c.ports.length) || 2);
+      const isMulti = numPorts > 2;
+      const fn = b.params.snpFileName || (isMulti ? (b.params[`s${numPorts}pFileName`] || b.params.s3pFileName || b.params.s4pFileName || b.params.s2pFileName) : b.params.s2pFileName);
+      const fileLabel = isMulti ? `${numPorts}-Port Touchstone File (.s${numPorts}p)` : "S-Parameter File (.s2p)";
+      const btnLabel = fn ? "📄 Change File" : (isMulti ? `📁 Attach Touchstone (.s${numPorts}p)` : "📁 Attach Touchstone (.s2p)");
+
       h += `<div class="insp-sec" style="margin-top:10px; padding-top:10px; border-top:1px solid var(--border,#e2e8f0)">
-        <label style="font-weight:600; font-size:12px; display:block; margin-bottom:4px">S-Parameter File (.s2p / .sNp)</label>
+        <label style="font-weight:600; font-size:12px; display:block; margin-bottom:4px">${fileLabel}</label>
         <div style="display:flex; gap:6px; align-items:center">
-          <button class="btn btn-sm" id="ibS2pBtn" style="flex:1">${b.params.s2pFileName ? "📄 Change .s2p" : "📁 Attach Touchstone (.s2p)"}</button>
-          ${b.params.s2pFileName ? `<button class="btn btn-sm btn-del" id="ibS2pClr" title="Clear S2P">✕</button>` : ""}
+          <button class="btn btn-sm" id="ibS2pBtn" style="flex:1">${btnLabel}</button>
+          ${fn ? `<button class="btn btn-sm btn-del" id="ibS2pClr" title="Clear Touchstone">✕</button>` : ""}
         </div>
         <div style="font-size:11px; color:var(--txt2,#64748b); margin-top:4px">
-          ${b.params.s2pFileName ? `File: <b>${esc(b.params.s2pFileName)}</b>` : "No file attached (using gain/loss fallback)"}
+          ${fn ? `File: <b>${esc(fn)}</b>` : (isMulti ? "No file attached (using behavioral parameters)" : "No file attached (using gain/loss fallback)")}
         </div>
-        <input type="file" id="ibS2pFile" accept=".s1p,.s2p,.s3p,.s4p,.s5p,.s6p,.s7p,.s8p,.s9p,.snp,.ts" style="display:none"/>
+        <input type="file" id="ibS2pFile" accept="${isMulti ? `.s${numPorts}p,.snp,.ts` : `.s2p,.snp,.ts`}" style="display:none"/>
       </div>`;
     }
   }
@@ -190,41 +197,9 @@ function renderInspector() {
     bindS2pSlot("ibS2pAmpBtn", "ibS2pAmpFile", "ibS2pAmpClr", "s2pFileName_amp", "s2pData_amp");
     bindS2pSlot("ibS2pBypBtn", "ibS2pBypFile", "ibS2pBypClr", "s2pFileName_byp", "s2pData_byp");
   } else if (b.type === "switch") {
-    const swMultiBtn = $("ibSwMultiBtn"), swMultiFile = $("ibSwMultiFile"), swMultiClr = $("ibSwMultiClr");
-    if (swMultiBtn && swMultiFile) {
-      swMultiBtn.onclick = () => swMultiFile.click();
-      swMultiFile.onchange = e => {
-        const f = e.target.files && e.target.files[0];
-        if (!f) return;
-        const rd = new FileReader();
-        rd.onload = ev => {
-          pushHistory();
-          b.params.s3pFileName = f.name;
-          b.params.s3pData = ev.target.result;
-          b.params.s2pFileName = f.name;
-          b.params.s2pData = ev.target.result;
-          renderAll();
-          if (typeof renderLinearAnalysis === "function") renderLinearAnalysis();
-          hint(`Attached switch multi-port file '${f.name}'`);
-        };
-        rd.readAsText(f);
-      };
-    }
-    if (swMultiClr) {
-      swMultiClr.onclick = () => {
-        pushHistory();
-        delete b.params.s3pFileName;
-        delete b.params.s3pData;
-        delete b.params.s2pFileName;
-        delete b.params.s2pData;
-        renderAll();
-        if (typeof renderLinearAnalysis === "function") renderLinearAnalysis();
-        hint("Removed switch multi-port file.");
-      };
-    }
-    box.querySelectorAll(".ib-sw-s2p-btn").forEach(btn => {
-      const t = btn.getAttribute("data-throw");
-      const fileEl = box.querySelector(`.ib-sw-s2p-file[data-throw="${t}"]`);
+    box.querySelectorAll(".ib-sw-pos-btn").forEach(btn => {
+      const pos = btn.getAttribute("data-pos");
+      const fileEl = box.querySelector(`.ib-sw-pos-file[data-pos="${pos}"]`);
       if (btn && fileEl) {
         btn.onclick = () => fileEl.click();
         fileEl.onchange = e => {
@@ -234,12 +209,23 @@ function renderInspector() {
           rd.onload = ev => {
             pushHistory();
             const content = ev.target.result;
-            b.params[`s2pFileName_st${t}`] = f.name;
-            b.params[`s2pData_st${t}`] = content;
-            b.params[`s3pFileName_st${t}`] = f.name;
-            b.params[`s3pData_st${t}`] = content;
-            b.params[`snpFileName_st${t}`] = f.name;
-            b.params[`snpData_st${t}`] = content;
+            if (pos === "open") {
+              b.params.snpFileName_pos_open = f.name;
+              b.params.snpData_pos_open = content;
+              b.params.s3pFileName_st0 = f.name;
+              b.params.s3pData_st0 = content;
+              b.params.snpFileName_st0 = f.name;
+              b.params.snpData_st0 = content;
+            } else {
+              b.params[`snpFileName_pos_${pos}`] = f.name;
+              b.params[`snpData_pos_${pos}`] = content;
+              b.params[`s3pFileName_st${pos}`] = f.name;
+              b.params[`s3pData_st${pos}`] = content;
+              b.params[`snpFileName_st${pos}`] = f.name;
+              b.params[`snpData_st${pos}`] = content;
+              b.params[`s2pFileName_st${pos}`] = f.name;
+              b.params[`s2pData_st${pos}`] = content;
+            }
             renderAll();
             if (typeof sparamsTabs !== "undefined" && sparamsTabs.length) {
               const curTab = sparamsTabs[typeof activeTabIdx !== "undefined" ? activeTabIdx : 0];
@@ -249,22 +235,33 @@ function renderInspector() {
               }
             }
             if (typeof renderLinearAnalysis === "function") renderLinearAnalysis();
-            hint(`Attached '${f.name}' for Throw ${t}`);
+            hint(`Attached '${f.name}' for Position ${pos === "open" ? "Open" : pos}`);
           };
           rd.readAsText(f);
         };
       }
     });
-    box.querySelectorAll(".ib-sw-s2p-clr").forEach(clr => {
+    box.querySelectorAll(".ib-sw-pos-clr").forEach(clr => {
       clr.onclick = () => {
-        const t = clr.getAttribute("data-throw");
+        const pos = clr.getAttribute("data-pos");
         pushHistory();
-        delete b.params[`s2pFileName_st${t}`];
-        delete b.params[`s2pData_st${t}`];
-        delete b.params[`s3pFileName_st${t}`];
-        delete b.params[`s3pData_st${t}`];
-        delete b.params[`snpFileName_st${t}`];
-        delete b.params[`snpData_st${t}`];
+        if (pos === "open") {
+          delete b.params.snpFileName_pos_open;
+          delete b.params.snpData_pos_open;
+          delete b.params.s3pFileName_st0;
+          delete b.params.s3pData_st0;
+          delete b.params.snpFileName_st0;
+          delete b.params.snpData_st0;
+        } else {
+          delete b.params[`snpFileName_pos_${pos}`];
+          delete b.params[`snpData_pos_${pos}`];
+          delete b.params[`s3pFileName_st${pos}`];
+          delete b.params[`s3pData_st${pos}`];
+          delete b.params[`snpFileName_st${pos}`];
+          delete b.params[`snpData_st${pos}`];
+          delete b.params[`s2pFileName_st${pos}`];
+          delete b.params[`s2pData_st${pos}`];
+        }
         renderAll();
         if (typeof sparamsTabs !== "undefined" && sparamsTabs.length) {
           const curTab = sparamsTabs[typeof activeTabIdx !== "undefined" ? activeTabIdx : 0];
@@ -274,11 +271,12 @@ function renderInspector() {
           }
         }
         if (typeof renderLinearAnalysis === "function") renderLinearAnalysis();
-        hint(`Removed Touchstone file for Throw ${t}.`);
+        hint(`Removed Touchstone file for Position ${pos === "open" ? "Open" : pos}.`);
       };
     });
   } else {
     const s2pBtn = $("ibS2pBtn"), s2pFile = $("ibS2pFile"), s2pClr = $("ibS2pClr");
+    const numPorts = (typeof getPorts === "function") ? getPorts(b).length : ((c.ports && c.ports.length) || 2);
     if (s2pBtn && s2pFile) {
       s2pBtn.onclick = () => s2pFile.click();
       s2pFile.onchange = e => {
@@ -287,9 +285,25 @@ function renderInspector() {
         const reader = new FileReader();
         reader.onload = ev => {
           pushHistory();
+          b.params.snpFileName = file.name;
+          b.params.snpData = ev.target.result;
           b.params.s2pFileName = file.name;
           b.params.s2pData = ev.target.result;
+          if (numPorts === 3) {
+            b.params.s3pFileName = file.name;
+            b.params.s3pData = ev.target.result;
+          } else if (numPorts === 4) {
+            b.params.s4pFileName = file.name;
+            b.params.s4pData = ev.target.result;
+          }
           renderAll();
+          if (typeof sparamsTabs !== "undefined" && sparamsTabs.length) {
+            const curTab = sparamsTabs[typeof activeTabIdx !== "undefined" ? activeTabIdx : 0];
+            if (curTab) {
+              curTab.res = null;
+              curTab.selectedPathIdx = null;
+            }
+          }
           if (typeof renderLinearAnalysis === "function") renderLinearAnalysis();
           hint(`Attached Touchstone file '${file.name}' to ${b.params.label || c.name}`);
         };
@@ -299,9 +313,22 @@ function renderInspector() {
     if (s2pClr) {
       s2pClr.onclick = () => {
         pushHistory();
+        delete b.params.snpFileName;
+        delete b.params.snpData;
         delete b.params.s2pFileName;
         delete b.params.s2pData;
+        delete b.params.s3pFileName;
+        delete b.params.s3pData;
+        delete b.params.s4pFileName;
+        delete b.params.s4pData;
         renderAll();
+        if (typeof sparamsTabs !== "undefined" && sparamsTabs.length) {
+          const curTab = sparamsTabs[typeof activeTabIdx !== "undefined" ? activeTabIdx : 0];
+          if (curTab) {
+            curTab.res = null;
+            curTab.selectedPathIdx = null;
+          }
+        }
         if (typeof renderLinearAnalysis === "function") renderLinearAnalysis();
         hint("Removed Touchstone S-parameter file.");
       };
