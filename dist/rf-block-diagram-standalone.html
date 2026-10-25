@@ -898,6 +898,38 @@ html[data-theme="light"] .pill-nfloor .ptx { fill: #4c1d95; }
   box-shadow: 0 -16px 36px rgba(0, 0, 0, 0.5);
 }
 .budget.open { display: flex; }
+.budget.maximized { max-height: 85vh; height: 85vh; }
+.bg-tab-btn {
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid var(--line);
+  background: var(--chrome);
+  color: var(--ink-dim);
+  transition: all 0.15s ease;
+}
+.bg-tab-btn:hover { color: var(--ink); background: rgba(255, 255, 255, 0.05); }
+.bg-tab-btn.active { background: var(--accent); color: #0f172a; border-color: var(--accent); }
+
+.bg-metric-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid var(--line);
+  background: #141d2b;
+  color: var(--ink-dim);
+  user-select: none;
+  transition: all 0.15s ease;
+}
+.bg-metric-pill:hover { border-color: rgba(255, 255, 255, 0.25); }
+.bg-metric-pill.active { border-color: currentColor; color: #f8fafc; background: rgba(255, 255, 255, 0.08); }
 .bg-hd {
   display: flex;
   align-items: center;
@@ -993,6 +1025,118 @@ table.bg tr:hover td { background: rgba(255, 255, 255, 0.04); cursor: pointer; }
   height: 1px;
   background: var(--line);
   margin: 4px 2px;
+}
+
+/* S-Parameter Multi-Port Enhancements & Docking */
+.sp-stage-panel.docked {
+  top: auto !important;
+  bottom: 0 !important;
+  height: 52vh !important;
+  max-height: 52vh !important;
+  border-top: 2px solid var(--accent, #f59e0b) !important;
+  box-shadow: 0 -14px 36px rgba(0, 0, 0, 0.6) !important;
+  border-radius: 8px 8px 0 0 !important;
+}
+
+/* Canvas Signal Path Highlighting */
+.sp-path-block-active .sel-ring {
+  stroke: var(--accent, #f59e0b) !important;
+  stroke-width: 2.5px !important;
+  opacity: 1 !important;
+  display: block !important;
+  filter: drop-shadow(0 0 6px var(--accent));
+}
+.sp-path-wire-active .wire {
+  stroke: var(--accent, #f59e0b) !important;
+  stroke-width: 3.5px !important;
+  filter: drop-shadow(0 0 8px rgba(245, 158, 11, 0.75));
+}
+.sp-path-dimmed {
+  opacity: 0.28 !important;
+  transition: opacity 0.2s ease;
+}
+
+/* Metric View Switcher Pills */
+.sp-metric-pill {
+  padding: 5px 12px;
+  border-radius: 6px;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid var(--line, #334155);
+  background: var(--chrome-2, #1f2937);
+  color: var(--ink-dim, #94a3b8);
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.sp-metric-pill:hover {
+  background: var(--chrome, #111827);
+  color: #f8fafc;
+  border-color: var(--ink-dim);
+}
+.sp-metric-pill.active {
+  background: var(--accent, #f59e0b);
+  color: #0f172a;
+  border-color: var(--accent, #f59e0b);
+  font-weight: 700;
+  box-shadow: 0 2px 6px rgba(245, 158, 11, 0.35);
+}
+
+/* N x N Matrix Grid */
+.sp-mat-table {
+  border-collapse: separate;
+  border-spacing: 4px;
+  font-family: var(--mono);
+  font-size: 11.5px;
+}
+.sp-mat-th {
+  padding: 6px 10px;
+  background: var(--chrome, #111827);
+  color: var(--accent, #f59e0b);
+  font-weight: 700;
+  border-radius: 5px;
+  text-align: center;
+  border: 1px solid var(--line);
+  font-size: 11px;
+}
+.sp-mat-cell {
+  padding: 6px 10px;
+  background: var(--chrome-2, #1f2937);
+  border: 1px solid var(--line, #334155);
+  border-radius: 5px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+.sp-mat-cell:hover {
+  border-color: var(--accent);
+  background: #273549;
+  transform: translateY(-1px);
+}
+.sp-mat-cell.active-trace {
+  border-color: #38bdf8;
+  box-shadow: 0 0 6px rgba(56, 189, 248, 0.4);
+  font-weight: 700;
+}
+
+/* Chart Tooltip and Crosshair */
+.sp-chart-tooltip {
+  position: absolute;
+  pointer-events: none;
+  z-index: 50;
+  background: rgba(15, 23, 42, 0.94);
+  border: 1px solid #38bdf8;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 11px;
+  font-family: var(--mono);
+  color: #f8fafc;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  white-space: nowrap;
 }
 
 
@@ -1189,9 +1333,15 @@ table.bg tr:hover td { background: rgba(255, 255, 255, 0.04); cursor: pointer; }
       <b>Cascade budget</b>
       <select id="bgStart" title="Signal source to trace from"></select>
       <label class="bg-bw">BW <input id="bgBw" type="number" value="1" step="any" min="0.000001"/><select id="bgBwUnit" class="tb-select-sm" title="Bandwidth Unit"><option value="Hz">Hz</option><option value="kHz">kHz</option><option value="MHz" selected>MHz</option><option value="GHz">GHz</option></select></label>
+      <div class="bg-view-tabs" style="display:flex; gap:4px; margin-left:6px">
+        <button class="bg-tab-btn" id="bgTabTable" title="Tabular View">📋 Table</button>
+        <button class="bg-tab-btn active" id="bgTabPlot" title="Interactive Cascade Stage Plot">📈 Stage Plot</button>
+      </div>
       <div class="tb-spacer"></div>
-      <button class="btn" id="bgCsv">Export CSV</button>
-      <button class="btn" id="bgClose">Close</button>
+      <button class="btn btn-sm" id="bgToggleExpand" title="Expand / Minimize Drawer">⛶ Expand</button>
+      <button class="btn btn-sm primary" id="bgXlsx" title="Export stage budget and plot settings to Excel">📥 Export Excel (.xlsx)</button>
+      <button class="btn btn-sm" id="bgCsv" title="Export CSV">Export CSV</button>
+      <button class="btn btn-sm" id="bgClose">Close</button>
     </div>
     <div class="bg-body" id="bgBody"></div>
   </div>
@@ -1501,6 +1651,74 @@ const normHex = v => {
   return m ? ("#" + m[1].toLowerCase()) : null;
 };
 
+/**
+ * Universal file download handler compatible with browsers, PySide6 QWebEngineView, and PyWebView.
+ * Supports Blobs, Uint8Arrays, and strings.
+ * Prevents premature blob revocation and supports modern File System Access API.
+ */
+async function downloadFile(content, filename, mimeType = "application/octet-stream") {
+  try {
+    let blob;
+    if (content instanceof Blob) {
+      blob = content;
+    } else if (content instanceof Uint8Array || content instanceof ArrayBuffer) {
+      blob = new Blob([content], { type: mimeType });
+    } else {
+      blob = new Blob([content], { type: mimeType.includes("charset") ? mimeType : (mimeType + ";charset=utf-8") });
+    }
+
+    // 1. Try modern File System Access API (window.showSaveFilePicker) if available
+    if (typeof window !== "undefined" && typeof window.showSaveFilePicker === "function") {
+      try {
+        const ext = filename.includes(".") ? filename.split(".").pop().toLowerCase() : "";
+        const pickerOpts = { suggestedName: filename };
+        if (ext) {
+          pickerOpts.types = [{
+            description: `${ext.toUpperCase()} File`,
+            accept: { [mimeType]: [`.${ext}`] }
+          }];
+        }
+        const fileHandle = await window.showSaveFilePicker(pickerOpts);
+        const writable = await fileHandle.createWritable();
+        await writable.write(blob);
+        await writable.close();
+        if (typeof hint === "function") hint(`Saved: ${filename}`);
+        return;
+      } catch (err) {
+        if (err && err.name === "AbortError") return; // User cancelled picker
+      }
+    }
+
+    // 2. Standard anchor download with 60s blob retention for PySide6/QWebEngine/pywebview
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.style.display = "none";
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+      if (a.parentNode) a.parentNode.removeChild(a);
+      URL.revokeObjectURL(url);
+    }, 60000); // 60s retention ensures QWebEngine asynchronous download thread completes
+
+    if (typeof hint === "function") {
+      hint(`Exported '${filename}' (check your Downloads folder)`);
+    }
+  } catch (err) {
+    console.error("Export download failed:", err);
+    if (typeof hint === "function") hint(`Export error: ${err.message || err}`);
+  }
+}
+
+if (typeof module !== "undefined" && module.exports) {
+  module.exports = {
+    $, uid, clamp, esc, fmt, dsp, dbm, gsign, nfDb, cint, cflt, swState,
+    icSend, isSubTag, subTagPort, icTagFont, icTagText,
+    L, sumDbm, hsl2hex, hex2hsl, normHex, downloadFile
+  };
+}
+
 
 
 /* --- File: js/api/engine-client.js --- */
@@ -1659,7 +1877,16 @@ def({
   params: { label: "AMP", gain: 15, nf: 2, p1db: 20, oip3: 30 },
   fields: [{ key: "gain", label: "Gain", unit: "dB", step: 0.5 }, { key: "nf", label: "Noise figure", unit: "dB", step: 0.1 },
            { key: "p1db", label: "Output P1dB", unit: "dBm", step: 0.5 }, { key: "oip3", label: "Output IP3", unit: "dBm", step: 0.5 }],
-  out: p => ({ out: +p.gain }), val: p => { const nfv = Math.abs(p.nf || 0); return gsign(p.gain) + (nfv > 0 ? ' · NF ' + fmt(nfv) + ' dB' : ''); }, nf: p => Math.abs(p.nf || 0),
+  out: p => ({ out: +p.gain }),
+  val: p => {
+    const lines = ["Gain: " + gsign(p.gain)];
+    const nfv = Math.abs(p.nf || 0);
+    if (p.nf !== undefined && p.nf !== "" && !isNaN(p.nf)) lines.push("NF: " + fmt(nfv) + " dB");
+    const p1v = num(p.p1db);
+    if (p1v !== undefined) lines.push("P1dB: " + fmt(p1v) + " dBm");
+    return lines.join("\n");
+  },
+  nf: p => Math.abs(p.nf || 0),
   p1db: p => num(p.p1db), oip3: p => num(p.oip3),
   sym() { return `<path class="blk-shape" d="M0 3L60 30L0 57Z"/>`; }
 });
@@ -1678,7 +1905,17 @@ def({
   nf: p => (p.mode === "Bypass Mode" ? Math.abs(+p.bypLoss || 0) : Math.abs(+p.nf || 0)),
   p1db: p => (p.mode === "Bypass Mode" ? undefined : num(p.p1db)),
   oip3: p => (p.mode === "Bypass Mode" ? undefined : num(p.oip3)),
-  val: p => { const isByp = p.mode === 'Bypass Mode'; const gainStr = isByp ? ('BYP \u2212' + fmt(Math.abs(+p.bypLoss||0)) + ' dB') : gsign(p.gain); const nfv = isByp ? Math.abs(+p.bypLoss||0) : Math.abs(+p.nf||0); return gainStr + (nfv > 0 ? ' · NF ' + fmt(nfv) + ' dB' : ''); },
+  val: p => {
+    if (p.mode === "Bypass Mode") {
+      return "Loss: \u2212" + fmt(Math.abs(+p.bypLoss || 0)) + " dB";
+    }
+    const lines = ["Gain: " + gsign(p.gain)];
+    const nfv = Math.abs(p.nf || 0);
+    if (p.nf !== undefined && p.nf !== "" && !isNaN(p.nf)) lines.push("NF: " + fmt(nfv) + " dB");
+    const p1v = num(p.p1db);
+    if (p1v !== undefined) lines.push("P1dB: " + fmt(p1v) + " dBm");
+    return lines.join("\n");
+  },
   sym(p) {
     const isByp = (p && p.mode === "Bypass Mode");
     const topSw = isByp ? `<path class="blk-line" d="M18 15H39"/>` : `<path class="blk-line" d="M18 15L36 6"/>`;
@@ -2768,9 +3005,12 @@ function bboxOf(b) {
   let maxY = b.y + s.h + extraY;
 
   // Include top label (val)
-  minX = Math.min(minX, b.x + s.w / 2 + valOffX - 40);
-  maxX = Math.max(maxX, b.x + s.w / 2 + valOffX + 40);
-  minY = Math.min(minY, b.y + lblY.valY + valOffY - 12);
+  const v = c.val ? c.val(p) : "";
+  const valLines = Array.isArray(v) ? v : (v ? String(v).split("\n").filter(Boolean) : []);
+  const extraValH = valLines.length > 1 ? (valLines.length - 1) * 15 : 0;
+  minX = Math.min(minX, b.x + s.w / 2 + valOffX - 45);
+  maxX = Math.max(maxX, b.x + s.w / 2 + valOffX + 45);
+  minY = Math.min(minY, b.y + lblY.valY + valOffY - 12 - extraValH);
 
   // Include name label
   minX = Math.min(minX, b.x + s.w / 2 + nameOffX - 40);
@@ -3112,11 +3352,16 @@ function buildBudget(startId) {
   const c0 = COMP[s0.type];
   let curB = s0, curPort = srcPorts(c0, s0.params)[0], curIn = null;
   let lvl = P[key(s0.id, curPort)];
+  const p0 = c0.p1db ? c0.p1db(s0.params) : undefined;
+  let cumG = 0, cumOip3Lin = Infinity, cumP1dbLin = (p0 !== undefined && isFinite(p0)) ? Math.pow(10, p0 / 10) : Infinity;
+  const p0Cum = (cumP1dbLin === Infinity) ? undefined : 10 * Math.log10(cumP1dbLin);
   const rows = [{
     id: s0.id, name: s0.params.label || c0.name, type: c0.name, gain: undefined,
-    nf: 0, lvl, cumG: 0, cumNF: 0, oip3: Infinity, p1db: undefined, over: false, src: true
+    nf: 0, lvl, cumG: 0, cumNF: 0, oip3: Infinity,
+    p1db: p0Cum, cumP1db: p0Cum, p1dbStage: p0,
+    head: (p0Cum !== undefined && isFinite(p0Cum) && lvl !== undefined) ? (p0Cum - lvl) : undefined,
+    over: false, src: true
   }];
-  let cumG = 0, cumOip3Lin = Infinity;
   const seen = new Set([s0.id]);
   const total = allBlocks().length;
 
@@ -3128,10 +3373,16 @@ function buildBudget(startId) {
       const pp = getPorts(partner)[0];
       if (!pp) break;
       const sh = sheetOfBlock(partner.id);
+      const icLvl = P[key(partner.id, pp.id)];
+      const icP1Cum = (cumP1dbLin === Infinity) ? undefined : 10 * Math.log10(cumP1dbLin);
       rows.push({
         id: partner.id, name: (partner.params.tag || "?") + " \u2192" + (sh ? " " + sh.name : ""), type: "Interconnect",
-        gain: 0, nfStage: 0, lvl: P[key(partner.id, pp.id)], cumG, cumNF: nfDb(N[key(partner.id, pp.id)]),
-        oip3: (cumOip3Lin === Infinity) ? undefined : 10 * Math.log10(cumOip3Lin), link: true
+        gain: 0, nfStage: 0, lvl: icLvl, cumG, cumNF: nfDb(N[key(partner.id, pp.id)]),
+        oip3: (cumOip3Lin === Infinity) ? undefined : 10 * Math.log10(cumOip3Lin),
+        p1db: icP1Cum, cumP1db: icP1Cum, p1dbStage: undefined,
+        head: (icP1Cum !== undefined && isFinite(icP1Cum) && icLvl !== undefined) ? (icP1Cum - icLvl) : undefined,
+        over: (icP1Cum !== undefined && isFinite(icP1Cum) && icLvl !== undefined && icLvl >= icP1Cum),
+        link: true
       });
       curB = partner; curIn = null; curPort = pp.id; continue;
     }
@@ -3154,18 +3405,26 @@ function buildBudget(startId) {
     const nfHere = nc.nf ? Math.max(0, +nc.nf(nb.params) || 0) : 0;
     const cumNF = hasOut ? (nfDb(N[key(nb.id, outPort)])) : (nfDb(N[key(cn.from.block, cn.from.port)]));
     const oi = nc.oip3 ? nc.oip3(nb.params) : undefined;
+    const p1 = nc.p1db ? nc.p1db(nb.params) : undefined;
     if (hasOut) {
       const gl = Math.pow(10, g / 10);
-      const prev = (cumOip3Lin === Infinity) ? Infinity : cumOip3Lin * gl;
-      const own = (oi === undefined) ? Infinity : Math.pow(10, oi / 10);
-      cumOip3Lin = (prev === Infinity && own === Infinity) ? Infinity : 1 / ((prev === Infinity ? 0 : 1 / prev) + (own === Infinity ? 0 : 1 / own));
+      const prevOi = (cumOip3Lin === Infinity) ? Infinity : cumOip3Lin * gl;
+      const ownOi = (oi === undefined || !isFinite(oi)) ? Infinity : Math.pow(10, oi / 10);
+      cumOip3Lin = (prevOi === Infinity && ownOi === Infinity) ? Infinity : 1 / ((prevOi === Infinity ? 0 : 1 / prevOi) + (ownOi === Infinity ? 0 : 1 / ownOi));
+
+      const prevP1 = (cumP1dbLin === Infinity) ? Infinity : cumP1dbLin * gl;
+      const ownP1 = (p1 === undefined || !isFinite(p1)) ? Infinity : Math.pow(10, p1 / 10);
+      cumP1dbLin = (prevP1 === Infinity && ownP1 === Infinity) ? Infinity : 1 / ((prevP1 === Infinity ? 0 : 1 / prevP1) + (ownP1 === Infinity ? 0 : 1 / ownP1));
     }
-    const p1 = nc.p1db ? nc.p1db(nb.params) : undefined;
-    const over = (p1 !== undefined && isFinite(p1) && hasOut && outLvl >= p1);
+    const cumP1Val = (cumP1dbLin === Infinity) ? undefined : 10 * Math.log10(cumP1dbLin);
+    const effLvl = hasOut ? outLvl : inLvl;
+    const over = (cumP1Val !== undefined && isFinite(cumP1Val) && hasOut && outLvl >= cumP1Val) || (p1 !== undefined && isFinite(p1) && hasOut && outLvl >= p1);
+    const head = (cumP1Val !== undefined && isFinite(cumP1Val) && hasOut) ? (cumP1Val - outLvl) : ((p1 !== undefined && isFinite(p1) && hasOut) ? (p1 - outLvl) : undefined);
     rows.push({
       id: nb.id, name: nb.params.label || nc.name, type: nc.isSubsystem ? "Section" : nc.name, gain: g, nfStage: nfHere,
-      lvl: hasOut ? outLvl : inLvl, cumG, cumNF, p1db: p1,
-      head: (p1 !== undefined && hasOut) ? (p1 - outLvl) : undefined, over,
+      lvl: effLvl, cumG, cumNF,
+      p1db: cumP1Val, cumP1db: cumP1Val, p1dbStage: p1,
+      head, over,
       oip3: (cumOip3Lin === Infinity) ? undefined : 10 * Math.log10(cumOip3Lin)
     });
     if (!hasOut) {
@@ -3174,6 +3433,13 @@ function buildBudget(startId) {
     }
     curB = nb; curIn = cn.to.port; curPort = outPort;
   }
+  const bwHz = (typeof settings !== "undefined" && settings.bandwidthHz && settings.bandwidthHz > 0) ? settings.bandwidthHz : 1e6;
+  const s0Lvl = rows.length ? rows[0].lvl : 0;
+  rows.forEach(r => {
+    r.nfloor = (typeof computeNoiseFloor === "function")
+      ? computeNoiseFloor(r.cumNF, r.lvl, s0Lvl, bwHz)
+      : (-173.98 + 10 * Math.log10(Math.max(1, bwHz)) + (r.cumNF || 0) + (r.cumG || 0));
+  });
   return { rows, P, N, start: s0 };
 }
 
@@ -3230,7 +3496,7 @@ function runChecks(P) {
   return w;
 }
 
-const noiseFloor = (nfDbv, bwHz) => (-174 + 10 * Math.log10(Math.max(1, bwHz)) + (nfDbv || 0));
+const noiseFloor = (nfDbv, bwHz, gCum = 0) => (-173.98 + 10 * Math.log10(Math.max(1, bwHz)) + (nfDbv || 0) + gCum);
 
 
 
@@ -3428,58 +3694,161 @@ function getStageTransmissionDb(b, freqs, warnings, path, isReverse = false, inP
     const ilDb = -Math.abs(+b.params.il || 0.4);
 
     if (stNum === 0) {
-      // Off / Open state
+      // Off / Open state: check for positional Open state Touchstone file
+      const openRaw = b.params && (b.params.snpData_pos_open || b.params.s3pData_st0 || b.params.snpData_st0);
+      if (openRaw) {
+        const parsedOpen = parseTouchstone(openRaw);
+        if (parsedOpen) {
+          const dstPortIdx = (parsedOpen.numPorts >= 3 && kThrow < parsedOpen.numPorts) ? kThrow : 1;
+          const rowIdx = isReverse ? 0 : dstPortIdx;
+          const colIdx = isReverse ? dstPortIdx : 0;
+          const pts = parsedOpen.pts, numPts = pts.length;
+          for (let k = 0; k < N; k++) {
+            const f = freqs[k];
+            let cVal = CMath.zero();
+            if (f <= pts[0].f) {
+              const row = pts[0].s[rowIdx];
+              cVal = row ? row[colIdx] : CMath.zero();
+            } else if (f >= pts[numPts - 1].f) {
+              const row = pts[numPts - 1].s[rowIdx];
+              cVal = row ? row[colIdx] : CMath.zero();
+            } else {
+              let idx = 0;
+              while (idx < numPts - 1 && pts[idx + 1].f < f) idx++;
+              const p0 = pts[idx], p1 = pts[idx + 1];
+              const t = (f - p0.f) / (p1.f - p0.f);
+              const r0 = (p0.s[rowIdx] && p0.s[rowIdx][colIdx]) || CMath.zero();
+              const r1 = (p1.s[rowIdx] && p1.s[rowIdx][colIdx]) || CMath.zero();
+              cVal = CMath.fromRI(r0.r + t * (r1.r - r0.r), r0.i + t * (r1.i - r0.i));
+            }
+            tDb[k] = CMath.dB(cVal);
+          }
+          if ((freqs[0] < parsedOpen.minFreq || freqs[N - 1] > parsedOpen.maxFreq) && warnings) {
+            warnings.push(`Warning: Touchstone data for '${lbl}' (${(parsedOpen.minFreq/1e9).toFixed(2)}–${(parsedOpen.maxFreq/1e9).toFixed(2)} GHz) was extrapolated to match the analysis band.`);
+          }
+          return tDb;
+        }
+      }
       for (let k = 0; k < N; k++) tDb[k] = isoDb;
       return tDb;
     }
 
-    // Check per-throw file or active switch position file or multi-port Touchstone
-    const sRaw = (b.params && b.params[`s2pData_st${kThrow}`]) || (b.params && b.params[`s2pData_st${stNum}`]) || (b.params && b.params.s2pData) || (b.params && b.params.s3pData) || (b.params && b.params.snpData);
+    const isThrough = (kThrow === stNum);
 
-    if (sRaw) {
-      const parsed = parseTouchstone(sRaw);
-      if (parsed) {
-        let dstPortIdx = 1;
-        if (parsed.numPorts >= 3) {
-          // Multi-port S(N+1)P Touchstone file: Throw k = Port k+1 (row index k in sMat)
-          dstPortIdx = kThrow;
+    // 1. Determine Touchstone source file for current switch state (stNum >= 1):
+    let sRaw = b.params && (
+      b.params[`snpData_pos_${stNum}`] ||
+      b.params[`s3pData_st${stNum}`] ||
+      b.params[`snpData_st${stNum}`]
+    );
+    let isPositional = !!sRaw;
+    if (!sRaw) {
+      sRaw = b.params && (
+        b.params[`s2pData_st${stNum}`] ||
+        b.params.snpData ||
+        b.params.s3pData ||
+        b.params.s4pData ||
+        b.params.s2pData ||
+        b.params.s3pData_st1 ||
+        b.params.s2pData_st1
+      );
+    }
+
+    let parsed = sRaw ? parseTouchstone(sRaw) : null;
+
+    if (parsed) {
+      let rowIdx = 1, colIdx = 0;
+      if (parsed.numPorts >= 3) {
+        if (isPositional) {
+          // Positional file characterizes the switch in position stNum directly:
+          // Port 0 is Common 'in', Port j is Throw j.
+          const dstPortIdx = (kThrow < parsed.numPorts) ? kThrow : 1;
+          rowIdx = isReverse ? 0 : dstPortIdx;
+          colIdx = isReverse ? dstPortIdx : 0;
         } else {
-          // 2-port Touchstone file:
-          if (kThrow !== stNum) {
+          // Legacy multi-port file: detect through port vs isolated port
+          const midIdx = Math.floor(parsed.pts.length / 2);
+          const midPt = parsed.pts[midIdx];
+          let maxPortIdx = 1;
+          let maxDb = -999;
+          for (let p = 1; p < parsed.numPorts; p++) {
+            const rowVal = midPt.s[p] ? midPt.s[p][0] : null;
+            const dbVal = rowVal ? CMath.dB(rowVal) : -999;
+            if (dbVal > maxDb) {
+              maxDb = dbVal;
+              maxPortIdx = p;
+            }
+          }
+          let dstPortIdx = 1;
+          if (isThrough) {
+            dstPortIdx = maxPortIdx;
+          } else {
+            if (kThrow < parsed.numPorts && kThrow !== maxPortIdx) {
+              dstPortIdx = kThrow;
+            } else {
+              dstPortIdx = (maxPortIdx === 1) ? 2 : 1;
+            }
+          }
+          rowIdx = isReverse ? 0 : dstPortIdx;
+          colIdx = isReverse ? dstPortIdx : 0;
+        }
+      } else {
+        // 2-port Touchstone file:
+        if (!isThrough) {
+          const isoRaw = b.params && (b.params[`s2pData_st${kThrow}`] || b.params[`s3pData_st${kThrow}`] || b.params[`snpData_pos_${kThrow}`]);
+          if (isoRaw) {
+            const isoParsed = parseTouchstone(isoRaw);
+            if (isoParsed) {
+              const midPt = isoParsed.pts[Math.floor(isoParsed.pts.length / 2)];
+              const midDb = midPt && midPt.s[1] ? CMath.dB(midPt.s[1][0]) : 0;
+              if (midDb < -15.0) {
+                parsed = isoParsed;
+                rowIdx = isReverse ? 0 : 1;
+                colIdx = isReverse ? 1 : 0;
+              } else {
+                for (let k = 0; k < N; k++) tDb[k] = isoDb;
+                return tDb;
+              }
+            } else {
+              for (let k = 0; k < N; k++) tDb[k] = isoDb;
+              return tDb;
+            }
+          } else {
             for (let k = 0; k < N; k++) tDb[k] = isoDb;
             return tDb;
           }
-          dstPortIdx = 1;
         }
-
-        const pts = parsed.pts, numPts = pts.length;
-
-        for (let k = 0; k < N; k++) {
-          const f = freqs[k];
-          let cVal = CMath.zero();
-          if (f <= pts[0].f) {
-            const row = pts[0].s[dstPortIdx];
-            cVal = row ? row[0] : CMath.zero();
-          } else if (f >= pts[numPts - 1].f) {
-            const row = pts[numPts - 1].s[dstPortIdx];
-            cVal = row ? row[0] : CMath.zero();
-          } else {
-            let idx = 0;
-            while (idx < numPts - 1 && pts[idx + 1].f < f) idx++;
-            const p0 = pts[idx], p1 = pts[idx + 1];
-            const t = (f - p0.f) / (p1.f - p0.f);
-            const r0 = p0.s[dstPortIdx] ? p0.s[dstPortIdx][0] : CMath.zero();
-            const r1 = p1.s[dstPortIdx] ? p1.s[dstPortIdx][0] : CMath.zero();
-            cVal = CMath.fromRI(r0.r + t * (r1.r - r0.r), r0.i + t * (r1.i - r0.i));
-          }
-          tDb[k] = CMath.dB(cVal);
-        }
-
-        if ((freqs[0] < parsed.minFreq || freqs[N - 1] > parsed.maxFreq) && warnings) {
-          warnings.push(`Warning: Touchstone data for '${lbl}' (${(parsed.minFreq/1e9).toFixed(2)}–${(parsed.maxFreq/1e9).toFixed(2)} GHz) was extrapolated to match the analysis band.`);
-        }
-        return tDb;
+        rowIdx = isReverse ? 0 : 1;
+        colIdx = isReverse ? 1 : 0;
       }
+
+      const pts = parsed.pts, numPts = pts.length;
+
+      for (let k = 0; k < N; k++) {
+        const f = freqs[k];
+        let cVal = CMath.zero();
+        if (f <= pts[0].f) {
+          const row = pts[0].s[rowIdx];
+          cVal = row ? row[colIdx] : CMath.zero();
+        } else if (f >= pts[numPts - 1].f) {
+          const row = pts[numPts - 1].s[rowIdx];
+          cVal = row ? row[colIdx] : CMath.zero();
+        } else {
+          let idx = 0;
+          while (idx < numPts - 1 && pts[idx + 1].f < f) idx++;
+          const p0 = pts[idx], p1 = pts[idx + 1];
+          const t = (f - p0.f) / (p1.f - p0.f);
+          const r0 = (p0.s[rowIdx] && p0.s[rowIdx][colIdx]) || CMath.zero();
+          const r1 = (p1.s[rowIdx] && p1.s[rowIdx][colIdx]) || CMath.zero();
+          cVal = CMath.fromRI(r0.r + t * (r1.r - r0.r), r0.i + t * (r1.i - r0.i));
+        }
+        tDb[k] = CMath.dB(cVal);
+      }
+
+      if ((freqs[0] < parsed.minFreq || freqs[N - 1] > parsed.maxFreq) && warnings) {
+        warnings.push(`Warning: Touchstone data for '${lbl}' (${(parsed.minFreq/1e9).toFixed(2)}–${(parsed.maxFreq/1e9).toFixed(2)} GHz) was extrapolated to match the analysis band.`);
+      }
+      return tDb;
     }
 
     // Behavioral synthesis for switch:
@@ -3495,35 +3864,56 @@ function getStageTransmissionDb(b, freqs, warnings, path, isReverse = false, inP
       kBranch = parseInt(outPort.slice(1)) || 1;
     } else if (inPort && inPort.startsWith("i")) {
       kBranch = parseInt(inPort.slice(1)) || 1;
+    } else if (outPort && outPort.startsWith("i")) {
+      kBranch = parseInt(outPort.slice(1)) || 1;
+    } else if (inPort && inPort.startsWith("o")) {
+      kBranch = parseInt(inPort.slice(1)) || 1;
     } else {
       kBranch = getBlockBranchIndex(b, path);
     }
     const exLoss = Math.abs(+b.params.exloss || 0);
     const pathLossDb = -(10 * Math.log10(Math.max(1, nWays)) + exLoss);
 
-    const sRaw = b.params && (b.params.s2pData || b.params.s3pData || b.params.snpData);
+    const sRaw = b.params && (b.params.snpData || b.params.s3pData || b.params.s4pData || b.params.s2pData);
     if (sRaw) {
       const parsed = parseTouchstone(sRaw);
       if (parsed) {
-        const dstPortIdx = (parsed.numPorts >= 3) ? kBranch : 1;
+        // Port 1 (0-based index 0) is the Common port:
+        // For splitter: Port 0 = Common input 'in', Port kBranch = Output branch 'ok'
+        // For combiner: Port 0 = Common output 'out', Port kBranch = Input branch 'ik'
+        let rowIdx = 1, colIdx = 0;
+        if (parsed.numPorts >= 3) {
+          const branchIdx = (kBranch < parsed.numPorts) ? kBranch : 1;
+          if (b.type === "splitter") {
+            rowIdx = isReverse ? 0 : branchIdx;
+            colIdx = isReverse ? branchIdx : 0;
+          } else {
+            rowIdx = isReverse ? branchIdx : 0;
+            colIdx = isReverse ? 0 : branchIdx;
+          }
+        } else {
+          rowIdx = isReverse ? 0 : 1;
+          colIdx = isReverse ? 1 : 0;
+        }
+
         const pts = parsed.pts, numPts = pts.length;
 
         for (let k = 0; k < N; k++) {
           const f = freqs[k];
           let cVal = CMath.zero();
           if (f <= pts[0].f) {
-            const row = pts[0].s[dstPortIdx];
-            cVal = row ? row[0] : CMath.zero();
+            const row = pts[0].s[rowIdx];
+            cVal = row ? row[colIdx] : CMath.zero();
           } else if (f >= pts[numPts - 1].f) {
-            const row = pts[numPts - 1].s[dstPortIdx];
-            cVal = row ? row[0] : CMath.zero();
+            const row = pts[numPts - 1].s[rowIdx];
+            cVal = row ? row[colIdx] : CMath.zero();
           } else {
             let idx = 0;
             while (idx < numPts - 1 && pts[idx + 1].f < f) idx++;
             const p0 = pts[idx], p1 = pts[idx + 1];
             const t = (f - p0.f) / (p1.f - p0.f);
-            const r0 = p0.s[dstPortIdx] ? p0.s[dstPortIdx][0] : CMath.zero();
-            const r1 = p1.s[dstPortIdx] ? p1.s[dstPortIdx][0] : CMath.zero();
+            const r0 = (p0.s[rowIdx] && p0.s[rowIdx][colIdx]) || CMath.zero();
+            const r1 = (p1.s[rowIdx] && p1.s[rowIdx][colIdx]) || CMath.zero();
             cVal = CMath.fromRI(r0.r + t * (r1.r - r0.r), r0.i + t * (r1.i - r0.i));
           }
           tDb[k] = CMath.dB(cVal);
@@ -3581,21 +3971,49 @@ function getStageTransmissionDb(b, freqs, warnings, path, isReverse = false, inP
     return tDb;
   }
 
-  // Standard component Touchstone S2P or ideal gain/loss
-  const sRaw = b.params && b.params.s2pData;
+  // Standard component Touchstone S2P/S3P/SNP or ideal gain/loss
+  const sRaw = b.params && (b.params.snpData || b.params.s3pData || b.params.s4pData || b.params.s2pData);
   if (sRaw) {
     const parsed = parseTouchstone(sRaw);
     if (parsed) {
       const pts = parsed.pts, numPts = pts.length;
-      const rowIdx = isReverse ? 0 : 1;
-      const colIdx = isReverse ? 1 : 0;
+      let rowIdx = isReverse ? 0 : 1;
+      let colIdx = isReverse ? 1 : 0;
+
+      if (parsed.numPorts >= 3) {
+        if (b.type === "circulator") {
+          const circMap = { "p1": 0, "in": 0, "p2": 1, "out": 1, "p3": 2 };
+          const pSrc = (inPort || "p1").toLowerCase();
+          const pDst = (outPort || (isReverse ? "p1" : "p2")).toLowerCase();
+          const sIdx = (circMap[pSrc] !== undefined) ? circMap[pSrc] : 0;
+          const dIdx = (circMap[pDst] !== undefined) ? circMap[pDst] : 1;
+          rowIdx = (dIdx < parsed.numPorts) ? dIdx : 1;
+          colIdx = (sIdx < parsed.numPorts) ? sIdx : 0;
+        } else if (b.type === "coupler") {
+          const getCplrIdx = p => {
+            const s = (p || "").toLowerCase();
+            if (s === "in" || s === "p1") return 0;
+            if (s === "thru" || s === "out" || s === "out0" || s === "o1" || s === "p2") return 1;
+            if (s === "cpl" || s === "tap" || s === "out90" || s === "fwd" || s === "o2" || s === "p3") return 2;
+            if (s === "iso" || s === "rev" || s === "p4") return 3;
+            return 0;
+          };
+          const sIdx = getCplrIdx(inPort || (isReverse ? "thru" : "in"));
+          const dIdx = getCplrIdx(outPort || (isReverse ? "in" : "thru"));
+          rowIdx = (dIdx < parsed.numPorts) ? dIdx : 1;
+          colIdx = (sIdx < parsed.numPorts) ? sIdx : 0;
+        }
+      }
+
       for (let k = 0; k < N; k++) {
         const f = freqs[k];
         let cVal = CMath.zero();
         if (f <= pts[0].f) {
-          cVal = (pts[0].s[rowIdx] && pts[0].s[rowIdx][colIdx]) || CMath.zero();
+          const row = pts[0].s[rowIdx];
+          cVal = row ? row[colIdx] : CMath.zero();
         } else if (f >= pts[numPts - 1].f) {
-          cVal = (pts[numPts - 1].s[rowIdx] && pts[numPts - 1].s[rowIdx][colIdx]) || CMath.zero();
+          const row = pts[numPts - 1].s[rowIdx];
+          cVal = row ? row[colIdx] : CMath.zero();
         } else {
           let idx = 0;
           while (idx < numPts - 1 && pts[idx + 1].f < f) idx++;
@@ -4097,10 +4515,12 @@ function computeLinearAnalysis(band) {
   // Ensure default S21 and S12 are set from primary active path
   const activePath = discoveredPaths.find(p => p.isActive) || (discoveredPaths.length ? discoveredPaths[0] : null);
   if (activePath && activePath.matrix) {
-    if (!matrix.S21) matrix.S21 = activePath.matrix.S21;
-    if (!matrix.S12) matrix.S12 = activePath.matrix.S12;
-    if (!matrix.S11) matrix.S11 = activePath.matrix.S11;
-    if (!matrix.S22) matrix.S22 = activePath.matrix.S22;
+    const actFwd = activePath.matrix[activePath.fwdKey] || activePath.matrix.S21;
+    const actRev = activePath.matrix[activePath.revKey] || activePath.matrix.S12;
+    if (actFwd) matrix.S21 = actFwd;
+    if (actRev) matrix.S12 = actRev;
+    if (activePath.matrix.S11) matrix.S11 = activePath.matrix.S11;
+    if (activePath.matrix.S22) matrix.S22 = activePath.matrix.S22;
   }
 
   // Port-pair matrix calculations (for P1–P8 terminal system compatibility)
@@ -5246,15 +5666,23 @@ function sheetXml(rows, widths) {
   return x + `</sheetData></worksheet>`;
 }
 
-function xlsxBlob(rows, widths, tabName) {
+function xlsxBlob(sheetsOrRows, widths, tabName) {
   const P = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
-  return zipStore([
+  const isMultiSheet = Array.isArray(sheetsOrRows) && sheetsOrRows.length > 0 && typeof sheetsOrRows[0] === "object" && !Array.isArray(sheetsOrRows[0]) && sheetsOrRows[0].rows;
+  const sheets = isMultiSheet ? sheetsOrRows : [{ name: tabName || "BOM", rows: sheetsOrRows, widths: widths || [] }];
+
+  const contentTypesSheets = sheets.map((s, i) => `<Override PartName="/xl/worksheets/sheet${i + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`).join("");
+  const workbookSheets = sheets.map((s, i) => `<sheet name="${xesc(s.name || `Sheet${i + 1}`)}" sheetId="${i + 1}" r:id="rId${i + 1}"/>`).join("");
+  const workbookRels = sheets.map((s, i) => `<Relationship Id="rId${i + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${i + 1}.xml"/>`).join("")
+    + `<Relationship Id="rId${sheets.length + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>`;
+
+  const entries = [
     {
       name: "[Content_Types].xml", data: P + `<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">`
         + `<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>`
         + `<Default Extension="xml" ContentType="application/xml"/>`
         + `<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>`
-        + `<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`
+        + contentTypesSheets
         + `<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>`
         + `</Types>`
     },
@@ -5264,12 +5692,11 @@ function xlsxBlob(rows, widths, tabName) {
     },
     {
       name: "xl/workbook.xml", data: P + `<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">`
-        + `<sheets><sheet name="${xesc(tabName || "BOM")}" sheetId="1" r:id="rId1"/></sheets></workbook>`
+        + `<sheets>${workbookSheets}</sheets></workbook>`
     },
     {
       name: "xl/_rels/workbook.xml.rels", data: P + `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">`
-        + `<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>`
-        + `<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`
+        + workbookRels + `</Relationships>`
     },
     {
       name: "xl/styles.xml", data: P + `<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">`
@@ -5278,9 +5705,14 @@ function xlsxBlob(rows, widths, tabName) {
         + `<borders count="1"><border/></borders><cellStyleXfs count="1"><xf/></cellStyleXfs>`
         + `<cellXfs count="2"><xf xfId="0"/><xf xfId="0" fontId="1" applyFont="1"/></cellXfs>`
         + `<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>`
-    },
-    { name: "xl/worksheets/sheet1.xml", data: sheetXml(rows, widths) }
-  ]);
+    }
+  ];
+
+  sheets.forEach((s, i) => {
+    entries.push({ name: `xl/worksheets/sheet${i + 1}.xml`, data: sheetXml(s.rows || [], s.widths || []) });
+  });
+
+  return zipStore(entries);
 }
 
 
@@ -6056,6 +6488,7 @@ function buildVsdxBlob(blocksList, connsList, Pdict, NFdict, PSecondaryDict, com
         name = `${owner ? (owner.params.label || "Section") : "Section"} · ${subTagPort(b.params.tag)}`;
       }
       const value = typeof c.val === "function" ? c.val(b.params || {}) : "";
+      const valLines = Array.isArray(value) ? value : (value ? String(value).split("\n").filter(Boolean) : []);
       const info = typeof c.info === "function" ? c.info(b.params || {}) : "";
       const fontSizes = (typeof DESIGN_TOKENS !== "undefined" && DESIGN_TOKENS.fontSizes) || { normal: 13.33, large: 14, small: 12 };
 
@@ -6068,8 +6501,12 @@ function buildVsdxBlob(blocksList, connsList, Pdict, NFdict, PSecondaryDict, com
       const infoOffY = Number(p._infoOffY != null ? p._infoOffY : p._lblOffY) || 0;
 
       const lblY = (typeof blockLabelY === "function") ? blockLabelY(b, f, effectiveSettings) : { valY: -13, nameY: f.h + 18, infoY: f.h + 33 };
-      if (value) {
-        addText(value, b.x + f.w / 2 + valOffX, b.y + lblY.valY + valOffY, Math.max(f.w + 32, value.length * 9.5 + 16), 18, fontSizes.normal || 13.33, "#1e293b", true, "middle");
+      if (valLines.length) {
+        const textVal = valLines.join("\n");
+        const boxH = Math.max(18, valLines.length * 16);
+        const shiftY = valLines.length > 1 ? -((valLines.length - 1) * 8) : 0;
+        const maxLen = Math.max(...valLines.map(l => l.length));
+        addText(textVal, b.x + f.w / 2 + valOffX, b.y + lblY.valY + valOffY + shiftY, Math.max(f.w + 32, maxLen * 9.5 + 16), boxH, fontSizes.normal || 13.33, "#1e293b", true, "middle");
       }
       if (name) {
         addText(name, b.x + f.w / 2 + nameOffX, b.y + lblY.nameY + nameOffY, Math.max(f.w + 32, name.length * 10 + 16), 20, fontSizes.large || 14, "#000000", true, "middle");
@@ -6365,10 +6802,7 @@ async function writeTo(h, text) {
 }
 
 function downloadFallback(text, name) {
-  const blob = new Blob([text], { type: "application/json" });
-  const url = URL.createObjectURL(blob), a = document.createElement("a");
-  a.href = url; a.download = name; a.click();
-  setTimeout(() => URL.revokeObjectURL(url), 2000);
+  downloadFile(text, name, "application/json");
 }
 
 async function saveDoc(forceSaveAs) {
@@ -6529,10 +6963,7 @@ function exportVsdx() {
     const blob = buildVsdxBlob(blocks, conns, P, NFm, PSecondary, null, settings);
     const base = (fileName || "rf-chain").replace(/\.(rfbd|json|vsdx|png|svg)$/i, "");
     const name = `${base}.vsdx`;
-    const url = URL.createObjectURL(blob), a = document.createElement("a");
-    a.href = url; a.download = name; a.click();
-    setTimeout(() => URL.revokeObjectURL(url), 2000);
-    hint(`Exported ${name}`);
+    downloadFile(blob, name, "application/vnd.ms-visio.drawing.main+xml");
   } catch (err) {
     console.error(err);
     alert("Error generating Visio VSDX file: " + (err.message || err));
@@ -6804,6 +7235,7 @@ function buildExportSVG(scale = 1) {
       }
       const nm = c.isInterconnect ? "" : (b.params.label || c.name);
       const v = c.val ? c.val(b.params) : "";
+      const valLines = Array.isArray(v) ? v : (v ? String(v).split("\n").filter(Boolean) : []);
       const lblY = (typeof blockLabelY === "function") ? blockLabelY(b, f, settings) : { valY: -13, nameY: f.h + 18, infoY: f.h + 33 };
       const valOffX = Number(b.params._valOffX != null ? b.params._valOffX : b.params._lblOffX) || 0;
       const valOffY = Number(b.params._valOffY != null ? b.params._valOffY : b.params._lblOffY) || 0;
@@ -6812,7 +7244,17 @@ function buildExportSVG(scale = 1) {
       const infoOffX = Number(b.params._infoOffX != null ? b.params._infoOffX : b.params._lblOffX) || 0;
       const infoOffY = Number(b.params._infoOffY != null ? b.params._infoOffY : b.params._lblOffY) || 0;
       const info = c.info ? c.info(b.params) : "";
-      if (v)    blocksBody += `<text x="${f.w / 2 + valOffX}" y="${lblY.valY + valOffY}" text-anchor="middle" fill="#000000" font-family="${fontSans}" font-size="${fontSizes.normal}px" font-weight="600">${esc(v)}</text>`;
+      if (valLines.length === 1) {
+        blocksBody += `<text x="${f.w / 2 + valOffX}" y="${lblY.valY + valOffY}" text-anchor="middle" fill="#000000" font-family="${fontSans}" font-size="${fontSizes.normal}px" font-weight="600">${esc(valLines[0])}</text>`;
+      } else if (valLines.length > 1) {
+        const lineH = 15;
+        const startY = lblY.valY + valOffY - (valLines.length - 1) * lineH;
+        blocksBody += `<text x="${f.w / 2 + valOffX}" y="${startY}" text-anchor="middle" fill="#000000" font-family="${fontSans}" font-size="${fontSizes.normal}px" font-weight="600">`;
+        for (let i = 0; i < valLines.length; i++) {
+          blocksBody += `<tspan x="${f.w / 2 + valOffX}" dy="${i === 0 ? 0 : lineH + 'px'}">${esc(valLines[i])}</tspan>`;
+        }
+        blocksBody += `</text>`;
+      }
       if (nm)   blocksBody += `<text x="${f.w / 2 + nameOffX}" y="${lblY.nameY + nameOffY}" text-anchor="middle" fill="#000000" font-family="${fontSans}" font-size="${fontSizes.large}px" font-weight="700">${esc(nm)}</text>`;
       if (info) blocksBody += `<text x="${f.w / 2 + infoOffX}" y="${lblY.infoY + infoOffY}" text-anchor="middle" fill="#000000" font-family="${fontSans}" font-size="${fontSizes.small}px" font-weight="500">${esc(info)}</text>`;
     }
@@ -7001,6 +7443,7 @@ function renderCanvas() {
         if (psh && psh !== sheets[cur]) nm = (icRecv(b.params) ? "\u2190 " : "\u2192 ") + psh.name;
       }
       const v = c.val ? c.val(b.params) : "";
+      const valLines = Array.isArray(v) ? v : (v ? String(v).split("\n").filter(Boolean) : []);
       /* Universal label layout with independent floating offsets:
          val  (gain/loss)         → ABOVE symbol at y = -13
          nm   (name/label)        → BELOW symbol at y = f.h + 18
@@ -7013,7 +7456,17 @@ function renderCanvas() {
       const infoOffX = Number(b.params._infoOffX != null ? b.params._infoOffX : b.params._lblOffX) || 0;
       const infoOffY = Number(b.params._infoOffY != null ? b.params._infoOffY : b.params._lblOffY) || 0;
       const info = c.info ? c.info(b.params) : "";
-      if (v)    bh += `<text class="lbl-val"  x="${f.w / 2 + valOffX}" y="${lblY.valY + valOffY}" data-block="${b.id}" data-lbl="val">${esc(v)}</text>`;
+      if (valLines.length === 1) {
+        bh += `<text class="lbl-val" x="${f.w / 2 + valOffX}" y="${lblY.valY + valOffY}" data-block="${b.id}" data-lbl="val">${esc(valLines[0])}</text>`;
+      } else if (valLines.length > 1) {
+        const lineH = 15;
+        const startY = lblY.valY + valOffY - (valLines.length - 1) * lineH;
+        bh += `<text class="lbl-val" x="${f.w / 2 + valOffX}" y="${startY}" data-block="${b.id}" data-lbl="val">`;
+        for (let i = 0; i < valLines.length; i++) {
+          bh += `<tspan x="${f.w / 2 + valOffX}" dy="${i === 0 ? 0 : lineH + 'px'}">${esc(valLines[i])}</tspan>`;
+        }
+        bh += `</text>`;
+      }
       if (nm)   bh += `<text class="lbl-name" x="${f.w / 2 + nameOffX}" y="${lblY.nameY + nameOffY}" data-block="${b.id}" data-lbl="name">${esc(nm)}</text>`;
       if (info) bh += `<text class="lbl-info" x="${f.w / 2 + infoOffX}" y="${lblY.infoY + infoOffY}" data-block="${b.id}" data-lbl="info">${esc(info)}</text>`;
       for (const p of getPorts(b)) {
@@ -7190,35 +7643,53 @@ function renderInspector() {
         </div>
       </div>`;
     } else if (b.type === "switch") {
-      // Per-throw upload for SPnT Switches
+      // Positional .sNp Touchstone upload for SPnT Switch (Total ports = throws + 1)
       const numThrows = parseInt(b.params.throws) || 2;
+      const numPorts = (typeof getPorts === "function") ? getPorts(b).length : (numThrows + 1);
+      const fnOpen = b.params.snpFileName_pos_open || b.params.s3pFileName_st0 || b.params.snpFileName_st0;
+
       h += `<div class="insp-sec" style="margin-top:10px; padding-top:10px; border-top:1px solid var(--border,#e2e8f0)">
-        <label style="font-weight:600; font-size:12px; display:block; margin-bottom:6px">Per-Throw Touchstone Files (.s2p / .sNp)</label>`;
-      for (let t = 1; t <= numThrows; t++) {
-        const fnKey = `s2pFileName_st${t}`;
-        const fn = b.params[fnKey];
-        h += `<div style="margin-bottom:6px">
-          <div style="font-size:11px; font-weight:600; color:var(--txt2,#64748b)">Throw ${t} (Path ${t}) S2P:</div>
+        <label style="font-weight:600; font-size:12px; display:block; margin-bottom:6px">Positional Touchstone Files (.s${numPorts}p)</label>
+        
+        <div style="margin-bottom:8px">
+          <div style="font-size:11px; font-weight:600; color:var(--txt2,#64748b)">Position: Open (Off) (.s${numPorts}p):</div>
           <div style="display:flex; gap:6px; align-items:center; margin-top:2px">
-            <button class="btn btn-sm ib-sw-s2p-btn" data-throw="${t}" style="flex:1">${fn ? "📄 " + esc(fn) : `📁 Attach Throw ${t} (.s2p)`}</button>
-            ${fn ? `<button class="btn btn-sm btn-del ib-sw-s2p-clr" data-throw="${t}">✕</button>` : ""}
+            <button class="btn btn-sm ib-sw-pos-btn" data-pos="open" style="flex:1">${fnOpen ? "📄 " + esc(fnOpen) : `📁 Attach Open State (.s${numPorts}p)`}</button>
+            ${fnOpen ? `<button class="btn btn-sm btn-del ib-sw-pos-clr" data-pos="open">✕</button>` : ""}
           </div>
-          <input type="file" class="ib-sw-s2p-file" data-throw="${t}" accept=".s1p,.s2p,.s3p,.s4p,.snp,.ts" style="display:none"/>
+          <input type="file" class="ib-sw-pos-file" data-pos="open" accept=".s${numPorts}p,.snp,.ts" style="display:none"/>
+        </div>`;
+
+      for (let t = 1; t <= numThrows; t++) {
+        const fn = b.params[`snpFileName_pos_${t}`] || b.params[`s3pFileName_st${t}`] || b.params[`snpFileName_st${t}`] || b.params[`s2pFileName_st${t}`];
+        h += `<div style="margin-bottom:6px">
+          <div style="font-size:11px; font-weight:600; color:var(--txt2,#64748b)">Position ${t} (.s${numPorts}p):</div>
+          <div style="display:flex; gap:6px; align-items:center; margin-top:2px">
+            <button class="btn btn-sm ib-sw-pos-btn" data-pos="${t}" style="flex:1">${fn ? "📄 " + esc(fn) : `📁 Attach Position ${t} (.s${numPorts}p)`}</button>
+            ${fn ? `<button class="btn btn-sm btn-del ib-sw-pos-clr" data-pos="${t}">✕</button>` : ""}
+          </div>
+          <input type="file" class="ib-sw-pos-file" data-pos="${t}" accept=".s${numPorts}p,.snp,.ts" style="display:none"/>
         </div>`;
       }
       h += `</div>`;
     } else {
-      // Standard single component Touchstone S2P upload
+      // Component Touchstone upload: .sNp for >2 ports, .s2p for 2 ports
+      const numPorts = (typeof getPorts === "function") ? getPorts(b).length : ((c.ports && c.ports.length) || 2);
+      const isMulti = numPorts > 2;
+      const fn = b.params.snpFileName || (isMulti ? (b.params[`s${numPorts}pFileName`] || b.params.s3pFileName || b.params.s4pFileName || b.params.s2pFileName) : b.params.s2pFileName);
+      const fileLabel = isMulti ? `${numPorts}-Port Touchstone File (.s${numPorts}p)` : "S-Parameter File (.s2p)";
+      const btnLabel = fn ? "📄 Change File" : (isMulti ? `📁 Attach Touchstone (.s${numPorts}p)` : "📁 Attach Touchstone (.s2p)");
+
       h += `<div class="insp-sec" style="margin-top:10px; padding-top:10px; border-top:1px solid var(--border,#e2e8f0)">
-        <label style="font-weight:600; font-size:12px; display:block; margin-bottom:4px">S-Parameter File (.s2p / .sNp)</label>
+        <label style="font-weight:600; font-size:12px; display:block; margin-bottom:4px">${fileLabel}</label>
         <div style="display:flex; gap:6px; align-items:center">
-          <button class="btn btn-sm" id="ibS2pBtn" style="flex:1">${b.params.s2pFileName ? "📄 Change .s2p" : "📁 Attach Touchstone (.s2p)"}</button>
-          ${b.params.s2pFileName ? `<button class="btn btn-sm btn-del" id="ibS2pClr" title="Clear S2P">✕</button>` : ""}
+          <button class="btn btn-sm" id="ibS2pBtn" style="flex:1">${btnLabel}</button>
+          ${fn ? `<button class="btn btn-sm btn-del" id="ibS2pClr" title="Clear Touchstone">✕</button>` : ""}
         </div>
         <div style="font-size:11px; color:var(--txt2,#64748b); margin-top:4px">
-          ${b.params.s2pFileName ? `File: <b>${esc(b.params.s2pFileName)}</b>` : "No file attached (using gain/loss fallback)"}
+          ${fn ? `File: <b>${esc(fn)}</b>` : (isMulti ? "No file attached (using behavioral parameters)" : "No file attached (using gain/loss fallback)")}
         </div>
-        <input type="file" id="ibS2pFile" accept=".s1p,.s2p,.s3p,.s4p,.s5p,.s6p,.s7p,.s8p,.s9p,.snp,.ts" style="display:none"/>
+        <input type="file" id="ibS2pFile" accept="${isMulti ? `.s${numPorts}p,.snp,.ts` : `.s2p,.snp,.ts`}" style="display:none"/>
       </div>`;
     }
   }
@@ -7262,9 +7733,9 @@ function renderInspector() {
     bindS2pSlot("ibS2pAmpBtn", "ibS2pAmpFile", "ibS2pAmpClr", "s2pFileName_amp", "s2pData_amp");
     bindS2pSlot("ibS2pBypBtn", "ibS2pBypFile", "ibS2pBypClr", "s2pFileName_byp", "s2pData_byp");
   } else if (b.type === "switch") {
-    box.querySelectorAll(".ib-sw-s2p-btn").forEach(btn => {
-      const t = btn.getAttribute("data-throw");
-      const fileEl = box.querySelector(`.ib-sw-s2p-file[data-throw="${t}"]`);
+    box.querySelectorAll(".ib-sw-pos-btn").forEach(btn => {
+      const pos = btn.getAttribute("data-pos");
+      const fileEl = box.querySelector(`.ib-sw-pos-file[data-pos="${pos}"]`);
       if (btn && fileEl) {
         btn.onclick = () => fileEl.click();
         fileEl.onchange = e => {
@@ -7273,29 +7744,75 @@ function renderInspector() {
           const rd = new FileReader();
           rd.onload = ev => {
             pushHistory();
-            b.params[`s2pFileName_st${t}`] = f.name;
-            b.params[`s2pData_st${t}`] = ev.target.result;
+            const content = ev.target.result;
+            if (pos === "open") {
+              b.params.snpFileName_pos_open = f.name;
+              b.params.snpData_pos_open = content;
+              b.params.s3pFileName_st0 = f.name;
+              b.params.s3pData_st0 = content;
+              b.params.snpFileName_st0 = f.name;
+              b.params.snpData_st0 = content;
+            } else {
+              b.params[`snpFileName_pos_${pos}`] = f.name;
+              b.params[`snpData_pos_${pos}`] = content;
+              b.params[`s3pFileName_st${pos}`] = f.name;
+              b.params[`s3pData_st${pos}`] = content;
+              b.params[`snpFileName_st${pos}`] = f.name;
+              b.params[`snpData_st${pos}`] = content;
+              b.params[`s2pFileName_st${pos}`] = f.name;
+              b.params[`s2pData_st${pos}`] = content;
+            }
             renderAll();
+            if (typeof sparamsTabs !== "undefined" && sparamsTabs.length) {
+              const curTab = sparamsTabs[typeof activeTabIdx !== "undefined" ? activeTabIdx : 0];
+              if (curTab) {
+                curTab.res = null;
+                curTab.selectedPathIdx = null;
+              }
+            }
             if (typeof renderLinearAnalysis === "function") renderLinearAnalysis();
-            hint(`Attached '${f.name}' for Throw ${t}`);
+            hint(`Attached '${f.name}' for Position ${pos === "open" ? "Open" : pos}`);
           };
           rd.readAsText(f);
         };
       }
     });
-    box.querySelectorAll(".ib-sw-s2p-clr").forEach(clr => {
+    box.querySelectorAll(".ib-sw-pos-clr").forEach(clr => {
       clr.onclick = () => {
-        const t = clr.getAttribute("data-throw");
+        const pos = clr.getAttribute("data-pos");
         pushHistory();
-        delete b.params[`s2pFileName_st${t}`];
-        delete b.params[`s2pData_st${t}`];
+        if (pos === "open") {
+          delete b.params.snpFileName_pos_open;
+          delete b.params.snpData_pos_open;
+          delete b.params.s3pFileName_st0;
+          delete b.params.s3pData_st0;
+          delete b.params.snpFileName_st0;
+          delete b.params.snpData_st0;
+        } else {
+          delete b.params[`snpFileName_pos_${pos}`];
+          delete b.params[`snpData_pos_${pos}`];
+          delete b.params[`s3pFileName_st${pos}`];
+          delete b.params[`s3pData_st${pos}`];
+          delete b.params[`snpFileName_st${pos}`];
+          delete b.params[`snpData_st${pos}`];
+          delete b.params[`s2pFileName_st${pos}`];
+          delete b.params[`s2pData_st${pos}`];
+        }
         renderAll();
+        if (typeof sparamsTabs !== "undefined" && sparamsTabs.length) {
+          const curTab = sparamsTabs[typeof activeTabIdx !== "undefined" ? activeTabIdx : 0];
+          if (curTab) {
+            curTab.res = null;
+            curTab.selectedPathIdx = null;
+          }
+        }
         if (typeof renderLinearAnalysis === "function") renderLinearAnalysis();
-        hint(`Removed Touchstone file for Throw ${t}.`);
+        hint(`Removed Touchstone file for Position ${pos === "open" ? "Open" : pos}.`);
       };
     });
   } else {
     const s2pBtn = $("ibS2pBtn"), s2pFile = $("ibS2pFile"), s2pClr = $("ibS2pClr");
+    const numPorts = (typeof getPorts === "function") ? getPorts(b).length : ((c.ports && c.ports.length) || 2);
     if (s2pBtn && s2pFile) {
       s2pBtn.onclick = () => s2pFile.click();
       s2pFile.onchange = e => {
@@ -7304,9 +7821,25 @@ function renderInspector() {
         const reader = new FileReader();
         reader.onload = ev => {
           pushHistory();
+          b.params.snpFileName = file.name;
+          b.params.snpData = ev.target.result;
           b.params.s2pFileName = file.name;
           b.params.s2pData = ev.target.result;
+          if (numPorts === 3) {
+            b.params.s3pFileName = file.name;
+            b.params.s3pData = ev.target.result;
+          } else if (numPorts === 4) {
+            b.params.s4pFileName = file.name;
+            b.params.s4pData = ev.target.result;
+          }
           renderAll();
+          if (typeof sparamsTabs !== "undefined" && sparamsTabs.length) {
+            const curTab = sparamsTabs[typeof activeTabIdx !== "undefined" ? activeTabIdx : 0];
+            if (curTab) {
+              curTab.res = null;
+              curTab.selectedPathIdx = null;
+            }
+          }
           if (typeof renderLinearAnalysis === "function") renderLinearAnalysis();
           hint(`Attached Touchstone file '${file.name}' to ${b.params.label || c.name}`);
         };
@@ -7316,9 +7849,22 @@ function renderInspector() {
     if (s2pClr) {
       s2pClr.onclick = () => {
         pushHistory();
+        delete b.params.snpFileName;
+        delete b.params.snpData;
         delete b.params.s2pFileName;
         delete b.params.s2pData;
+        delete b.params.s3pFileName;
+        delete b.params.s3pData;
+        delete b.params.s4pFileName;
+        delete b.params.s4pData;
         renderAll();
+        if (typeof sparamsTabs !== "undefined" && sparamsTabs.length) {
+          const curTab = sparamsTabs[typeof activeTabIdx !== "undefined" ? activeTabIdx : 0];
+          if (curTab) {
+            curTab.res = null;
+            curTab.selectedPathIdx = null;
+          }
+        }
         if (typeof renderLinearAnalysis === "function") renderLinearAnalysis();
         hint("Removed Touchstone S-parameter file.");
       };
@@ -7336,7 +7882,10 @@ function renderInspector() {
         if (panel && panel.style.display !== "none" && typeof renderLinearAnalysis === "function") {
           if (typeof sparamsTabs !== "undefined" && sparamsTabs.length) {
             const curTab = sparamsTabs[typeof activeTabIdx !== "undefined" ? activeTabIdx : 0];
-            if (curTab) curTab.res = null;
+            if (curTab) {
+              curTab.res = null;
+              curTab.selectedPathIdx = null;
+            }
           }
           renderLinearAnalysis();
         }
@@ -7609,7 +8158,64 @@ function renameSheet(i, tabEl) {
 /* --- File: js/ui/budget-renderer.js --- */
 "use strict";
 
-/* Cascade Budget UI Drawer Renderer */
+/* =====================================================================
+ * RF Block Diagram Editor - Cascade Budget Drawer & Interactive Stage Plotter
+ * ===================================================================== */
+
+let budgetViewMode = "plot"; // "plot" or "table"
+let budgetIsMaximized = false;
+let budgetPlotMetrics = new Set(["cumG", "cumNF", "lvl", "oip3", "cumP1db"]);
+let budgetCustomScaling = {
+  leftAuto: true,
+  leftMin: -60,
+  leftMax: 40,
+  rightAuto: true,
+  rightMin: 0,
+  rightMax: 15,
+  showScaleOptions: false
+};
+
+const BUDGET_METRICS = {
+  cumG: { key: "cumG", label: "Cascaded Gain", unit: "dB", axis: "left", color: "#38bdf8", getVal: r => r.cumG },
+  lvl: { key: "lvl", label: "Signal Level", unit: "dBm", axis: "left", color: "#10b981", getVal: r => r.lvl },
+  cumNF: { key: "cumNF", label: "Cum. Noise Figure", unit: "dB", axis: "right", color: "#f43f5e", getVal: r => r.cumNF },
+  nfStage: { key: "nfStage", label: "Stage NF", unit: "dB", axis: "right", color: "#14b8a6", getVal: r => r.nfStage },
+  noiseFloor: {
+    key: "noiseFloor",
+    label: "Noise Floor",
+    unit: "dBm",
+    axis: "left",
+    color: "#a855f7",
+    getVal: (r, bwHz) => (r && r.nfloor !== undefined && isFinite(r.nfloor))
+      ? r.nfloor
+      : (-173.98 + 10 * Math.log10(Math.max(1, bwHz)) + (r.cumNF || 0) + (r.cumG || 0))
+  },
+  oip3: {
+    key: "oip3",
+    label: "Output IP3",
+    unit: "dBm",
+    axis: "left",
+    color: "#f59e0b",
+    getVal: r => (r.oip3 !== undefined && isFinite(r.oip3)) ? r.oip3 : null
+  },
+  cumP1db: {
+    key: "cumP1db",
+    label: "Cascaded P1dB",
+    unit: "dBm",
+    axis: "left",
+    color: "#ec4899",
+    getVal: r => (r.cumP1db !== undefined && isFinite(r.cumP1db)) ? r.cumP1db : ((r.p1db !== undefined && isFinite(r.p1db)) ? r.p1db : null)
+  },
+  p1dbStage: {
+    key: "p1dbStage",
+    label: "Stage P1dB",
+    unit: "dBm",
+    axis: "left",
+    color: "#f472b6",
+    getVal: r => (r.p1dbStage !== undefined && isFinite(r.p1dbStage)) ? r.p1dbStage : null
+  }
+};
+
 const budgetOpen = () => {
   const el = $("budget");
   return el ? el.classList.contains("open") : false;
@@ -7624,6 +8230,16 @@ function toggleBudget() {
   if (btn) btn.style.borderColor = open ? "var(--accent)" : "";
 }
 
+function toggleBudgetExpand() {
+  const el = $("budget");
+  if (!el) return;
+  budgetIsMaximized = !budgetIsMaximized;
+  el.classList.toggle("maximized", budgetIsMaximized);
+  const btn = $("bgToggleExpand");
+  if (btn) btn.textContent = budgetIsMaximized ? "⬍ Minimize" : "⛶ Expand";
+  renderBudget();
+}
+
 function renderBudget() {
   const body = $("bgBody"), sel = $("bgStart");
   if (!body || !sel) return;
@@ -7632,24 +8248,623 @@ function renderBudget() {
   sel.innerHTML = starts.map(b => `<option value="${b.id}"${b.id === curStart ? " selected" : ""}>${esc(b.params.label || COMP[b.type].name)}</option>`).join("");
   sel.onchange = () => renderBudget();
 
+  // Bind view switch buttons
+  const tabTable = $("bgTabTable"), tabPlot = $("bgTabPlot");
+  if (tabTable && tabPlot) {
+    tabTable.className = `bg-tab-btn ${budgetViewMode === "table" ? "active" : ""}`;
+    tabPlot.className = `bg-tab-btn ${budgetViewMode === "plot" ? "active" : ""}`;
+    tabTable.onclick = () => { budgetViewMode = "table"; renderBudget(); };
+    tabPlot.onclick = () => { budgetViewMode = "plot"; renderBudget(); };
+  }
+
+  // Bind action buttons
+  if ($("bgToggleExpand")) {
+    $("bgToggleExpand").onclick = toggleBudgetExpand;
+    $("bgToggleExpand").textContent = budgetIsMaximized ? "⬍ Minimize" : "⛶ Expand";
+  }
+  if ($("bgXlsx")) $("bgXlsx").onclick = exportBudgetXlsx;
+  if ($("bgCsv")) $("bgCsv").onclick = exportBudgetCsv;
+  if ($("bgClose")) $("bgClose").onclick = toggleBudget;
+
   const startId = sel.value || (starts[0] ? starts[0].id : null);
   const { rows, P } = buildBudget(startId);
   const bwHz = (settings.bandwidthHz && settings.bandwidthHz > 0) ? settings.bandwidthHz : 1e6;
+  const bwMHz = bwHz / 1e6;
 
   if (!rows.length) {
     body.innerHTML = `<div class="bg-empty">Add a source (RF IN, Source, or an Rx antenna) and wire a chain to see the budget.</div>` + warnHtml(P);
     return;
   }
 
+  if (budgetViewMode === "plot") {
+    renderBudgetPlot(rows, bwHz, bwMHz, P, body);
+  } else {
+    renderBudgetTable(rows, bwHz, bwMHz, P, body);
+  }
+}
+
+/* =====================================================================
+ * Cascade Stage Plotter: Dual Y-Axis SVG Chart with Interactive Controls
+ * ===================================================================== */
+function generateBudgetPlotSvg(rows, bwHz, isStandalone = false) {
+  const numStages = rows.length;
+  const container = $("bgBody");
+  const W = isStandalone ? 960 : ((container && container.clientWidth ? Math.max(680, container.clientWidth - 24) : 920) || 920);
+  const H = isStandalone ? 460 : (budgetIsMaximized ? 420 : 280);
+  const margin = { top: isStandalone ? 40 : 28, right: 65, bottom: 65, left: 65 };
+  const pw = Math.max(120, W - margin.left - margin.right);
+  const ph = Math.max(100, H - margin.top - margin.bottom);
+
+  // 1. Gather active Left and Right Axis data points
+  let leftVals = [];
+  let rightVals = [];
+
+  for (const mKey of budgetPlotMetrics) {
+    const m = BUDGET_METRICS[mKey];
+    if (!m) continue;
+    rows.forEach(r => {
+      const v = m.getVal(r, bwHz);
+      if (v !== null && v !== undefined && isFinite(v)) {
+        if (m.axis === "right") rightVals.push(v);
+        else leftVals.push(v);
+      }
+    });
+  }
+
+  // Left Axis Range (Power, Gain, Linearity in dB / dBm)
+  let yLeftMin = -40, yLeftMax = 40;
+  if (budgetCustomScaling.leftAuto) {
+    if (leftVals.length) {
+      const minV = Math.min(...leftVals);
+      const maxV = Math.max(...leftVals);
+      const span = maxV - minV || 20;
+      yLeftMin = Math.floor(minV - span * 0.12);
+      yLeftMax = Math.ceil(maxV + span * 0.12);
+      if (yLeftMin === yLeftMax) { yLeftMin -= 5; yLeftMax += 5; }
+    }
+  } else {
+    yLeftMin = budgetCustomScaling.leftMin;
+    yLeftMax = budgetCustomScaling.leftMax;
+  }
+
+  // Right Axis Range (Noise Figure in dB)
+  let yRightMin = 0, yRightMax = 15;
+  if (budgetCustomScaling.rightAuto) {
+    if (rightVals.length) {
+      const minV = Math.min(...rightVals);
+      const maxV = Math.max(...rightVals);
+      yRightMin = Math.max(0, Math.floor(minV - 0.5));
+      yRightMax = Math.max(yRightMin + 3, Math.ceil(maxV + 1.5));
+    }
+  } else {
+    yRightMin = budgetCustomScaling.rightMin;
+    yRightMax = budgetCustomScaling.rightMax;
+  }
+
+  const getX = idx => margin.left + (idx / Math.max(1, numStages - 1)) * pw;
+  const getYLeft = val => margin.top + ph - ((val - yLeftMin) / (yLeftMax - yLeftMin || 1)) * ph;
+  const getYRight = val => margin.top + ph - ((val - yRightMin) / (yRightMax - yRightMin || 1)) * ph;
+
+  const sansFont = "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+
+  // Construct SVG Plot
+  let svg = `<svg id="bgPlotSvg" width="100%" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="display:block; overflow:visible; font-family:${sansFont};">`;
+
+  if (isStandalone) {
+    svg += `<style>
+      svg { font-family: ${sansFont}; background: transparent; }
+      text { font-family: ${sansFont}; fill: #000000; }
+    </style>`;
+  } else {
+    // In-drawer dark background rect
+    svg += `<rect x="0" y="0" width="${W}" height="${H}" fill="var(--chrome-2,#1e293b)" rx="6"/>`;
+  }
+
+  // Plot area rect
+  if (isStandalone) {
+    svg += `<rect x="${margin.left}" y="${margin.top}" width="${pw}" height="${ph}" fill="none" stroke="#334155" stroke-width="1.2"/>`;
+  } else {
+    svg += `<rect x="${margin.left}" y="${margin.top}" width="${pw}" height="${ph}" fill="rgba(15,23,42,0.45)" stroke="var(--line,#334155)" stroke-width="1"/>`;
+  }
+
+  // Colors based on standalone vs dark mode
+  const gridStroke = isStandalone ? "#e2e8f0" : "rgba(255,255,255,0.08)";
+  const leftTickColor = isStandalone ? "#000000" : "var(--ink-dim,#94a3b8)";
+  const rightTickColor = isStandalone ? "#000000" : "#f43f5e";
+  const leftTitleColor = isStandalone ? "#000000" : "var(--ink,#f8fafc)";
+  const rightTitleColor = isStandalone ? "#000000" : "#f43f5e";
+  const stageGridStroke = isStandalone ? "#e2e8f0" : "rgba(255,255,255,0.06)";
+  const stageNameColor = isStandalone ? "#000000" : "var(--ink,#f8fafc)";
+  const stageTypeColor = isStandalone ? "#475569" : "var(--ink-dim,#94a3b8)";
+  const dotStroke = isStandalone ? "#ffffff" : "#0f172a";
+
+  // Horizontal Grid Lines & Left/Right Axis Ticks (6 divisions)
+  const numGridTicks = 6;
+  for (let k = 0; k <= numGridTicks; k++) {
+    const frac = k / numGridTicks;
+    const y = margin.top + frac * ph;
+    const valL = yLeftMax - frac * (yLeftMax - yLeftMin);
+    const valR = yRightMax - frac * (yRightMax - yRightMin);
+
+    // Gridline
+    svg += `<line x1="${margin.left}" y1="${y}" x2="${margin.left + pw}" y2="${y}" stroke="${gridStroke}" stroke-dasharray="3,3"/>`;
+
+    // Left Axis Label
+    svg += `<text x="${margin.left - 8}" y="${y + 3.5}" fill="${leftTickColor}" font-size="10.5" font-weight="${isStandalone ? '600' : '400'}" text-anchor="end">${valL.toFixed(0)}</text>`;
+
+    // Right Axis Label
+    svg += `<text x="${margin.left + pw + 8}" y="${y + 3.5}" fill="${rightTickColor}" font-size="10.5" font-weight="${isStandalone ? '600' : '400'}" text-anchor="start">${valR.toFixed(1)}</text>`;
+  }
+
+  // Axis Labels
+  svg += `<text transform="rotate(-90)" x="${-(margin.top + ph / 2)}" y="${margin.left - 42}" fill="${leftTitleColor}" font-size="11" font-weight="700" text-anchor="middle">Power &amp; Gain (dB / dBm)</text>`;
+  svg += `<text transform="rotate(90)" x="${(margin.top + ph / 2)}" y="${-(margin.left + pw + 44)}" fill="${rightTitleColor}" font-size="11" font-weight="700" text-anchor="middle">Noise Figure (dB)</text>`;
+
+  // Vertical Stage Gridlines and X-Axis Labels
+  rows.forEach((r, idx) => {
+    const x = getX(idx);
+    svg += `<line x1="${x}" y1="${margin.top}" x2="${x}" y2="${margin.top + ph}" stroke="${stageGridStroke}"/>`;
+    svg += `<line x1="${x}" y1="${margin.top + ph}" x2="${x}" y2="${margin.top + ph + 5}" stroke="${isStandalone ? '#334155' : 'var(--line,#334155)'}" stroke-width="1"/>`;
+
+    // Rotated Stage Label
+    const stageName = r.name || `Stage ${idx + 1}`;
+    svg += `<g transform="translate(${x}, ${margin.top + ph + 16}) rotate(28)">
+      <text x="0" y="0" fill="${stageNameColor}" font-size="10.5" font-weight="600" text-anchor="start">${esc(stageName)}</text>
+      <text x="0" y="11" fill="${stageTypeColor}" font-size="9" font-weight="500" text-anchor="start">${esc(r.type)}</text>
+    </g>`;
+  });
+
+  // Plot Active Traces
+  for (const mKey of budgetPlotMetrics) {
+    const m = BUDGET_METRICS[mKey];
+    if (!m) continue;
+
+    const isRight = (m.axis === "right");
+    const getY = isRight ? getYRight : getYLeft;
+
+    let pathD = "";
+    const pts = [];
+
+    rows.forEach((r, idx) => {
+      const v = m.getVal(r, bwHz);
+      if (v !== null && v !== undefined && isFinite(v)) {
+        const x = getX(idx);
+        const y = getY(v);
+        pts.push({ x, y, v, stage: r, idx });
+        pathD += (pathD === "" ? `M ${x.toFixed(1)} ${y.toFixed(1)}` : ` L ${x.toFixed(1)} ${y.toFixed(1)}`);
+      }
+    });
+
+    if (pathD) {
+      // Trace line
+      svg += `<path d="${pathD}" fill="none" stroke="${m.color}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>`;
+
+      // Stage dots
+      pts.forEach(pt => {
+        svg += `<circle cx="${pt.x.toFixed(1)}" cy="${pt.y.toFixed(1)}" r="4.5" fill="${m.color}" stroke="${dotStroke}" stroke-width="1.5" class="bg-stage-dot" data-bid="${esc(pt.stage.id)}" data-mkey="${mKey}" style="cursor:pointer; transition:r 0.15s ease;">
+          <title>${esc(pt.stage.name)}: ${m.label} = ${fmt(pt.v)} ${m.unit}</title>
+        </circle>`;
+      });
+    }
+  }
+
+  // Top Legend for standalone export
+  if (isStandalone) {
+    let legX = margin.left + 8;
+    const legY = 18;
+    for (const mKey of budgetPlotMetrics) {
+      const m = BUDGET_METRICS[mKey];
+      if (!m) continue;
+      svg += `<g transform="translate(${legX}, ${legY})">
+        <circle cx="0" cy="-3.5" r="4.5" fill="${m.color}"/>
+        <text x="8" y="0" font-size="10.5" font-weight="600" fill="#000000">${esc(m.label)} (${m.unit || (m.axis === 'right' ? 'dB' : 'dB/dBm')})</text>
+      </g>`;
+      legX += (m.label.length * 7 + 65);
+    }
+  }
+
+  svg += `</svg>`;
+  return { svg, W, H, margin, pw, ph, getX, getYLeft, getYRight, yLeftMin, yLeftMax, yRightMin, yRightMax };
+}
+
+function renderBudgetPlot(rows, bwHz, bwMHz, P, container) {
+  // 1. Build Interactive Metric Pills, Export Buttons, and Scale Controls Toolbar
+  let topBarHtml = `<div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:10px; padding:6px 0; border-bottom:1px solid var(--line);">
+    <div style="display:flex; align-items:center; flex-wrap:wrap; gap:6px;">
+      <span style="font-size:11.5px; font-weight:600; color:var(--ink-dim); margin-right:4px;">Plot Traces:</span>`;
+
+  for (const mKey in BUDGET_METRICS) {
+    const m = BUDGET_METRICS[mKey];
+    const isAct = budgetPlotMetrics.has(mKey);
+    topBarHtml += `<button class="bg-metric-pill ${isAct ? "active" : ""}" data-mkey="${mKey}" style="${isAct ? `border-color:${m.color}; color:#f8fafc;` : ""}">
+      <span style="width:7px; height:7px; border-radius:50%; background:${m.color}; display:inline-block;"></span>
+      <span>${esc(m.label)}</span>
+      <span style="font-size:10px; opacity:0.7">(${m.axis === "right" ? "Rt" : "Lt"})</span>
+    </button>`;
+  }
+
+  topBarHtml += `</div>
+    <div style="display:flex; align-items:center; gap:6px;">
+      <button class="btn btn-sm" id="bgPlotExportSvg" title="Export stage plot as standalone transparent SVG">📊 Export SVG</button>
+      <button class="btn btn-sm" id="bgPlotExportPng" title="Export stage plot as high-resolution transparent PNG">🖼️ Export PNG</button>
+      <button class="btn btn-sm" id="bgPlotExportVsdx" title="Export stage plot as native Microsoft Visio (.vsdx) document">📐 Export VSDX</button>
+      <button class="btn btn-sm" id="bgToggleScaleOpt">⚙️ ${budgetCustomScaling.showScaleOptions ? "Hide Scales" : "Axis Scales"}</button>
+    </div>
+  </div>`;
+
+  // Scale Options Panel (Collapsible)
+  let scalePanelHtml = "";
+  if (budgetCustomScaling.showScaleOptions) {
+    scalePanelHtml = `<div style="display:flex; gap:16px; align-items:center; flex-wrap:wrap; background:rgba(0,0,0,0.25); border:1px solid var(--line); border-radius:6px; padding:8px 12px; margin-bottom:10px; font-size:11.5px;">
+      <div style="display:flex; align-items:center; gap:6px;">
+        <b style="color:var(--accent)">Left Axis (Power/Gain):</b>
+        <label><input type="checkbox" id="bgScaleLeftAuto" ${budgetCustomScaling.leftAuto ? "checked" : ""}/> Auto</label>
+        ${!budgetCustomScaling.leftAuto ? `
+          <span>Min:</span><input type="number" id="bgScaleLeftMin" value="${budgetCustomScaling.leftMin}" style="width:55px; padding:2px 4px; font-size:11px; background:#192231; border:1px solid var(--line); color:var(--ink);"/>
+          <span>Max:</span><input type="number" id="bgScaleLeftMax" value="${budgetCustomScaling.leftMax}" style="width:55px; padding:2px 4px; font-size:11px; background:#192231; border:1px solid var(--line); color:var(--ink);"/>
+        ` : ""}
+      </div>
+      <div style="display:flex; align-items:center; gap:6px;">
+        <b style="color:#f43f5e">Right Axis (Noise Figure):</b>
+        <label><input type="checkbox" id="bgScaleRightAuto" ${budgetCustomScaling.rightAuto ? "checked" : ""}/> Auto</label>
+        ${!budgetCustomScaling.rightAuto ? `
+          <span>Min:</span><input type="number" id="bgScaleRightMin" value="${budgetCustomScaling.rightMin}" style="width:55px; padding:2px 4px; font-size:11px; background:#192231; border:1px solid var(--line); color:var(--ink);"/>
+          <span>Max:</span><input type="number" id="bgScaleRightMax" value="${budgetCustomScaling.rightMax}" style="width:55px; padding:2px 4px; font-size:11px; background:#192231; border:1px solid var(--line); color:var(--ink);"/>
+        ` : ""}
+      </div>
+    </div>`;
+  }
+
+  // 2. Render SVG plot inside drawer
+  const { svg } = generateBudgetPlotSvg(rows, bwHz, false);
+
+  // 3. Stage Summary Footer & Warnings
+  const last = rows[rows.length - 1];
+  const nfFinal = last.cumNF;
+  const sens = noiseFloor(nfFinal, bwHz);
+  const lastNfloor = (last.nfloor !== undefined && isFinite(last.nfloor))
+    ? last.nfloor
+    : (-173.98 + 10 * Math.log10(Math.max(1, bwHz)) + (last.cumNF || 0) + (last.cumG || 0));
+  const lastP1Cum = (last.cumP1db !== undefined && isFinite(last.cumP1db)) ? last.cumP1db : last.p1db;
+
+  let footerHtml = `<div class="bg-sum" style="margin-top:10px;">
+    <div><span>Total Gain:</span><b>${gsign(last.cumG)}</b></div>
+    <div><span>Cascade NF:</span><b>${last.cumNF !== undefined ? fmt(last.cumNF) + " dB" : "\u2014"}</b></div>
+    <div><span>Noise Floor:</span><b style="color:#a855f7">${fmt(lastNfloor)} dBm</b></div>
+    <div><span>Sens. (${fmt(bwMHz)} MHz):</span><b>${fmt(sens)} dBm</b></div>
+    <div><span>Cascade OIP3:</span><b>${(last.oip3 !== undefined && isFinite(last.oip3)) ? fmt(last.oip3) + " dBm" : "\u2014"}</b></div>
+    <div><span>Cascade P1dB:</span><b>${(lastP1Cum !== undefined && isFinite(lastP1Cum)) ? fmt(lastP1Cum) + " dBm" : "\u2014"}</b></div>
+  </div>`;
+  footerHtml += warnHtml(P);
+
+  container.innerHTML = topBarHtml + scalePanelHtml + svg + footerHtml;
+
+  // 4. Attach Plot Event Listeners
+  container.querySelectorAll(".bg-metric-pill").forEach(pill => {
+    pill.onclick = () => {
+      const k = pill.getAttribute("data-mkey");
+      if (budgetPlotMetrics.has(k)) {
+        if (budgetPlotMetrics.size > 1) budgetPlotMetrics.delete(k);
+      } else {
+        budgetPlotMetrics.add(k);
+      }
+      renderBudget();
+    };
+  });
+
+  const btnScaleOpt = $("bgToggleScaleOpt");
+  if (btnScaleOpt) {
+    btnScaleOpt.onclick = () => {
+      budgetCustomScaling.showScaleOptions = !budgetCustomScaling.showScaleOptions;
+      renderBudget();
+    };
+  }
+
+  // Export Buttons
+  const btnSvg = $("bgPlotExportSvg");
+  if (btnSvg) btnSvg.onclick = exportBudgetPlotSvg;
+  const btnPng = $("bgPlotExportPng");
+  if (btnPng) btnPng.onclick = exportBudgetPlotPng;
+  const btnVsdx = $("bgPlotExportVsdx");
+  if (btnVsdx) btnVsdx.onclick = exportBudgetPlotVsdx;
+
+  // Scale inputs
+  const chkLeftAuto = $("bgScaleLeftAuto");
+  if (chkLeftAuto) {
+    chkLeftAuto.onchange = e => { budgetCustomScaling.leftAuto = e.target.checked; renderBudget(); };
+  }
+  const inLeftMin = $("bgScaleLeftMin"), inLeftMax = $("bgScaleLeftMax");
+  if (inLeftMin) inLeftMin.onchange = e => { budgetCustomScaling.leftMin = parseFloat(e.target.value) || -40; renderBudget(); };
+  if (inLeftMax) inLeftMax.onchange = e => { budgetCustomScaling.leftMax = parseFloat(e.target.value) || 40; renderBudget(); };
+
+  const chkRightAuto = $("bgScaleRightAuto");
+  if (chkRightAuto) {
+    chkRightAuto.onchange = e => { budgetCustomScaling.rightAuto = e.target.checked; renderBudget(); };
+  }
+  const inRightMin = $("bgScaleRightMin"), inRightMax = $("bgScaleRightMax");
+  if (inRightMin) inRightMin.onchange = e => { budgetCustomScaling.rightMin = parseFloat(e.target.value) || 0; renderBudget(); };
+  if (inRightMax) inRightMax.onchange = e => { budgetCustomScaling.rightMax = parseFloat(e.target.value) || 15; renderBudget(); };
+
+  // Click stage dot to select block on canvas
+  container.querySelectorAll(".bg-stage-dot").forEach(dot => {
+    dot.onclick = () => {
+      const bid = dot.getAttribute("data-bid");
+      const sh = typeof sheetOfBlock === "function" ? sheetOfBlock(bid) : null;
+      if (sh && typeof sheets !== "undefined" && typeof cur !== "undefined" && sh !== sheets[cur] && typeof gotoSheet === "function") {
+        gotoSheet(sheets.indexOf(sh));
+      }
+      if (typeof selectOnly === "function") selectOnly(bid);
+      if (typeof renderAll === "function") renderAll();
+    };
+  });
+}
+
+/* =====================================================================
+ * Cascade Stage Plot Exporters (SVG, PNG, VSDX)
+ * ===================================================================== */
+
+/* Export Budget Plot as Standalone Transparent SVG */
+function exportBudgetPlotSvg() {
+  const sel = $("bgStart");
+  const startId = sel ? sel.value : null;
+  const { rows } = buildBudget(startId);
+  if (!rows || !rows.length) { hint("No budget plot data to export."); return; }
+  const bwHz = (settings.bandwidthHz && settings.bandwidthHz > 0) ? settings.bandwidthHz : 1e6;
+  const { svg } = generateBudgetPlotSvg(rows, bwHz, true);
+  downloadFile(svg, "cascade_budget_plot.svg", "image/svg+xml");
+  hint("Exported Stage Plot as transparent SVG.");
+}
+
+/* Export Budget Plot as High-Resolution Transparent PNG */
+function exportBudgetPlotPng() {
+  const sel = $("bgStart");
+  const startId = sel ? sel.value : null;
+  const { rows } = buildBudget(startId);
+  if (!rows || !rows.length) { hint("No budget plot data to export."); return; }
+  const bwHz = (settings.bandwidthHz && settings.bandwidthHz > 0) ? settings.bandwidthHz : 1e6;
+  const { svg, W, H } = generateBudgetPlotSvg(rows, bwHz, true);
+
+  const img = new Image();
+  const url = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
+  img.onload = () => {
+    const cv = document.createElement("canvas");
+    const scale = 2; // High-DPI 2x supersampling
+    cv.width = W * scale;
+    cv.height = H * scale;
+    const g = cv.getContext("2d");
+    g.clearRect(0, 0, cv.width, cv.height);
+    g.imageSmoothingEnabled = true;
+    g.imageSmoothingQuality = "high";
+    g.drawImage(img, 0, 0, cv.width, cv.height);
+    cv.toBlob(blob => {
+      downloadFile(blob, "cascade_budget_plot.png", "image/png");
+      hint("Exported Stage Plot as high-resolution transparent PNG.");
+    });
+  };
+  img.src = url;
+}
+
+/* Export Budget Plot as Native Microsoft Visio (.vsdx) Document */
+function exportBudgetPlotVsdx() {
+  const sel = $("bgStart");
+  const startId = sel ? sel.value : null;
+  const { rows } = buildBudget(startId);
+  if (!rows || !rows.length) { hint("No budget plot data to export."); return; }
+  if (typeof zipStore !== "function" || typeof getVsdxDocXml !== "function") {
+    hint("Visio packager is unavailable.");
+    return;
+  }
+
+  const bwHz = (settings.bandwidthHz && settings.bandwidthHz > 0) ? settings.bandwidthHz : 1e6;
+  const numStages = rows.length;
+
+  const W_px = 1000, H_px = 560;
+  const dpi = 96;
+  const toInX = x => x / dpi, toInY = y => (H_px - y) / dpi, toInLen = len => len / dpi;
+  const pageWidthIn = W_px / dpi, pageHeightIn = H_px / dpi;
+
+  const margin = { top: 60, right: 80, bottom: 90, left: 80 };
+  const pw = W_px - margin.left - margin.right;
+  const ph = H_px - margin.top - margin.bottom;
+
+  // Compute Left and Right axis ranges
+  let leftVals = [], rightVals = [];
+  for (const mKey of budgetPlotMetrics) {
+    const m = BUDGET_METRICS[mKey];
+    if (!m) continue;
+    rows.forEach(r => {
+      const v = m.getVal(r, bwHz);
+      if (v !== null && v !== undefined && isFinite(v)) {
+        if (m.axis === "right") rightVals.push(v);
+        else leftVals.push(v);
+      }
+    });
+  }
+
+  let yLeftMin = -40, yLeftMax = 40;
+  if (budgetCustomScaling.leftAuto) {
+    if (leftVals.length) {
+      const minV = Math.min(...leftVals), maxV = Math.max(...leftVals);
+      const span = maxV - minV || 20;
+      yLeftMin = Math.floor(minV - span * 0.12);
+      yLeftMax = Math.ceil(maxV + span * 0.12);
+      if (yLeftMin === yLeftMax) { yLeftMin -= 5; yLeftMax += 5; }
+    }
+  } else {
+    yLeftMin = budgetCustomScaling.leftMin;
+    yLeftMax = budgetCustomScaling.leftMax;
+  }
+
+  let yRightMin = 0, yRightMax = 15;
+  if (budgetCustomScaling.rightAuto) {
+    if (rightVals.length) {
+      const minV = Math.min(...rightVals), maxV = Math.max(...rightVals);
+      yRightMin = Math.max(0, Math.floor(minV - 0.5));
+      yRightMax = Math.max(yRightMin + 3, Math.ceil(maxV + 1.5));
+    }
+  } else {
+    yRightMin = budgetCustomScaling.rightMin;
+    yRightMax = budgetCustomScaling.rightMax;
+  }
+
+  const getX = idx => margin.left + (idx / Math.max(1, numStages - 1)) * pw;
+  const getYLeft = val => margin.top + ph - ((val - yLeftMin) / (yLeftMax - yLeftMin || 1)) * ph;
+  const getYRight = val => margin.top + ph - ((val - yRightMin) / (yRightMax - yRightMin || 1)) * ph;
+
+  let nextShapeId = 1;
+  let shapesXml = "";
+
+  // Title shape
+  shapesXml += buildTextShapeXml(nextShapeId++, "Cascade Stage Budget Analysis", W_px / 2, 25, 450, 30, 18, "#000000", true, "middle", dpi, toInX, toInY);
+
+  // Plot Area Border
+  const plotRectPts = [
+    { x: 0, y: toInLen(ph) },
+    { x: toInLen(pw), y: toInLen(ph) },
+    { x: toInLen(pw), y: 0 },
+    { x: 0, y: 0 }
+  ];
+  const plotGeom = makeGeometrySection(plotRectPts, 0, true, true);
+  shapesXml += buildShapeXml(nextShapeId++, "Plot Area", toInX(margin.left + pw / 2), toInY(margin.top + ph / 2), toInLen(pw), toInLen(ph), plotGeom, { stroke: true, strokeColor: "#334155", lineWidth: 1.5, fill: false });
+
+  // Horizontal Grid Lines & Y-axis labels (6 divisions)
+  const numGridTicks = 6;
+  for (let k = 0; k <= numGridTicks; k++) {
+    const frac = k / numGridTicks;
+    const y = margin.top + frac * ph;
+    const valL = yLeftMax - frac * (yLeftMax - yLeftMin);
+    const valR = yRightMax - frac * (yRightMax - yRightMin);
+
+    // Horizontal line
+    const linePts = [{ x: 0, y: 0 }, { x: toInLen(pw), y: 0 }];
+    const lineGeom = makeGeometrySection(linePts, 0, true, false);
+    shapesXml += buildShapeXml(nextShapeId++, "Gridline", toInX(margin.left + pw / 2), toInY(y), toInLen(pw), 0.01, lineGeom, { stroke: true, strokeColor: "#e2e8f0", lineWidth: 1, linePattern: 2, fill: false });
+
+    // Left tick text
+    shapesXml += buildTextShapeXml(nextShapeId++, valL.toFixed(0), margin.left - 26, y, 40, 16, 11, "#000000", true, "end", dpi, toInX, toInY);
+
+    // Right tick text
+    shapesXml += buildTextShapeXml(nextShapeId++, valR.toFixed(1), margin.left + pw + 26, y, 40, 16, 11, "#000000", true, "start", dpi, toInX, toInY);
+  }
+
+  // Axis Titles
+  shapesXml += buildTextShapeXml(nextShapeId++, "Power & Gain (dB / dBm)", margin.left - 55, margin.top + ph / 2, 220, 20, 12, "#000000", true, "middle", dpi, toInX, toInY, -Math.PI / 2);
+  shapesXml += buildTextShapeXml(nextShapeId++, "Noise Figure (dB)", margin.left + pw + 55, margin.top + ph / 2, 220, 20, 12, "#000000", true, "middle", dpi, toInX, toInY, Math.PI / 2);
+
+  // Vertical Stage Lines and Stage Labels
+  rows.forEach((r, idx) => {
+    const x = getX(idx);
+    const vLinePts = [{ x: 0, y: toInLen(ph) }, { x: 0, y: 0 }];
+    const vGeom = makeGeometrySection(vLinePts, 0, true, false);
+    shapesXml += buildShapeXml(nextShapeId++, `Stage Line ${idx+1}`, toInX(x), toInY(margin.top + ph / 2), 0.01, toInLen(ph), vGeom, { stroke: true, strokeColor: "#e2e8f0", lineWidth: 1, linePattern: 1, fill: false });
+
+    const stageName = r.name || `Stage ${idx + 1}`;
+    shapesXml += buildTextShapeXml(nextShapeId++, stageName, x, margin.top + ph + 20, 110, 18, 11, "#000000", true, "middle", dpi, toInX, toInY);
+    shapesXml += buildTextShapeXml(nextShapeId++, r.type, x, margin.top + ph + 34, 110, 16, 9.5, "#475569", false, "middle", dpi, toInX, toInY);
+  });
+
+  // Plot Traces (Polylines) & Stage Points
+  for (const mKey of budgetPlotMetrics) {
+    const m = BUDGET_METRICS[mKey];
+    if (!m) continue;
+
+    const isRight = (m.axis === "right");
+    const getY = isRight ? getYRight : getYLeft;
+
+    const pts = [];
+    rows.forEach((r, idx) => {
+      const v = m.getVal(r, bwHz);
+      if (v !== null && v !== undefined && isFinite(v)) {
+        pts.push({ x: getX(idx), y: getY(v), v });
+      }
+    });
+
+    if (pts.length >= 2) {
+      let minX = pts[0].x, maxX = pts[0].x, minY = pts[0].y, maxY = pts[0].y;
+      pts.forEach(p => {
+        if (p.x < minX) minX = p.x; if (p.x > maxX) maxX = p.x;
+        if (p.y < minY) minY = p.y; if (p.y > maxY) maxY = p.y;
+      });
+      const tW = Math.max(1, maxX - minX), tH = Math.max(1, maxY - minY);
+      const localPts = pts.map(p => ({
+        x: toInLen(p.x - minX),
+        y: toInLen(maxY - p.y)
+      }));
+      const traceGeom = makeGeometrySection(localPts, 0, true, false);
+      const traceStyle = { stroke: true, strokeColor: m.color, lineWidth: 2.5, linePattern: 1, fill: false };
+      shapesXml += buildShapeXml(nextShapeId++, `Trace ${m.label}`, toInX((minX + maxX) / 2), toInY((minY + maxY) / 2), toInLen(tW), toInLen(tH), traceGeom, traceStyle);
+
+      // Points
+      pts.forEach(p => {
+        const d = 8;
+        const ptGeom = `<Section N="Geometry" IX="0"><Cell N="NoFill" V="0"/><Cell N="NoLine" V="0"/><Row T="Ellipse" IX="1"><Cell N="X" V="${toInLen(d/2)}"/><Cell N="Y" V="${toInLen(d/2)}"/><Cell N="A" V="${toInLen(d)}"/><Cell N="B" V="${toInLen(d/2)}"/><Cell N="C" V="${toInLen(d/2)}"/><Cell N="D" V="${toInLen(d)}"/></Row></Section>`;
+        const ptStyle = { stroke: true, strokeColor: "#ffffff", lineWidth: 1.2, fill: true, fillColor: m.color };
+        shapesXml += buildShapeXml(nextShapeId++, "Marker", toInX(p.x), toInY(p.y), toInLen(d), toInLen(d), ptGeom, ptStyle);
+      });
+    }
+  }
+
+  // Legend
+  let legX = margin.left + 20;
+  for (const mKey of budgetPlotMetrics) {
+    const m = BUDGET_METRICS[mKey];
+    if (!m) continue;
+    const d = 7;
+    const ptGeom = `<Section N="Geometry" IX="0"><Cell N="NoFill" V="0"/><Cell N="NoLine" V="0"/><Row T="Ellipse" IX="1"><Cell N="X" V="${toInLen(d/2)}"/><Cell N="Y" V="${toInLen(d/2)}"/><Cell N="A" V="${toInLen(d)}"/><Cell N="B" V="${toInLen(d/2)}"/><Cell N="C" V="${toInLen(d/2)}"/><Cell N="D" V="${toInLen(d)}"/></Row></Section>`;
+    shapesXml += buildShapeXml(nextShapeId++, "Legend Dot", toInX(legX), toInY(H_px - 20), toInLen(d), toInLen(d), ptGeom, { stroke: false, fill: true, fillColor: m.color });
+    shapesXml += buildTextShapeXml(nextShapeId++, `${m.label} (${m.unit || (m.axis === 'right' ? 'dB' : 'dB/dBm')})`, legX + 50, H_px - 20, 90, 16, 10.5, "#000000", true, "start", dpi, toInX, toInY);
+    legX += 115;
+  }
+
+  const page1Xml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n`
+    + `<PageContents xmlns="http://schemas.microsoft.com/office/visio/2012/main">\n`
+    + `  <Shapes>\n${shapesXml}  </Shapes>\n`
+    + `</PageContents>`;
+
+  const entries = [
+    { name: "[Content_Types].xml", data: getVsdxContentTypesXml() },
+    { name: "_rels/.rels", data: getVsdxRootRelsXml() },
+    { name: "docProps/app.xml", data: getVsdxAppXml() },
+    { name: "docProps/core.xml", data: getVsdxCoreXml() },
+    { name: "visio/document.xml", data: getVsdxDocXml() },
+    { name: "visio/_rels/document.xml.rels", data: getVsdxDocRelsXml() },
+    { name: "visio/pages/pages.xml", data: getVsdxPagesXml(pageWidthIn, pageHeightIn) },
+    { name: "visio/pages/_rels/pages.xml.rels", data: getVsdxPagesRelsXml() },
+    { name: "visio/pages/page1.xml", data: page1Xml },
+    { name: "visio/masters/masters.xml", data: getVsdxMastersXml() },
+    { name: "visio/windows.xml", data: getVsdxWindowsXml() }
+  ];
+
+  if (typeof validateVsdxPackage === "function") validateVsdxPackage(entries);
+  const res = zipStore(entries);
+  const blob = (typeof Blob !== "undefined" && res instanceof Blob) ? res : new Blob([res], { type: "application/vnd.ms-visio.drawing" });
+  downloadFile(blob, "cascade_budget_plot.vsdx", "application/vnd.ms-visio.drawing");
+  hint("Exported Stage Plot as native Microsoft Visio (.vsdx) drawing.");
+}
+
+/* =====================================================================
+ * Cascade Stage Table View Renderer
+ * ===================================================================== */
+function renderBudgetTable(rows, bwHz, bwMHz, P, body) {
   const nfFinal = rows[rows.length - 1].cumNF;
   const sens = noiseFloor(nfFinal, bwHz);
+  const last = rows[rows.length - 1];
+  const lastNfloor = (last.nfloor !== undefined && isFinite(last.nfloor))
+    ? last.nfloor
+    : (-173.98 + 10 * Math.log10(Math.max(1, bwHz)) + (last.cumNF || 0) + (last.cumG || 0));
+  const lastP1Cum = (last.cumP1db !== undefined && isFinite(last.cumP1db)) ? last.cumP1db : last.p1db;
+
   let h = `<table class="bg"><thead><tr>
     <th>Stage</th><th>Type</th><th>Gain</th><th>Level</th>
-    <th>NF stage</th><th>NF cum.</th><th>OIP3 cum.</th><th>P1dB</th><th>Headroom</th>
+    <th>NF stage</th><th>NF cum.</th><th>Noise Floor</th><th>OIP3 cum.</th><th>P1dB stage</th><th>P1dB cum.</th><th>Headroom</th>
   </tr></thead><tbody>`;
 
   rows.forEach(r => {
     const isHot = r.over;
+    const p1CumVal = (r.cumP1db !== undefined && isFinite(r.cumP1db)) ? r.cumP1db : r.p1db;
+    const nfl = (r.nfloor !== undefined && isFinite(r.nfloor))
+      ? r.nfloor
+      : (-173.98 + 10 * Math.log10(Math.max(1, bwHz)) + (r.cumNF || 0) + (r.cumG || 0));
     h += `<tr class="${isHot ? "hot" : ""}" data-bid="${r.id}">
       <td>${esc(r.name)}</td>
       <td style="color:var(--ink-dim)">${esc(r.type)}</td>
@@ -7657,19 +8872,22 @@ function renderBudget() {
       <td style="font-weight:600;color:var(--accent)">${dbm(r.lvl)}</td>
       <td>${r.nfStage ? fmt(r.nfStage) + " dB" : "\u2014"}</td>
       <td>${r.cumNF !== undefined ? fmt(r.cumNF) + " dB" : "\u2014"}</td>
-      <td>${r.oip3 !== undefined ? fmt(r.oip3) + " dBm" : "\u2014"}</td>
-      <td>${r.p1db !== undefined ? fmt(r.p1db) + " dBm" : "\u2014"}</td>
+      <td style="color:#a855f7;font-weight:500">${nfl !== undefined && isFinite(nfl) ? fmt(nfl) + " dBm" : "\u2014"}</td>
+      <td>${(r.oip3 !== undefined && isFinite(r.oip3)) ? fmt(r.oip3) + " dBm" : "\u2014"}</td>
+      <td>${(r.p1dbStage !== undefined && isFinite(r.p1dbStage)) ? fmt(r.p1dbStage) + " dBm" : "\u2014"}</td>
+      <td style="font-weight:600;color:#ec4899">${(p1CumVal !== undefined && isFinite(p1CumVal)) ? fmt(p1CumVal) + " dBm" : "\u2014"}</td>
       <td style="color:${r.head !== undefined && r.head < 3 ? "#f0a0a0" : "inherit"}">${r.head === undefined ? "\u2014" : fmt(r.head) + " dB"}</td>
     </tr>`;
   });
   h += `</tbody></table>`;
 
-  const last = rows[rows.length - 1];
   h += `<div class="bg-sum">
     <div><span>Total gain:</span><b>${gsign(last.cumG)}</b></div>
     <div><span>Cascade NF:</span><b>${last.cumNF !== undefined ? fmt(last.cumNF) + " dB" : "\u2014"}</b></div>
+    <div><span>Noise Floor:</span><b style="color:#a855f7">${fmt(lastNfloor)} dBm</b></div>
     <div><span>Sens. (${fmt(bwMHz)} MHz):</span><b>${fmt(sens)} dBm</b></div>
-    <div><span>Cascade OIP3:</span><b>${last.oip3 !== undefined ? fmt(last.oip3) + " dBm" : "\u2014"}</b></div>
+    <div><span>Cascade OIP3:</span><b>${(last.oip3 !== undefined && isFinite(last.oip3)) ? fmt(last.oip3) + " dBm" : "\u2014"}</b></div>
+    <div><span>Cascade P1dB:</span><b>${(lastP1Cum !== undefined && isFinite(lastP1Cum)) ? fmt(lastP1Cum) + " dBm" : "\u2014"}</b></div>
   </div>`;
   h += warnHtml(P);
 
@@ -7695,21 +8913,143 @@ function warnHtml(P) {
   return h + `</div>`;
 }
 
+/* =====================================================================
+ * Multi-Sheet Formatted Excel (.xlsx) Export
+ * ===================================================================== */
+function exportBudgetXlsx() {
+  const sel = $("bgStart");
+  const startId = sel ? sel.value : null;
+  const { rows } = buildBudget(startId);
+  if (!rows || !rows.length) { hint("No budget data to export."); return; }
+
+  const bwHz = (settings.bandwidthHz && settings.bandwidthHz > 0) ? settings.bandwidthHz : 1e6;
+  const bwMHz = bwHz / 1e6;
+  const startBlock = allBlocks().find(b => b.id === startId);
+  const startName = startBlock ? (startBlock.params.label || COMP[startBlock.type].name) : "Source";
+
+  // --- Sheet 1: Cascade Budget Data ---
+  const sheet1Headers = [
+    "Stage #", "Component Name", "Type", "Gain (dB)", "Cum. Gain (dB)",
+    "Level (dBm)", "Stage NF (dB)", "Cum. NF (dB)", "Noise Floor (dBm)",
+    "OIP3 cum. (dBm)", "Stage P1dB (dBm)", "Cascaded P1dB (dBm)", "Headroom (dB)", "Status"
+  ];
+  const sheet1Widths = [10, 22, 16, 12, 14, 14, 14, 14, 18, 16, 16, 18, 14, 16];
+  const sheet1Rows = [sheet1Headers];
+
+  rows.forEach((r, idx) => {
+    const nfCum = r.cumNF || 0;
+    const nFloor = (r.nfloor !== undefined && isFinite(r.nfloor))
+      ? r.nfloor
+      : (-173.98 + 10 * Math.log10(Math.max(1, bwHz)) + nfCum + (r.cumG || 0));
+    const status = r.over ? "OVERDRIVEN" : (r.head !== undefined && r.head < 3 ? "LOW HEADROOM" : "NORMAL");
+    const p1Cum = (r.cumP1db !== undefined && isFinite(r.cumP1db)) ? r.cumP1db : r.p1db;
+
+    sheet1Rows.push([
+      idx + 1,
+      r.name || `Stage ${idx + 1}`,
+      r.type || "",
+      r.gain !== undefined ? parseFloat(r.gain.toFixed(2)) : "",
+      r.cumG !== undefined ? parseFloat(r.cumG.toFixed(2)) : "",
+      r.lvl !== undefined ? parseFloat(r.lvl.toFixed(2)) : "",
+      r.nfStage !== undefined ? parseFloat(r.nfStage.toFixed(2)) : "",
+      r.cumNF !== undefined ? parseFloat(r.cumNF.toFixed(2)) : "",
+      parseFloat(nFloor.toFixed(2)),
+      (r.oip3 !== undefined && isFinite(r.oip3)) ? parseFloat(r.oip3.toFixed(2)) : "",
+      (r.p1dbStage !== undefined && isFinite(r.p1dbStage)) ? parseFloat(r.p1dbStage.toFixed(2)) : "",
+      (p1Cum !== undefined && isFinite(p1Cum)) ? parseFloat(p1Cum.toFixed(2)) : "",
+      r.head !== undefined ? parseFloat(r.head.toFixed(2)) : "",
+      status
+    ]);
+  });
+
+  // Summary Row
+  const last = rows[rows.length - 1];
+  const lastNf = last.cumNF || 0;
+  const sens = noiseFloor(lastNf, bwHz);
+  const lastNfloor = (last.nfloor !== undefined && isFinite(last.nfloor))
+    ? last.nfloor
+    : (-173.98 + 10 * Math.log10(Math.max(1, bwHz)) + lastNf + (last.cumG || 0));
+  const lastP1Cum = (last.cumP1db !== undefined && isFinite(last.cumP1db)) ? last.cumP1db : last.p1db;
+  sheet1Rows.push([]);
+  sheet1Rows.push([
+    "CASCADE SUMMARY", "", "",
+    "", parseFloat(last.cumG.toFixed(2)),
+    parseFloat(last.lvl.toFixed(2)), "",
+    parseFloat(lastNf.toFixed(2)),
+    parseFloat(lastNfloor.toFixed(2)),
+    (last.oip3 !== undefined && isFinite(last.oip3)) ? parseFloat(last.oip3.toFixed(2)) : "",
+    "",
+    (lastP1Cum !== undefined && isFinite(lastP1Cum)) ? parseFloat(lastP1Cum.toFixed(2)) : "",
+    "", "COMPLETE"
+  ]);
+
+  // --- Sheet 2: Plot Settings & System Configuration ---
+  const sheet2Headers = ["Configuration Parameter", "Value", "Unit / Notes"];
+  const sheet2Widths = [28, 26, 32];
+  const activeMetricsStr = Array.from(budgetPlotMetrics).map(k => (BUDGET_METRICS[k] ? BUDGET_METRICS[k].label : k)).join(", ");
+
+  const sheet2Rows = [
+    sheet2Headers,
+    ["Signal Source", startName, "Chain origin"],
+    ["Analysis Bandwidth", bwHz, "Hz"],
+    ["Analysis Bandwidth (MHz)", bwMHz, "MHz"],
+    ["Thermal Noise Reference", -173.98, "dBm/Hz (k*T at 290 K)"],
+    ["Output Noise Floor", parseFloat(lastNfloor.toFixed(2)), "dBm at chain output"],
+    ["System Sensitivity (MDS)", parseFloat(sens.toFixed(2)), `dBm at ${bwMHz.toFixed(3)} MHz BW`],
+    ["Total Cascaded Gain", parseFloat(last.cumG.toFixed(2)), "dB"],
+    ["Total Cascaded NF", parseFloat(lastNf.toFixed(2)), "dB"],
+    ["Total Cascaded OIP3", (last.oip3 !== undefined && isFinite(last.oip3)) ? parseFloat(last.oip3.toFixed(2)) : "", "dBm"],
+    ["Total Cascaded P1dB", (lastP1Cum !== undefined && isFinite(lastP1Cum)) ? parseFloat(lastP1Cum.toFixed(2)) : "", "dBm"],
+    ["Active Plot Traces", activeMetricsStr, "Rendered on Stage Plot"],
+    ["Left Y-Axis Scaling", budgetCustomScaling.leftAuto ? "Auto" : `Custom (${budgetCustomScaling.leftMin} to ${budgetCustomScaling.leftMax})`, "dB / dBm"],
+    ["Right Y-Axis (NF) Scaling", budgetCustomScaling.rightAuto ? "Auto" : `Custom (${budgetCustomScaling.rightMin} to ${budgetCustomScaling.rightMax})`, "dB"],
+    ["Export Date", new Date().toISOString(), "ISO 8601 UTC"]
+  ];
+
+  if (typeof xlsxBlob === "function") {
+    const blob = xlsxBlob([
+      { name: "Cascade Budget", rows: sheet1Rows, widths: sheet1Widths },
+      { name: "Plot Configuration", rows: sheet2Rows, widths: sheet2Widths }
+    ]);
+    downloadFile(blob, "cascade-budget-analysis.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+  } else {
+    exportBudgetCsv();
+  }
+}
+
 function exportBudgetCsv() {
   const sel = $("bgStart");
   const startId = sel ? sel.value : null;
   const { rows } = buildBudget(startId);
   if (!rows.length) { hint("No budget to export."); return; }
-  let csv = "Stage,Type,Gain_dB,Level_dBm,NF_stage_dB,NF_cum_dB,OIP3_cum_dBm,P1dB_dBm,Headroom_dB\n";
+  const bwHz = (typeof settings !== "undefined" && settings.bandwidthHz && settings.bandwidthHz > 0) ? settings.bandwidthHz : 1e6;
+  let csv = "Stage,Type,Gain_dB,Level_dBm,NF_stage_dB,NF_cum_dB,Noise_Floor_dBm,OIP3_cum_dBm,P1dB_stage_dBm,P1dB_cum_dBm,Headroom_dB\n";
   for (const r of rows) {
     const q = s => `"${String(s || "").replace(/"/g, '""')}"`;
-    csv += [q(r.name), q(r.type), r.gain ?? "", r.lvl ?? "", r.nfStage ?? "", r.cumNF ?? "", r.oip3 ?? "", r.p1db ?? "", r.head ?? ""].join(",") + "\n";
+    const p1Cum = (r.cumP1db !== undefined && isFinite(r.cumP1db)) ? r.cumP1db : r.p1db;
+    const nFloor = (r.nfloor !== undefined && isFinite(r.nfloor))
+      ? r.nfloor
+      : (-173.98 + 10 * Math.log10(Math.max(1, bwHz)) + (r.cumNF || 0) + (r.cumG || 0));
+    csv += [q(r.name), q(r.type), r.gain ?? "", r.lvl ?? "", r.nfStage ?? "", r.cumNF ?? "", nFloor !== undefined ? nFloor.toFixed(2) : "", (r.oip3 !== undefined && isFinite(r.oip3)) ? r.oip3 : "", (r.p1dbStage !== undefined && isFinite(r.p1dbStage)) ? r.p1dbStage : "", (p1Cum !== undefined && isFinite(p1Cum)) ? p1Cum : "", r.head ?? ""].join(",") + "\n";
   }
-  const blob = new Blob([csv], { type: "text/csv" }), url = URL.createObjectURL(blob), a = document.createElement("a");
-  a.href = url; a.download = "cascade-budget.csv"; a.click(); URL.revokeObjectURL(url);
-  hint("Exported cascade-budget.csv");
+  downloadFile(csv, "cascade-budget.csv", "text/csv");
 }
 
+if (typeof module !== "undefined" && module.exports) {
+  module.exports = {
+    budgetOpen,
+    toggleBudget,
+    toggleBudgetExpand,
+    renderBudget,
+    generateBudgetPlotSvg,
+    exportBudgetPlotSvg,
+    exportBudgetPlotPng,
+    exportBudgetPlotVsdx,
+    exportBudgetXlsx,
+    exportBudgetCsv,
+    BUDGET_METRICS
+  };
+}
 
 
 /* --- File: js/ui/sparams/graph-chart.js --- */
@@ -7732,8 +9072,8 @@ function getTraceColor(key, idx = 0) {
   return TRACE_COLORS[key] || FALLBACK_COLORS[idx % FALLBACK_COLORS.length];
 }
 
-/* Render SVG Plotter for All Invoked Traces with Dynamic Y-Axis Auto-Scaling */
-function renderSvgPlot(res) {
+/* Render SVG Plotter for All Invoked Traces with Dynamic Y-Axis Auto-Scaling and Multi-Metric Support */
+function renderSvgPlot(res, metric = "mag", yScaleChoice = "auto") {
   const container = $("spChartContainer");
   if (!container || !res || !res.freqs || !res.matrix) return;
 
@@ -7748,170 +9088,582 @@ function renderSvgPlot(res) {
 
   const W = container.clientWidth || 900;
   const H = 360;
-  const margin = { top: 20, right: 30, bottom: 35, left: 55 };
-  const pw = W - margin.left - margin.right;
-  const ph = H - margin.top - margin.bottom;
+  const margin = { top: 24, right: 36, bottom: 40, left: 60 };
+  const pw = Math.max(100, W - margin.left - margin.right);
+  const ph = Math.max(100, H - margin.top - margin.bottom);
 
-  // Compute dynamic Y-axis auto-scaling from active data (> -110 dB)
+  // Check logarithmic frequency sweep
+  const isLogSweep = (res.band && String(res.band.sweepType).toLowerCase() === "log") ||
+    (N > 4 && (freqs[N - 1] / freqs[0] > 5) && (Math.abs((freqs[2] - freqs[1]) - (freqs[1] - freqs[0])) > (freqs[1] - freqs[0]) * 0.1));
+  const logMin = isLogSweep ? Math.log10(Math.max(1, fMin)) : 0;
+  const logMax = isLogSweep ? Math.log10(Math.max(1, fMax)) : 1;
+
+  const getX = f => {
+    if (isLogSweep) {
+      const lf = Math.log10(Math.max(1, f));
+      return margin.left + ((lf - logMin) / (logMax - logMin || 1)) * pw;
+    }
+    return margin.left + ((f - fMin) / (fMax - fMin || 1)) * pw;
+  };
+
+  const getFFromX = x => {
+    const ratio = Math.max(0, Math.min(1, (x - margin.left) / pw));
+    if (isLogSweep) {
+      return Math.pow(10, logMin + ratio * (logMax - logMin));
+    }
+    return fMin + ratio * (fMax - fMin);
+  };
+
+  // Determine active metric properties
+  let yUnit = "dB";
+  let yAxisLabel = "Magnitude (dB)";
+  let isStability = metric === "k";
+
+  if (metric === "phase") {
+    yUnit = "°";
+    yAxisLabel = "Phase (deg)";
+  } else if (metric === "delay") {
+    yUnit = "ns";
+    yAxisLabel = "Group Delay (ns)";
+  } else if (metric === "k") {
+    yUnit = "";
+    yAxisLabel = "Stability Factor (K)";
+  }
+
+  // Extract arrays to plot
+  const tracesToPlot = [];
+  if (isStability) {
+    const kArr = res.k_factor || (res.paths && res.paths[0] ? res.paths[0].k_factor : null);
+    if (kArr) {
+      tracesToPlot.push({ key: "K-Factor", arr: kArr, color: "#10b981" });
+    }
+  } else {
+    let tIdx = 0;
+    invokedTraces.forEach(sKey => {
+      let arr = null;
+      if (metric === "phase") {
+        arr = res.matrix_phase && res.matrix_phase[sKey];
+      } else if (metric === "delay") {
+        arr = res.matrix_gd && res.matrix_gd[sKey];
+        if (!arr && res.paths && res.paths[0]) arr = res.paths[0].group_delay_ns;
+      } else {
+        arr = res.matrix[sKey];
+      }
+      if (arr) {
+        tracesToPlot.push({ key: sKey, arr, color: getTraceColor(sKey, tIdx++) });
+      }
+    });
+  }
+
+  // Compute dynamic Y-axis range
   let dMin = Infinity, dMax = -Infinity;
-  invokedTraces.forEach(sKey => {
-    const arr = res.matrix[sKey];
-    if (arr) {
-      for (let k = 0; k < N; k++) {
-        const v = arr[k];
-        if (isFinite(v) && v > -110) {
-          if (v < dMin) dMin = v;
-          if (v > dMax) dMax = v;
-        }
+  tracesToPlot.forEach(t => {
+    for (let k = 0; k < N; k++) {
+      const v = t.arr[k];
+      if (isFinite(v)) {
+        if (v < dMin) dMin = v;
+        if (v > dMax) dMax = v;
       }
     }
   });
 
   let yMin, yMax;
-  if (!isFinite(dMin) || !isFinite(dMax)) {
-    yMin = -60; yMax = 30;
+  if (yScaleChoice === "pos20_to_neg60" && metric === "mag") {
+    yMin = -60; yMax = 20;
+  } else if (yScaleChoice === "0_to_neg100" && metric === "mag") {
+    yMin = -100; yMax = 0;
+  } else if (yScaleChoice === "0_to_neg40" && metric === "mag") {
+    yMin = -40; yMax = 0;
+  } else if (metric === "phase") {
+    if (!isFinite(dMin) || !isFinite(dMax)) {
+      yMin = -180; yMax = 180;
+    } else {
+      yMin = Math.max(-360, Math.floor(dMin / 45) * 45);
+      yMax = Math.min(360, Math.ceil(dMax / 45) * 45);
+      if (yMin >= yMax) { yMin = -180; yMax = 180; }
+    }
+  } else if (metric === "k") {
+    yMin = Math.min(0, Math.floor(dMin * 2) / 2);
+    yMax = Math.max(3, Math.ceil(dMax * 1.2));
+  } else if (metric === "delay") {
+    if (!isFinite(dMin) || !isFinite(dMax)) {
+      yMin = 0; yMax = 10;
+    } else {
+      const span = Math.max(0.5, dMax - dMin);
+      yMin = Math.floor((dMin - span * 0.15) * 10) / 10;
+      yMax = Math.ceil((dMax + span * 0.15) * 10) / 10;
+      if (yMin >= yMax) { yMin = 0; yMax = 10; }
+    }
   } else {
-    const span = Math.max(1, dMax - dMin);
-    yMin = Math.floor((dMin - Math.max(1, span * 0.2)) / 5) * 5;
-    yMax = Math.ceil((dMax + Math.max(1, span * 0.2)) / 5) * 5;
-    if (yMin >= yMax) { yMin = -60; yMax = 30; }
-  }
-
-  const getX = f => margin.left + ((f - fMin) / (fMax - fMin || 1)) * pw;
-  const getY = val => margin.top + (1 - (val - yMin) / (yMax - yMin || 1)) * ph;
-
-  let svgHtml = `<svg id="spSvgPlot" width="100%" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="user-select:none; font-family:var(--sans); background:var(--canvas); border-radius:6px">`;
-
-  // Grid Lines & Axis Labels
-  svgHtml += `<rect x="${margin.left}" y="${margin.top}" width="${pw}" height="${ph}" fill="var(--canvas)" stroke="var(--line)"/>`;
-
-  const yStep = Math.max(2, Math.ceil((yMax - yMin) / 6 / 2) * 2);
-  for (let db = yMin; db <= yMax; db += yStep) {
-    const y = getY(db);
-    if (y >= margin.top && y <= H - margin.bottom) {
-      svgHtml += `<line x1="${margin.left}" y1="${y}" x2="${W - margin.right}" y2="${y}" stroke="${db===0?'var(--ink-dim)':'var(--grid-maj)'}" stroke-width="${db===0?1.5:1}"/>`;
-      svgHtml += `<text x="${margin.left - 8}" y="${y + 4}" font-size="10" font-family="var(--mono)" fill="var(--ink-dim)" text-anchor="end">${db} dB</text>`;
+    // Standard magnitude dB auto-scale without artificial -110 dB cutoff
+    if (!isFinite(dMin) || !isFinite(dMax)) {
+      yMin = -60; yMax = 30;
+    } else {
+      const span = Math.max(5, dMax - dMin);
+      yMin = Math.floor((dMin - span * 0.12) / 5) * 5;
+      yMax = Math.ceil((dMax + span * 0.12) / 5) * 5;
+      if (yMin >= yMax) { yMin = -60; yMax = 30; }
     }
   }
 
-  for (let i = 0; i <= 5; i++) {
-    const fVal = fMin + (i / 5) * (fMax - fMin);
-    const x = getX(fVal);
-    svgHtml += `<line x1="${x}" y1="${margin.top}" x2="${x}" y2="${H - margin.bottom}" stroke="var(--grid-maj)" stroke-width="1"/>`;
-    svgHtml += `<text x="${x}" y="${H - margin.bottom + 18}" font-size="10" font-family="var(--mono)" fill="var(--ink-dim)" text-anchor="middle">${(fVal / fDiv).toFixed(2)} ${fUnit}</text>`;
+  const getY = val => margin.top + (1 - (val - yMin) / (yMax - yMin || 1)) * ph;
+
+  let svgHtml = `<svg id="spSvgPlot" width="100%" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="user-select:none; font-family:var(--sans); background:var(--canvas); border-radius:6px; overflow:visible">`;
+
+  // Plot Area Background
+  svgHtml += `<rect x="${margin.left}" y="${margin.top}" width="${pw}" height="${ph}" fill="var(--canvas)" stroke="var(--line)"/>`;
+
+  // Y-Axis Grid Lines & Tick Labels
+  const yDivisions = 6;
+  const yRawStep = (yMax - yMin) / yDivisions;
+  const yStep = Math.max(0.1, yRawStep >= 5 ? Math.round(yRawStep / 5) * 5 : parseFloat(yRawStep.toPrecision(2)));
+
+  for (let val = yMin; val <= yMax + yStep * 0.1; val += yStep) {
+    const y = getY(val);
+    if (y >= margin.top - 1 && y <= H - margin.bottom + 1) {
+      const isZero = Math.abs(val) < 1e-4;
+      svgHtml += `<line x1="${margin.left}" y1="${y}" x2="${W - margin.right}" y2="${y}" stroke="${isZero ? 'var(--ink-dim)' : 'var(--grid-maj)'}" stroke-width="${isZero ? 1.5 : 1}"/>`;
+      svgHtml += `<text x="${margin.left - 8}" y="${y + 4}" font-size="10" font-family="var(--mono)" fill="var(--ink-dim)" text-anchor="end">${val.toFixed(metric === "delay" || metric === "k" ? 1 : 0)} ${yUnit}</text>`;
+    }
   }
 
+  // Stability K = 1.0 Threshold Reference Line
+  if (isStability) {
+    const yK1 = getY(1.0);
+    if (yK1 >= margin.top && yK1 <= H - margin.bottom) {
+      svgHtml += `<line x1="${margin.left}" y1="${yK1}" x2="${W - margin.right}" y2="${yK1}" stroke="#ef4444" stroke-width="2" stroke-dasharray="5 3"/>`;
+      svgHtml += `<text x="${W - margin.right - 8}" y="${yK1 - 5}" font-size="10.5" font-family="var(--mono)" font-weight="bold" fill="#ef4444" text-anchor="end">K = 1.0 (Stability Threshold)</text>`;
+    }
+  }
+
+  // X-Axis Grid Lines & Frequency Tick Labels
+  if (isLogSweep) {
+    const startDecade = Math.floor(logMin);
+    const stopDecade = Math.ceil(logMax);
+    for (let dec = startDecade; dec <= stopDecade; dec++) {
+      const fDec = Math.pow(10, dec);
+      if (fDec >= fMin * 0.99 && fDec <= fMax * 1.01) {
+        const x = getX(fDec);
+        svgHtml += `<line x1="${x}" y1="${margin.top}" x2="${x}" y2="${H - margin.bottom}" stroke="var(--ink-dim)" stroke-width="1.2"/>`;
+        const lbl = fDec >= 1e9 ? `${(fDec/1e9).toFixed(dec%1===0?0:1)} GHz` : fDec >= 1e6 ? `${(fDec/1e6).toFixed(dec%1===0?0:1)} MHz` : `${(fDec/1e3).toFixed(0)} kHz`;
+        svgHtml += `<text x="${x}" y="${H - margin.bottom + 18}" font-size="10" font-family="var(--mono)" fill="var(--ink-dim)" text-anchor="middle">${lbl}</text>`;
+      }
+      // Minor sub-decade ticks
+      for (const m of [2, 3, 5, 7]) {
+        const fSub = m * fDec;
+        if (fSub > fMin && fSub < fMax) {
+          const xSub = getX(fSub);
+          svgHtml += `<line x1="${xSub}" y1="${margin.top}" x2="${xSub}" y2="${H - margin.bottom}" stroke="var(--grid-maj)" stroke-width="0.8" stroke-dasharray="2 2"/>`;
+        }
+      }
+    }
+  } else {
+    for (let i = 0; i <= 5; i++) {
+      const fVal = fMin + (i / 5) * (fMax - fMin);
+      const x = getX(fVal);
+      svgHtml += `<line x1="${x}" y1="${margin.top}" x2="${x}" y2="${H - margin.bottom}" stroke="var(--grid-maj)" stroke-width="1"/>`;
+      svgHtml += `<text x="${x}" y="${H - margin.bottom + 18}" font-size="10" font-family="var(--mono)" fill="var(--ink-dim)" text-anchor="middle">${(fVal / fDiv).toFixed(2)} ${fUnit}</text>`;
+    }
+  }
+
+  // Path generator with safety clamping
   const makePath = arr => {
     let d = "";
     for (let k = 0; k < N; k++) {
       const x = getX(freqs[k]);
-      const y = Math.max(margin.top, Math.min(H - margin.bottom, getY(arr[k])));
+      const rawY = getY(arr[k]);
+      const y = Math.max(margin.top, Math.min(H - margin.bottom, rawY));
       d += (k === 0 ? "M" : "L") + `${x.toFixed(1)} ${y.toFixed(1)}`;
     }
     return d;
   };
 
   // Comparative Overlays for Benchmark Saved Tabs
-  if (showCompare && sparamsTabs.length > 1) {
+  if (showCompare && sparamsTabs.length > 1 && !isStability) {
     sparamsTabs.forEach((tb, idx) => {
       if (idx === activeTabIdx || !tb.res || !tb.res.matrix) return;
       invokedTraces.forEach(sKey => {
-        if (tb.res.matrix[sKey]) {
-          svgHtml += `<path d="${makePath(tb.res.matrix[sKey])}" fill="none" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="4 3" opacity="0.75"/>`;
+        let cmpArr = metric === "phase" ? (tb.res.matrix_phase && tb.res.matrix_phase[sKey]) :
+                     metric === "delay" ? (tb.res.matrix_gd && tb.res.matrix_gd[sKey]) :
+                     tb.res.matrix[sKey];
+        if (cmpArr) {
+          svgHtml += `<path d="${makePath(cmpArr)}" fill="none" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="4 3" opacity="0.6"/>`;
         }
       });
     });
   }
 
-  // Active Invoked Traces
-  let traceIdx = 0;
-  invokedTraces.forEach(sKey => {
-    if (res.matrix[sKey]) {
-      const col = getTraceColor(sKey, traceIdx++);
-      svgHtml += `<path d="${makePath(res.matrix[sKey])}" fill="none" stroke="${col}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>`;
-    }
+  // Draw Main Traces
+  tracesToPlot.forEach(t => {
+    svgHtml += `<path d="${makePath(t.arr)}" fill="none" stroke="${t.color}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>`;
   });
 
-  // Frequency Markers
+  // Frequency Markers & Readout Overlay Card
   if (linearMarkers.length) {
     if (linearMarkers[0].f === 0) linearMarkers[0].f = (fMin + fMax) / 2;
 
-    linearMarkers.forEach(m => {
+    const unitSuffix = (metric === "phase") ? "°" : (metric === "delay") ? " ns" : (metric === "k") ? "" : " dB";
+
+    const getValAt = (arr, targetF) => {
+      if (!arr || !arr.length) return null;
+      let idx = 0;
+      while (idx < freqs.length - 1 && freqs[idx + 1] < targetF) idx++;
+      if (idx < freqs.length - 1 && freqs[idx + 1] > freqs[idx]) {
+        const frac = (targetF - freqs[idx]) / (freqs[idx + 1] - freqs[idx]);
+        const v0 = arr[idx], v1 = arr[idx + 1];
+        if (isFinite(v0) && isFinite(v1)) return v0 + frac * (v1 - v0);
+      }
+      return isFinite(arr[idx]) ? arr[idx] : null;
+    };
+
+    // 1. Vertical Marker Line, Handle, and Trace Intersection Dots
+    linearMarkers.forEach((m, mIdx) => {
       const mx = getX(m.f);
-      svgHtml += `<line x1="${mx}" y1="${margin.top}" x2="${mx}" y2="${H - margin.bottom}" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="4 3"/>`;
-      svgHtml += `<polygon points="${mx-6},${margin.top} ${mx+6},${margin.top} ${mx},${margin.top+10}" fill="#f59e0b"/>`;
-      svgHtml += `<text x="${mx}" y="${margin.top - 4}" font-size="11" font-family="var(--mono)" font-weight="bold" fill="#f59e0b" text-anchor="middle">${m.id}</text>`;
+      svgHtml += `<g class="sp-mkr-handle" data-midx="${mIdx}" style="cursor:ew-resize">
+        <line x1="${mx}" y1="${margin.top}" x2="${mx}" y2="${H - margin.bottom}" stroke="#f59e0b" stroke-width="1.8" stroke-dasharray="4 3"/>
+        <polygon points="${mx-7},${margin.top} ${mx+7},${margin.top} ${mx},${margin.top+12}" fill="#f59e0b"/>
+        <rect x="${mx-12}" y="${margin.top-16}" width="24" height="24" fill="transparent"/>
+        <text x="${mx}" y="${margin.top - 5}" font-size="11" font-family="var(--mono)" font-weight="bold" fill="#f59e0b" text-anchor="middle">${m.id}</text>
+      </g>`;
+
+      // Intersection dots on active curves
+      tracesToPlot.forEach(t => {
+        const v = getValAt(t.arr, m.f);
+        if (v !== null && isFinite(v)) {
+          const my = Math.max(margin.top, Math.min(H - margin.bottom, getY(v)));
+          svgHtml += `<circle cx="${mx.toFixed(1)}" cy="${my.toFixed(1)}" r="4" fill="${t.color}" stroke="#ffffff" stroke-width="1.2" style="pointer-events:none"/>`;
+        }
+      });
     });
+
+    // 2. Marker Readout Box in Top-Right of Plot Area
+    const numTraces = tracesToPlot.length;
+    const multiRow = numTraces > 3;
+    const subRowsPerMarker = multiRow ? 2 : 1;
+    const rowH = 17;
+    const cardH = linearMarkers.length * (subRowsPerMarker * rowH) + 12;
+    const cardW = multiRow ? 360 : Math.min(pw - 20, Math.max(260, 110 + numTraces * 95));
+    const cardX = W - margin.right - cardW - 8;
+    const cardY = margin.top + 8;
+
+    let cardBody = `<rect class="sp-mkr-card-bg" x="${cardX}" y="${cardY}" width="${cardW}" height="${cardH}" rx="4" fill="var(--canvas)" fill-opacity="0.88" stroke="var(--line)" stroke-width="1"/>`;
+
+    let curY = cardY + 12;
+    linearMarkers.forEach((m, mIdx) => {
+      const fStr = (m.f / fDiv).toFixed(3) + " " + fUnit;
+      let startX = cardX + 8;
+
+      // Marker badge: amber rectangle with M1/M2/etc
+      cardBody += `<rect x="${startX}" y="${curY - 9}" width="22" height="13" rx="2" fill="#f59e0b"/>`;
+      cardBody += `<text class="sp-mkr-badge-text" x="${startX + 11}" y="${curY + 1}" font-size="9" font-family="var(--sans)" font-weight="bold" fill="#ffffff" text-anchor="middle">${m.id}</text>`;
+      startX += 26;
+
+      // Marker Frequency
+      cardBody += `<text x="${startX}" y="${curY + 1}" font-size="10" font-family="var(--mono)" font-weight="bold" fill="var(--ink)">${fStr}</text>`;
+      startX += (fStr.length * 6.5 + 10);
+
+      if (multiRow) {
+        // Subrow 1: first 2 traces
+        let tX = startX;
+        for (let i = 0; i < Math.min(2, numTraces); i++) {
+          const t = tracesToPlot[i];
+          const v = getValAt(t.arr, m.f);
+          const vStr = v !== null && isFinite(v) ? (v >= 0 && metric === "mag" ? "+" : "") + v.toFixed(2) + unitSuffix : "—";
+          cardBody += `<circle cx="${tX + 3}" cy="${curY - 3}" r="3" fill="${t.color}"/>`;
+          cardBody += `<text x="${tX + 9}" y="${curY + 1}" font-size="9.5" font-family="var(--mono)" fill="var(--ink)">${t.key}: <tspan font-weight="bold">${vStr}</tspan></text>`;
+          tX += 95;
+        }
+        // Subrow 2: remaining traces
+        curY += rowH;
+        let tX2 = cardX + 34;
+        for (let i = 2; i < numTraces; i++) {
+          const t = tracesToPlot[i];
+          const v = getValAt(t.arr, m.f);
+          const vStr = v !== null && isFinite(v) ? (v >= 0 && metric === "mag" ? "+" : "") + v.toFixed(2) + unitSuffix : "—";
+          cardBody += `<circle cx="${tX2 + 3}" cy="${curY - 3}" r="3" fill="${t.color}"/>`;
+          cardBody += `<text x="${tX2 + 9}" y="${curY + 1}" font-size="9.5" font-family="var(--mono)" fill="var(--ink)">${t.key}: <tspan font-weight="bold">${vStr}</tspan></text>`;
+          tX2 += 95;
+        }
+        curY += rowH;
+      } else {
+        // Single row per marker
+        let tX = startX;
+        tracesToPlot.forEach(t => {
+          const v = getValAt(t.arr, m.f);
+          const vStr = v !== null && isFinite(v) ? (v >= 0 && metric === "mag" ? "+" : "") + v.toFixed(2) + unitSuffix : "—";
+          cardBody += `<circle cx="${tX + 3}" cy="${curY - 3}" r="3" fill="${t.color}"/>`;
+          cardBody += `<text x="${tX + 9}" y="${curY + 1}" font-size="9.5" font-family="var(--mono)" fill="var(--ink)">${t.key}: <tspan font-weight="bold">${vStr}</tspan></text>`;
+          tX += 95;
+        });
+        curY += rowH;
+      }
+    });
+
+    svgHtml += `<g id="spMarkerReadoutG" style="pointer-events:none">${cardBody}</g>`;
   }
 
+  // Interactive Crosshair & Tooltip Overlay Elements
+  svgHtml += `<g id="spCrosshairG" style="display:none; pointer-events:none">
+    <line id="spCrosshairX" x1="0" y1="${margin.top}" x2="0" y2="${H - margin.bottom}" stroke="#38bdf8" stroke-width="1" stroke-dasharray="3 3"/>
+  </g>`;
+
   svgHtml += `</svg>`;
+
+  // Append Tooltip Container
+  svgHtml += `<div id="spHoverTooltip" class="sp-chart-tooltip" style="display:none"></div>`;
+
   container.innerHTML = svgHtml;
+
+  // Bind Mouse & Pointer Events for Interactive Crosshairs, Dragging, and Double-Click
+  const svgEl = container.querySelector("#spSvgPlot");
+  const crosshairG = container.querySelector("#spCrosshairG");
+  const crosshairX = container.querySelector("#spCrosshairX");
+  const tooltipEl = container.querySelector("#spHoverTooltip");
+
+  if (svgEl && crosshairG && crosshairX && tooltipEl) {
+    let isDraggingMarker = false;
+    let dragMIdx = 0;
+
+    // Draggable Marker Pointer Events
+    container.querySelectorAll(".sp-mkr-handle").forEach(handle => {
+      handle.onpointerdown = e => {
+        e.preventDefault();
+        e.stopPropagation();
+        isDraggingMarker = true;
+        dragMIdx = parseInt(handle.getAttribute("data-midx")) || 0;
+        handle.setPointerCapture(e.pointerId);
+
+        const onPointerMove = ev => {
+          if (!isDraggingMarker) return;
+          const rect = svgEl.getBoundingClientRect();
+          const curX = ev.clientX - rect.left;
+          const clampedX = Math.max(margin.left, Math.min(W - margin.right, curX));
+          const newF = getFFromX(clampedX);
+          linearMarkers[dragMIdx].f = newF;
+
+          // Re-render plot and update tables
+          renderSvgPlot(res, metric, yScaleChoice);
+          if (typeof renderMarkerTable === "function") renderMarkerTable(res, metric);
+          if (typeof renderSParamMatrixTable === "function") renderSParamMatrixTable(res, "spMatrixTableContainer");
+        };
+
+        const onPointerUp = ev => {
+          isDraggingMarker = false;
+          try { handle.releasePointerCapture(ev.pointerId); } catch (_) {}
+          window.removeEventListener("pointermove", onPointerMove);
+          window.removeEventListener("pointerup", onPointerUp);
+        };
+
+        window.addEventListener("pointermove", onPointerMove);
+        window.addEventListener("pointerup", onPointerUp);
+      };
+    });
+
+    // Hover Crosshairs Tracking
+    svgEl.onpointermove = e => {
+      if (isDraggingMarker) return;
+      const rect = svgEl.getBoundingClientRect();
+      const curX = e.clientX - rect.left;
+      const curY = e.clientY - rect.top;
+
+      if (curX < margin.left || curX > W - margin.right || curY < margin.top || curY > H - margin.bottom) {
+        crosshairG.style.display = "none";
+        tooltipEl.style.display = "none";
+        return;
+      }
+
+      const f = getFFromX(curX);
+      let k = 0;
+      while (k < N - 1 && freqs[k + 1] < f) k++;
+
+      const plotX = getX(freqs[k]);
+      crosshairG.style.display = "inline";
+      crosshairX.setAttribute("x1", plotX);
+      crosshairX.setAttribute("x2", plotX);
+
+      // Tooltip HTML
+      let tipHtml = `<div style="font-weight:700; color:var(--accent,#f59e0b); border-bottom:1px solid #334155; padding-bottom:3px; margin-bottom:5px">f = ${(freqs[k]/fDiv).toFixed(3)} ${fUnit}</div>`;
+      tracesToPlot.forEach(t => {
+        const v = t.arr[k];
+        const vStr = (v !== undefined && isFinite(v)) ? `${v.toFixed(2)} ${yUnit}` : "—";
+        tipHtml += `<div style="display:flex; justify-content:space-between; gap:12px; margin-bottom:2px">
+          <span style="color:${t.color}; font-weight:700">■ ${t.key}:</span>
+          <span style="color:#ffffff; font-weight:600">${vStr}</span>
+        </div>`;
+      });
+
+      tooltipEl.innerHTML = tipHtml;
+      tooltipEl.style.display = "block";
+
+      // Keep tooltip within container bounds
+      const tipW = tooltipEl.offsetWidth || 140;
+      let leftPos = curX + 16;
+      if (leftPos + tipW > W) leftPos = curX - tipW - 16;
+      tooltipEl.style.left = `${leftPos}px`;
+      tooltipEl.style.top = `${Math.min(H - 100, Math.max(margin.top, curY - 20))}px`;
+    };
+
+    svgEl.onpointerleave = () => {
+      if (!isDraggingMarker) {
+        crosshairG.style.display = "none";
+        tooltipEl.style.display = "none";
+      }
+    };
+
+    // Double-click on chart: Move Marker 1 to Clicked Frequency
+    svgEl.ondblclick = e => {
+      const rect = svgEl.getBoundingClientRect();
+      const curX = e.clientX - rect.left;
+      if (curX >= margin.left && curX <= W - margin.right && linearMarkers.length) {
+        linearMarkers[0].f = getFFromX(curX);
+        renderSvgPlot(res, metric, yScaleChoice);
+        if (typeof renderMarkerTable === "function") renderMarkerTable(res, metric);
+        if (typeof renderSParamMatrixTable === "function") renderSParamMatrixTable(res, "spMatrixTableContainer");
+      }
+    };
+  }
 }
 
 /* Export Multi-Port Graph Data to CSV */
 function exportSParamsCsv(res) {
   if (!res || !res.freqs || !res.matrix) return;
   const freqs = res.freqs;
-  const invKeys = Array.from(invokedTraces);
-  let csv = "Frequency_Hz," + invKeys.join(",") + "\n";
+  let invKeys = Array.from(invokedTraces);
+  if (!invKeys.length) {
+    invKeys = Object.keys(res.matrix).filter(k => /^S\d+$/.test(k) || ["S21", "S11", "S22", "S12"].includes(k));
+    if (!invKeys.length) invKeys = Object.keys(res.matrix);
+  }
+
+  // Construct CSV Header
+  const headers = ["Frequency_Hz", "Frequency_GHz"];
+  invKeys.forEach(sKey => {
+    headers.push(`${sKey}_dB`);
+    if (res.matrix_phase && res.matrix_phase[sKey]) {
+      headers.push(`${sKey}_Phase_deg`);
+    }
+  });
+  if (res.group_delay_ns && res.group_delay_ns.length) headers.push("Group_Delay_ns");
+  if (res.k_factor && res.k_factor.length) headers.push("Stability_Factor_K");
+
+  let csv = headers.join(",") + "\n";
 
   for (let k = 0; k < freqs.length; k++) {
-    const row = [freqs[k].toFixed(0)];
+    const f = freqs[k];
+    const row = [f.toFixed(0), (f / 1e9).toFixed(6)];
     invKeys.forEach(sKey => {
-      const arr = res.matrix[sKey];
-      row.push(arr ? arr[k].toFixed(4) : "-120.0000");
+      const arrMag = res.matrix[sKey];
+      row.push(arrMag ? arrMag[k].toFixed(4) : "-120.0000");
+      if (res.matrix_phase && res.matrix_phase[sKey]) {
+        const arrPhase = res.matrix_phase[sKey];
+        row.push(arrPhase ? arrPhase[k].toFixed(2) : "0.00");
+      }
     });
+    if (res.group_delay_ns && res.group_delay_ns.length) {
+      row.push(res.group_delay_ns[k] != null ? res.group_delay_ns[k].toFixed(4) : "0.0000");
+    }
+    if (res.k_factor && res.k_factor.length) {
+      row.push(res.k_factor[k] != null ? res.k_factor[k].toFixed(4) : "1.0000");
+    }
     csv += row.join(",") + "\n";
   }
 
-  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "rf_multi_port_linear_analysis.csv";
-  a.click();
-  URL.revokeObjectURL(url);
+  downloadFile(csv, "rf_multi_port_linear_analysis.csv", "text/csv");
+}
+
+/* Helper to resolve standalone CSS styles for self-contained transparent SVG export */
+function buildStandaloneSvg(container) {
+  const svgEl = container.querySelector("svg");
+  if (!svgEl) return null;
+  const clone = svgEl.cloneNode(true);
+  clone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+
+  const monoFont = "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace";
+  const sansFont = "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+
+  // Create embedded style definition without solid background and with solid black text
+  const styleEl = document.createElementNS("http://www.w3.org/2000/svg", "style");
+  styleEl.textContent = `
+    svg { font-family: ${sansFont}; background: transparent; }
+    text { font-family: ${monoFont}; fill: #000000 !important; font-weight: 500; }
+    .title-text { fill: #000000 !important; font-family: ${sansFont}; font-weight: 700; }
+    .sp-mkr-badge-text { fill: #ffffff !important; font-family: ${sansFont}; font-weight: 700; }
+  `;
+  clone.insertBefore(styleEl, clone.firstChild);
+
+  // Replace CSS variable references in cloned attributes with explicit export colors (black text & neutral grid)
+  const replaceVarAttrs = el => {
+    const tag = el.tagName.toLowerCase();
+    const cls = el.getAttribute("class") || "";
+    if (tag === "rect") {
+      if (cls.includes("sp-mkr-card-bg")) {
+        el.setAttribute("fill", "#ffffff");
+        el.setAttribute("fill-opacity", "0.94");
+        el.setAttribute("stroke", "#cbd5e1");
+        el.setAttribute("stroke-width", "1");
+      } else {
+        const f = el.getAttribute("fill");
+        if (f && f.includes("var(--canvas)")) {
+          el.setAttribute("fill", "none");
+          el.setAttribute("stroke", "#334155");
+        }
+      }
+    }
+    if (tag === "text") {
+      if (cls.includes("sp-mkr-badge-text")) {
+        el.setAttribute("fill", "#ffffff");
+      } else {
+        const curFill = el.getAttribute("fill");
+        if (!curFill || curFill.includes("var(") || curFill === "#f8fafc" || curFill === "#94a3b8" || curFill === "#ffffff") {
+          el.setAttribute("fill", "#000000");
+        }
+      }
+    }
+
+    ["fill", "stroke", "font-family"].forEach(attr => {
+      const v = el.getAttribute(attr);
+      if (v && v.includes("var(")) {
+        if (v.includes("--canvas")) el.setAttribute(attr, "none");
+        else if (v.includes("--ink-dim") || v.includes("--ink")) el.setAttribute(attr, "#000000");
+        else if (v.includes("--grid-maj")) el.setAttribute(attr, "#e2e8f0");
+        else if (v.includes("--line")) el.setAttribute(attr, "#334155");
+        else if (v.includes("--mono")) el.setAttribute(attr, monoFont);
+        else if (v.includes("--sans")) el.setAttribute(attr, sansFont);
+      }
+    });
+    for (let c of el.children) replaceVarAttrs(c);
+  };
+  replaceVarAttrs(clone);
+
+  return new XMLSerializer().serializeToString(clone);
 }
 
 /* Export SVG Vector Graph File */
 function exportSParamsSvg() {
   const container = $("spChartContainer");
   if (!container) return;
-  const svgEl = container.querySelector("svg");
-  if (!svgEl) return;
-  const svgText = new XMLSerializer().serializeToString(svgEl);
-  const blob = new Blob([svgText], { type: "image/svg+xml;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "multi_port_s_parameters.svg";
-  a.click();
-  URL.revokeObjectURL(url);
+  const svgText = buildStandaloneSvg(container);
+  if (!svgText) return;
+  downloadFile(svgText, "multi_port_s_parameters.svg", "image/svg+xml");
 }
 
 /* Export PNG Raster Graph Image File */
 function exportSParamsPng() {
   const container = $("spChartContainer");
   if (!container) return;
-  const svgEl = container.querySelector("svg");
-  if (!svgEl) return;
-  const svgText = new XMLSerializer().serializeToString(svgEl);
+  const svgText = buildStandaloneSvg(container);
+  if (!svgText) return;
   const img = new Image();
   const url = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svgText);
   img.onload = () => {
     const cv = document.createElement("canvas");
     cv.width = 1800; cv.height = 720;
     const g = cv.getContext("2d");
-    g.fillStyle = "#ffffff";
-    g.fillRect(0, 0, cv.width, cv.height);
+    g.clearRect(0, 0, cv.width, cv.height);
+    g.imageSmoothingEnabled = true;
+    g.imageSmoothingQuality = "high";
     g.drawImage(img, 0, 0, cv.width, cv.height);
     cv.toBlob(blob => {
-      const u = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = u;
-      a.download = "multi_port_s_parameters.png";
-      a.click();
-      URL.revokeObjectURL(u);
+      downloadFile(blob, "multi_port_s_parameters.png", "image/png");
     });
   };
   img.src = url;
@@ -7920,32 +9672,55 @@ function exportSParamsPng() {
 /* Export System Touchstone (.s2p / .sNp) File */
 function exportTouchstoneS2p(res) {
   if (!res || !res.freqs || !res.matrix) return;
-  const freqs = res.freqs;
   const P = (res.portsList && res.portsList.length) || 2;
+  const ext = P === 2 ? ".s2p" : `.s${P}p`;
+
+  // 1. If backend provided verified Touchstone string, use it directly for authentic N-port complex data
+  const tsText = res.touchstone_snp || res.touchstone_s2p;
+  if (tsText && typeof tsText === "string" && !tsText.startsWith("! Touchstone export error")) {
+    downloadFile(tsText, `system_linear_analysis${ext}`, "text/plain");
+    return;
+  }
+
+  // 2. Client-side fallback Touchstone generation with exact Touchstone V1.1 matrix layout
+  const freqs = res.freqs;
   let sNp = `! RF Chain System Multi-Port S-Parameters (${P}-Port Export)\n`;
   sNp += `! Date: ${new Date().toISOString()}\n`;
   sNp += `# Hz S DB R 50\n`;
 
   for (let k = 0; k < freqs.length; k++) {
-    let line = `${freqs[k].toFixed(0)}`;
-    for (let i = 1; i <= P; i++) {
-      for (let j = 1; j <= P; j++) {
-        const arr = res.matrix[`S${i}${j}`];
-        const db = arr ? arr[k].toFixed(3) : "-120.000";
-        line += ` ${db} 0.00`;
+    const fHz = freqs[k].toFixed(0);
+    if (P === 2) {
+      // Touchstone 2-port specification standard order: S11 S21 S12 S22
+      const sOrder = ["S11", "S21", "S12", "S22"];
+      let line = fHz;
+      for (const sk of sOrder) {
+        const arrMag = res.matrix[sk];
+        const db = arrMag ? arrMag[k].toFixed(3) : "-120.000";
+        const arrPhase = res.matrix_phase && res.matrix_phase[sk];
+        const ph = arrPhase ? arrPhase[k].toFixed(2) : "0.00";
+        line += ` ${db} ${ph}`;
+      }
+      sNp += line + "\n";
+    } else {
+      // Touchstone N-port (N >= 3) matrix specification layout:
+      // Row 1 starts with frequency, subsequent rows are indented
+      for (let i = 1; i <= P; i++) {
+        let line = (i === 1) ? fHz : "           ";
+        for (let j = 1; j <= P; j++) {
+          const sk = `S${i}${j}`;
+          const arrMag = res.matrix[sk];
+          const db = arrMag ? arrMag[k].toFixed(3) : "-120.000";
+          const arrPhase = res.matrix_phase && res.matrix_phase[sk];
+          const ph = arrPhase ? arrPhase[k].toFixed(2) : "0.00";
+          line += ` ${db} ${ph}`;
+        }
+        sNp += line + "\n";
       }
     }
-    sNp += line + "\n";
   }
 
-  const ext = P === 2 ? ".s2p" : `.s${P}p`;
-  const blob = new Blob([sNp], { type: "text/plain;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `system_linear_analysis${ext}`;
-  a.click();
-  URL.revokeObjectURL(url);
+  downloadFile(sNp, `system_linear_analysis${ext}`, "text/plain");
 }
 
 if (typeof module !== "undefined" && module.exports) {
@@ -8074,7 +9849,7 @@ function renderAnalyserSettings() {
 }
 
 /* Render Table for Markers and Invoked S-Parameters */
-function renderMarkerTable(res) {
+function renderMarkerTable(res, activeMetric = "mag") {
   const box = $("spMarkerTable");
   if (!box || !res || !res.freqs || !res.matrix) return;
 
@@ -8086,12 +9861,26 @@ function renderMarkerTable(res) {
 
   const invKeys = Array.from(invokedTraces);
 
+  const getMetricData = (sKey) => {
+    if (activeMetric === "phase") return res.matrix_phase && res.matrix_phase[sKey];
+    if (activeMetric === "delay") return res.matrix_gd && res.matrix_gd[sKey];
+    if (activeMetric === "k") return res.k_factor;
+    return res.matrix[sKey];
+  };
+
+  const getUnitSuffix = () => {
+    if (activeMetric === "phase") return "°";
+    if (activeMetric === "delay") return " ns";
+    if (activeMetric === "k") return "";
+    return " dB";
+  };
+
   const getValAt = (arr, targetF) => {
     if (!arr) return "-";
     let idx = 0;
     while (idx < freqs.length - 1 && freqs[idx + 1] < targetF) idx++;
     const v = arr[idx];
-    return isFinite(v) ? v.toFixed(2) + " dB" : "-";
+    return isFinite(v) ? v.toFixed(2) + getUnitSuffix() : "-";
   };
 
   let h = `<table style="width:100%; border-collapse:collapse; font-size:12px; text-align:left; color:var(--ink)">
@@ -8100,10 +9889,14 @@ function renderMarkerTable(res) {
         <th style="padding:6px">Marker</th>
         <th style="padding:6px">Frequency (${fUnit})</th>`;
 
-  invKeys.forEach(sKey => {
-    const col = getTraceColor(sKey);
-    h += `<th style="padding:6px; color:${col}">${sKey}</th>`;
-  });
+  if (activeMetric === "k") {
+    h += `<th style="padding:6px; color:#10b981">Stability Factor K</th>`;
+  } else {
+    invKeys.forEach(sKey => {
+      const col = getTraceColor(sKey);
+      h += `<th style="padding:6px; color:${col}">${sKey}</th>`;
+    });
+  }
 
   h += `<th style="padding:6px">Action</th>
       </tr>
@@ -8122,11 +9915,17 @@ function renderMarkerTable(res) {
         ${idx > 0 ? `<span style="font-size:10px; color:var(--ink-dim); margin-left:4px">(Δ ${deltaF > 0 ? '+'+deltaF : deltaF})</span>` : ""}
       </td>`;
 
-    invKeys.forEach(sKey => {
-      const v = getValAt(res.matrix[sKey], m.f);
-      const col = getTraceColor(sKey);
-      h += `<td style="padding:6px; color:${col}; font-weight:600">${v}</td>`;
-    });
+    if (activeMetric === "k") {
+      const v = getValAt(res.k_factor, m.f);
+      h += `<td style="padding:6px; color:#10b981; font-weight:600">${v}</td>`;
+    } else {
+      invKeys.forEach(sKey => {
+        const dArr = getMetricData(sKey);
+        const v = getValAt(dArr, m.f);
+        const col = getTraceColor(sKey);
+        h += `<td style="padding:6px; color:${col}; font-weight:600">${v}</td>`;
+      });
+    }
 
     h += `<td style="padding:6px">
         ${idx > 0 ? `<button class="btn btn-sm btn-del sp-del-mkr" data-midx="${idx}">✕</button>` : `<span style="color:#64748b">Ref</span>`}
@@ -8143,8 +9942,9 @@ function renderMarkerTable(res) {
       const newF = parseFloat(e.target.value) * fDiv;
       if (isFinite(newF) && newF >= fMin && newF <= fMax) {
         linearMarkers[idx].f = newF;
-        renderSvgPlot(res);
-        renderMarkerTable(res);
+        if (typeof renderSvgPlot === "function") renderSvgPlot(res, activeMetric);
+        renderMarkerTable(res, activeMetric);
+        if ($("spMatrixTableContainer")) renderSParamMatrixTable(res, "spMatrixTableContainer");
       }
     };
   });
@@ -8153,8 +9953,105 @@ function renderMarkerTable(res) {
     btn.onclick = e => {
       const idx = parseInt(e.target.getAttribute("data-midx"));
       linearMarkers.splice(idx, 1);
-      renderSvgPlot(res);
-      renderMarkerTable(res);
+      if (typeof renderSvgPlot === "function") renderSvgPlot(res, activeMetric);
+      renderMarkerTable(res, activeMetric);
+      if ($("spMatrixTableContainer")) renderSParamMatrixTable(res, "spMatrixTableContainer");
+    };
+  });
+}
+
+/* Render Interactive N x N S-Parameter Matrix Table at Active Marker Frequency */
+function renderSParamMatrixTable(res, boxId = "spMatrixTableContainer", onToggleTrace = null) {
+  const box = $(boxId);
+  if (!box || !res || !res.freqs || !res.matrix) return;
+
+  const freqs = res.freqs;
+  const portsList = res.portsList || [];
+  let P = portsList.length;
+  if (P < 2) {
+    let maxP = 2;
+    for (const k in res.matrix) {
+      if (k.startsWith("S") && k.length >= 3) {
+        const outP = parseInt(k[1]), inP = parseInt(k[2]);
+        if (outP > maxP) maxP = outP;
+        if (inP > maxP) maxP = inP;
+      }
+    }
+    P = maxP;
+  }
+
+  // Find index corresponding to M1
+  const m1 = (typeof linearMarkers !== "undefined" && linearMarkers.length) ? linearMarkers[0] : null;
+  const targetF = m1 ? m1.f : freqs[Math.floor(freqs.length / 2)];
+  let k = 0;
+  while (k < freqs.length - 1 && freqs[k + 1] < targetF) k++;
+
+  const useGhz = freqs[freqs.length - 1] >= 1e8;
+  const fDiv = useGhz ? 1e9 : 1e6;
+  const fUnit = useGhz ? "GHz" : "MHz";
+  const curFStr = `${(targetF / fDiv).toFixed(3)} ${fUnit}`;
+
+  let html = `<div style="background:var(--chrome); border:1px solid var(--line); border-radius:8px; padding:12px 14px; margin-bottom:14px">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:8px">
+      <div style="display:flex; align-items:center; gap:8px">
+        <h4 style="margin:0; font-size:12.5px; font-weight:700; color:var(--accent,#f59e0b); display:flex; align-items:center; gap:6px">
+          <span>🔢</span> Global ${P}×${P} Scattering Matrix at Marker M₁ (${curFStr})
+        </h4>
+        <span style="font-size:11px; color:var(--ink-dim); opacity:0.85">(Click cell to toggle trace on plot)</span>
+      </div>
+    </div>
+    <div style="overflow-x:auto">
+      <table class="sp-mat-table" style="margin:0 auto">
+        <thead>
+          <tr>
+            <th class="sp-mat-th" style="background:transparent; border:none; color:var(--ink-dim); font-size:10px">Out \\ In</th>`;
+
+  for (let j = 1; j <= P; j++) {
+    const pObj = portsList.find(p => p.num === j);
+    const pName = pObj && pObj.label ? pObj.label : `Port ${j}`;
+    html += `<th class="sp-mat-th" title="Input Port ${j}: ${pName}">P${j}<br/><span style="font-size:9.5px; font-weight:500; opacity:0.85; max-width:80px; display:inline-block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap">${pName}</span></th>`;
+  }
+  html += `</tr></thead><tbody>`;
+
+  for (let i = 1; i <= P; i++) {
+    const pOutObj = portsList.find(p => p.num === i);
+    const pOutName = pOutObj && pOutObj.label ? pOutObj.label : `Port ${i}`;
+    html += `<tr><th class="sp-mat-th" title="Output Port ${i}: ${pOutName}">P${i}<br/><span style="font-size:9.5px; font-weight:500; opacity:0.85; max-width:80px; display:inline-block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap">${pOutName}</span></th>`;
+
+    for (let j = 1; j <= P; j++) {
+      const sKey = `S${i}${j}`;
+      const arr = res.matrix[sKey];
+      const valStr = arr && arr[k] !== undefined && isFinite(arr[k]) ? `${arr[k].toFixed(2)} dB` : "—";
+      const phArr = res.matrix_phase && res.matrix_phase[sKey];
+      const phStr = phArr && phArr[k] !== undefined && isFinite(phArr[k]) ? `${phArr[k].toFixed(0)}°` : "";
+      const isActive = typeof invokedTraces !== "undefined" && invokedTraces.has(sKey);
+      const traceCol = isActive ? getTraceColor(sKey) : "";
+
+      html += `<td class="sp-mat-cell ${isActive ? "active-trace" : ""}" data-skey="${sKey}" style="${isActive ? `border-color:${traceCol}; background:${traceCol}22;` : ""}" title="Click to toggle ${sKey}">
+        <div style="font-weight:700; font-size:11px; ${isActive ? `color:${traceCol}` : "color:var(--ink)"}">${sKey}</div>
+        <div style="font-size:11.5px; font-weight:600; color:${isActive ? "#ffffff" : "var(--ink)"}">${valStr}</div>
+        ${phStr ? `<div style="font-size:9.5px; color:var(--ink-dim)">${phStr}</div>` : ""}
+      </td>`;
+    }
+    html += `</tr>`;
+  }
+
+  html += `</tbody></table></div></div>`;
+  box.innerHTML = html;
+
+  box.querySelectorAll(".sp-mat-cell").forEach(td => {
+    td.onclick = () => {
+      const sKey = td.getAttribute("data-skey");
+      if (sKey && typeof invokedTraces !== "undefined") {
+        if (invokedTraces.has(sKey)) {
+          invokedTraces.delete(sKey);
+        } else {
+          invokedTraces.add(sKey);
+        }
+        if (typeof onToggleTrace === "function") {
+          onToggleTrace(sKey);
+        }
+      }
     };
   });
 }
@@ -8163,7 +10060,8 @@ if (typeof module !== "undefined" && module.exports) {
   module.exports = {
     toggleAnalyserDrawer,
     renderAnalyserSettings,
-    renderMarkerTable
+    renderMarkerTable,
+    renderSParamMatrixTable
   };
 }
 
@@ -8179,6 +10077,60 @@ let sparamsTabs = []; // Array of { id, name, band, res }
 let activeTabIdx = 0;
 let linearMarkers = [{ id: "M1", f: 0 }];
 let invokedTraces = new Set(["S21", "S12"]); // Default to Forward Gain S21 and Reverse Isolation S12
+let isPanelDocked = false;
+
+/* Canvas Signal Path Highlighting */
+function highlightSignalPath(path) {
+  if (!path || !path.block_ids || !path.block_ids.length) {
+    clearSignalPathHighlight();
+    return;
+  }
+  const bSet = new Set(path.block_ids);
+
+  // Highlight blocks in layerBlock
+  const blockEls = document.querySelectorAll("#layerBlock .block");
+  blockEls.forEach(el => {
+    const bid = el.getAttribute("data-block");
+    if (bSet.has(bid)) {
+      el.classList.add("sp-path-block-active");
+      el.classList.remove("sp-path-dimmed");
+    } else {
+      el.classList.remove("sp-path-block-active");
+      el.classList.add("sp-path-dimmed");
+    }
+  });
+
+  // Highlight wires in layerConn
+  const connEls = document.querySelectorAll("#layerConn .conn");
+  if (typeof conns !== "undefined") {
+    const pairs = new Set();
+    for (let i = 0; i < path.block_ids.length - 1; i++) {
+      pairs.add(`${path.block_ids[i]}->${path.block_ids[i+1]}`);
+      pairs.add(`${path.block_ids[i+1]}->${path.block_ids[i]}`);
+    }
+
+    connEls.forEach(el => {
+      const cid = el.getAttribute("data-conn");
+      const cn = conns.find(c => c.id === cid);
+      if (cn && (pairs.has(`${cn.from.block}->${cn.to.block}`) || pairs.has(`${cn.to.block}->${cn.from.block}`))) {
+        el.classList.add("sp-path-wire-active");
+        el.classList.remove("sp-path-dimmed");
+      } else {
+        el.classList.remove("sp-path-wire-active");
+        el.classList.add("sp-path-dimmed");
+      }
+    });
+  }
+}
+
+function clearSignalPathHighlight() {
+  document.querySelectorAll("#layerBlock .block").forEach(el => {
+    el.classList.remove("sp-path-block-active", "sp-path-dimmed");
+  });
+  document.querySelectorAll("#layerConn .conn").forEach(el => {
+    el.classList.remove("sp-path-wire-active", "sp-path-dimmed");
+  });
+}
 
 /* --- Full-Stage Multi-Port S-Params Panel & Tab Management --- */
 function toggleSParamsDrawer() {
@@ -8189,7 +10141,9 @@ function toggleSParamsDrawer() {
   const btn = $("btnSParams");
   if (btn) btn.style.borderColor = isHidden ? "var(--accent)" : "";
 
-  if (isHidden) {
+  if (!isHidden) {
+    clearSignalPathHighlight();
+  } else {
     if (!sparamsTabs.length) {
       const band = settings.analysisBand || { startFreq: 1, startUnit: "GHz", stopFreq: 10, stopUnit: "GHz", points: 101, sweepType: "lin" };
       runNewSParamSweep(band, "Sweep 1");
@@ -8230,7 +10184,7 @@ async function fetchBackendSParams(band) {
 
 function runNewSParamSweep(band, tabName) {
   const name = tabName || `Sweep ${sparamsTabs.length + 1}`;
-  const newTab = { id: "sp_tab_" + Date.now(), name, band: { ...band }, res: null, selectedPathIdx: null, activeMetric: "mag" };
+  const newTab = { id: "sp_tab_" + Date.now(), name, band: { ...band }, res: null, selectedPathIdx: null, activeMetric: "mag", yScale: "auto" };
   sparamsTabs.push(newTab);
   activeTabIdx = sparamsTabs.length - 1;
 
@@ -8238,18 +10192,28 @@ function runNewSParamSweep(band, tabName) {
   fetchBackendSParams(band).then(backendRes => {
     const localRes = withAllSheets(() => computeLinearAnalysis(band));
     if (backendRes && backendRes.status === "success" && backendRes.paths && backendRes.paths.length) {
-      backendRes.portsList = localRes.portsList || [];
+      if (!backendRes.portsList || !backendRes.portsList.length) {
+        backendRes.portsList = localRes.portsList || [];
+      }
       if (backendRes.freq_hz) backendRes.freqs = new Float64Array(backendRes.freq_hz);
       const activeIdx = backendRes.paths.findIndex(p => p.is_active || p.isActive);
       const selIdx = activeIdx >= 0 ? activeIdx : 0;
       newTab.selectedPathIdx = selIdx;
       const curPath = backendRes.paths[selIdx] || backendRes.paths[0];
-      backendRes.matrix = curPath.matrix || {
-        S21: curPath.s21_db,
-        S12: curPath.s12_db,
-        S11: curPath.s11_db,
-        S22: curPath.s22_db,
-      };
+
+      // Retain global multi-port matrix! Only fallback to curPath if matrix is empty
+      if (!backendRes.matrix) {
+        backendRes.matrix = curPath.matrix || {};
+      }
+      if (curPath) {
+        if (!backendRes.matrix.S21 && curPath.s21_db) backendRes.matrix.S21 = curPath.s21_db;
+        if (!backendRes.matrix.S12 && curPath.s12_db) backendRes.matrix.S12 = curPath.s12_db;
+        if (!backendRes.matrix.S11 && curPath.s11_db) backendRes.matrix.S11 = curPath.s11_db;
+        if (!backendRes.matrix.S22 && curPath.s22_db) backendRes.matrix.S22 = curPath.s22_db;
+        if (curPath.fwdKey && !backendRes.matrix[curPath.fwdKey] && curPath.s21_db) {
+          backendRes.matrix[curPath.fwdKey] = curPath.s21_db;
+        }
+      }
       newTab.res = backendRes;
     } else {
       newTab.res = localRes;
@@ -8262,8 +10226,22 @@ function renderLinearAnalysis() {
   const box = $("spStagePanel");
   if (!box) return;
 
-  if (!sparamsTabs.length || activeTabIdx >= sparamsTabs.length) activeTabIdx = Math.max(0, sparamsTabs.length - 1);
+  if (isPanelDocked) {
+    box.classList.add("docked");
+  } else {
+    box.classList.remove("docked");
+  }
+
+  if (!sparamsTabs.length) {
+    const bandDef = settings.analysisBand || { startFreq: 1, startUnit: "GHz", stopFreq: 10, stopUnit: "GHz", points: 101, sweepType: "lin" };
+    sparamsTabs.push({ id: "sp_tab_1", name: "Sweep 1", band: { ...bandDef }, res: null, selectedPathIdx: null, activeMetric: "mag", yScale: "auto" });
+    activeTabIdx = 0;
+  } else if (activeTabIdx >= sparamsTabs.length) {
+    activeTabIdx = Math.max(0, sparamsTabs.length - 1);
+  }
   const activeTab = sparamsTabs[activeTabIdx];
+  const activeMetric = (activeTab && activeTab.activeMetric) || "mag";
+  const yScale = (activeTab && activeTab.yScale) || "auto";
 
   // Data persistence: evaluate for current state if not cached
   const band = (activeTab && activeTab.band) || settings.analysisBand || { startFreq: 1, startUnit: "GHz", stopFreq: 10, stopUnit: "GHz", points: 101, sweepType: "lin" };
@@ -8278,20 +10256,26 @@ function renderLinearAnalysis() {
 
   // Sync selected path: allow user to select and KEEP any path without forcing it back
   if (res && res.paths && res.paths.length) {
-    if (activeTab.selectedPathIdx === null || activeTab.selectedPathIdx === undefined || activeTab.selectedPathIdx >= res.paths.length) {
+    if (activeTab && (activeTab.selectedPathIdx === null || activeTab.selectedPathIdx === undefined || activeTab.selectedPathIdx >= res.paths.length)) {
       const activeIdx = res.paths.findIndex(p => p.isActive || p.is_active);
       activeTab.selectedPathIdx = activeIdx >= 0 ? activeIdx : 0;
     }
-    const selIdx = activeTab.selectedPathIdx;
+    const selIdx = (activeTab && activeTab.selectedPathIdx !== null && activeTab.selectedPathIdx !== undefined) ? activeTab.selectedPathIdx : 0;
     const curPath = res.paths[selIdx];
-    if (curPath && curPath.matrix) {
-      // Merge path matrix with global matrix without destroying multi-port keys
-      Object.assign(res.matrix, curPath.matrix);
-      if (curPath.s21_db) res.matrix.S21 = new Float64Array(curPath.s21_db);
-      if (curPath.s12_db) res.matrix.S12 = new Float64Array(curPath.s12_db);
-      if (curPath.fwdKey && curPath.matrix[curPath.fwdKey]) {
-        res.matrix[curPath.fwdKey] = new Float64Array(curPath.matrix[curPath.fwdKey]);
+    if (curPath) {
+      if (curPath.matrix) {
+        // Merge without overwriting existing global matrix keys
+        for (const k in curPath.matrix) {
+          if (!res.matrix[k]) res.matrix[k] = curPath.matrix[k];
+        }
       }
+      if (curPath.fwdKey) {
+        if (!res.matrix[curPath.fwdKey] && curPath.s21_db) {
+          res.matrix[curPath.fwdKey] = new Float64Array(curPath.s21_db);
+        }
+        invokedTraces.add(curPath.fwdKey);
+      }
+      highlightSignalPath(curPath);
     }
   }
 
@@ -8305,6 +10289,7 @@ function renderLinearAnalysis() {
       </h3>
       <button class="btn btn-sm primary" id="spRerunSweep" title="Re-evaluate sweep for current schematic state">⚡ Re-run Sweep</button>
       <button class="btn btn-sm" id="spOpenSettings" title="Open Analyser Settings">⚙️ Analyser Settings</button>
+      <button class="btn btn-sm" id="spToggleDock" title="Toggle Docked to Bottom or Fullscreen">${isPanelDocked ? "⛶ Maximize View" : "⬍ Dock to Bottom"}</button>
     </div>
     <button class="btn btn-sm" id="spClosePanel">✕ Close Analysis View</button>
   </div>`;
@@ -8357,6 +10342,26 @@ function renderLinearAnalysis() {
     </div>`;
   }
 
+  // Metric Switcher & Y-Scale Controls
+  html += `<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap; gap:8px; background:var(--chrome-2,#1f2937); border:1px solid var(--line,#374151); border-radius:8px; padding:8px 14px">
+    <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap">
+      <span style="font-size:12px; font-weight:700; color:var(--ink-dim,#94a3b8)">Display Metric:</span>
+      <button class="sp-metric-pill ${activeMetric==='mag'?'active':''}" data-metric="mag">📈 Magnitude (dB)</button>
+      <button class="sp-metric-pill ${activeMetric==='phase'?'active':''}" data-metric="phase">∿ Phase (°)</button>
+      <button class="sp-metric-pill ${activeMetric==='delay'?'active':''}" data-metric="delay">⏱️ Group Delay (ns)</button>
+      <button class="sp-metric-pill ${activeMetric==='k'?'active':''}" data-metric="k">🛡️ Stability (K)</button>
+    </div>
+    <div style="display:flex; align-items:center; gap:6px">
+      <label style="font-size:11.5px; font-weight:600; color:var(--ink-dim)">Y-Scale:</label>
+      <select id="spYScaleSelect" style="padding:4px 8px; font-size:11.5px; border-radius:5px; border:1px solid var(--line); background:var(--chrome-2); color:var(--ink)">
+        <option value="auto" ${yScale==='auto'?'selected':''}>Auto-Scale</option>
+        <option value="pos20_to_neg60" ${yScale==='pos20_to_neg60'?'selected':''}>+20 to -60 dB</option>
+        <option value="0_to_neg100" ${yScale==='0_to_neg100'?'selected':''}>0 to -100 dB</option>
+        <option value="0_to_neg40" ${yScale==='0_to_neg40'?'selected':''}>0 to -40 dB</option>
+      </select>
+    </div>
+  </div>`;
+
   // Warning Alerts Banner
   if (res.error) {
     html += `<div style="background:#3f1717; color:#fca5a5; padding:12px 16px; border-radius:8px; margin-bottom:14px; font-size:12.5px; border:1px solid #991b1b">
@@ -8369,18 +10374,24 @@ function renderLinearAnalysis() {
     </div>`;
   }
 
+  // Interactive N x N Matrix Grid Container
+  html += `<div id="spMatrixTableContainer"></div>`;
+
   if (!res.error && (portsList.length >= 2 || (res.paths && res.paths.length > 0))) {
     const P = Math.max(2, portsList.length);
 
+    // Build Contextual Port-Aware Trace List
     const availableTraces = [];
     for (let i = 1; i <= P; i++) {
+      const pOutObj = portsList.find(p => p.num === i);
+      const pOutName = pOutObj && pOutObj.label ? pOutObj.label : `P${i}`;
       for (let j = 1; j <= P; j++) {
+        const pInObj = portsList.find(p => p.num === j);
+        const pInName = pInObj && pInObj.label ? pInObj.label : `P${j}`;
         const sKey = `S${i}${j}`;
         let label = sKey;
-        if (i === j) label += ` (Return Loss P${i})`;
-        else if (j === 1) label += ` (Forward Transmission P1 → P${i})`;
-        else if (i === 1) label += ` (Reverse Isolation P${j} → P1)`;
-        else label += ` (Transmission P${j} → P${i})`;
+        if (i === j) label += ` (Match at ${pInName})`;
+        else label += ` (${pOutName} ← ${pInName})`;
         availableTraces.push({ key: sKey, label });
       }
       if (res.matrix && res.matrix[`S${i}Σ`]) {
@@ -8425,7 +10436,7 @@ function renderLinearAnalysis() {
       <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap">
         <div style="display:flex; align-items:center; gap:6px">
           <label style="font-size:12px; font-weight:600; color:var(--ink-dim)">Add Trace:</label>
-          <select id="spTraceSelect" style="padding:6px 10px; font-size:12px; border-radius:6px; border:1px solid var(--line); background:var(--chrome-2); color:var(--ink); min-width:240px">
+          <select id="spTraceSelect" style="padding:6px 10px; font-size:12px; border-radius:6px; border:1px solid var(--line); background:var(--chrome-2); color:var(--ink); min-width:260px">
             <option value="">-- Select S-Parameter Trace --</option>`;
 
     availableTraces.forEach(tr => {
@@ -8456,7 +10467,7 @@ function renderLinearAnalysis() {
     html += `<div style="position:relative; background:var(--chrome-2); border:1px solid var(--line); border-radius:8px; padding:16px; margin-bottom:16px; box-shadow:var(--shadow-md)">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; font-size:12px; flex-wrap:wrap; gap:8px">
         <div style="display:flex; gap:14px; align-items:center; flex-wrap:wrap">
-          <span style="font-weight:700; color:var(--ink)">Transmission Traces (${invokedTraces.size}):</span>`;
+          <span style="font-weight:700; color:var(--ink)">Active Traces (${invokedTraces.size}):</span>`;
     invokedTraces.forEach(sKey => {
       const col = getTraceColor(sKey);
       html += `<span style="color:${col}; font-weight:700; font-size:12px">■ ${sKey}</span>`;
@@ -8481,6 +10492,15 @@ function renderLinearAnalysis() {
   html += `</div>`;
   box.innerHTML = html;
 
+  // Render Interactive N x N Matrix Table
+  if (!res.error && (portsList.length >= 2 || (res.paths && res.paths.length > 0))) {
+    renderSParamMatrixTable(res, "spMatrixTableContainer", () => {
+      renderLinearAnalysis();
+    });
+    renderSvgPlot(res, activeMetric, yScale);
+    renderMarkerTable(res, activeMetric);
+  }
+
   // Bind Path Selector
   const selPath = $("spPathSelect");
   if (selPath && activeTab && res && res.paths) {
@@ -8489,16 +10509,44 @@ function renderLinearAnalysis() {
       activeTab.selectedPathIdx = pIdx;
       const pData = res.paths[pIdx];
       if (pData) {
-        if (pData.matrix) Object.assign(res.matrix, pData.matrix);
-        if (pData.s21_db) res.matrix.S21 = new Float64Array(pData.s21_db);
-        if (pData.s12_db) res.matrix.S12 = new Float64Array(pData.s12_db);
-        if (pData.fwdKey && pData.matrix && pData.matrix[pData.fwdKey]) {
-          res.matrix[pData.fwdKey] = new Float64Array(pData.matrix[pData.fwdKey]);
+        if (pData.matrix) {
+          for (const k in pData.matrix) {
+            if (!res.matrix[k]) res.matrix[k] = pData.matrix[k];
+          }
         }
         if (pData.fwdKey) invokedTraces.add(pData.fwdKey);
-        invokedTraces.add("S21");
+        highlightSignalPath(pData);
       }
       renderLinearAnalysis();
+    };
+  }
+
+  // Bind Dock Toggle
+  if ($("spToggleDock")) {
+    $("spToggleDock").onclick = () => {
+      isPanelDocked = !isPanelDocked;
+      renderLinearAnalysis();
+    };
+  }
+
+  // Bind Metric Switcher Pills
+  box.querySelectorAll(".sp-metric-pill").forEach(pill => {
+    pill.onclick = () => {
+      const m = pill.getAttribute("data-metric");
+      if (m && activeTab) {
+        activeTab.activeMetric = m;
+        renderLinearAnalysis();
+      }
+    };
+  });
+
+  // Bind Y-Scale Select
+  if ($("spYScaleSelect")) {
+    $("spYScaleSelect").onchange = e => {
+      if (activeTab) {
+        activeTab.yScale = e.target.value;
+        renderSvgPlot(res, activeMetric, activeTab.yScale);
+      }
     };
   }
 
@@ -8511,16 +10559,23 @@ function renderLinearAnalysis() {
         fetchBackendSParams(activeTab.band).then(backendRes => {
           const localRes = withAllSheets(() => computeLinearAnalysis(activeTab.band));
           if (backendRes && backendRes.status === "success" && backendRes.paths && backendRes.paths.length) {
-            backendRes.portsList = localRes.portsList || [];
+            if (!backendRes.portsList || !backendRes.portsList.length) {
+              backendRes.portsList = localRes.portsList || [];
+            }
             if (backendRes.freq_hz) backendRes.freqs = new Float64Array(backendRes.freq_hz);
             const selIdx = activeTab.selectedPathIdx || 0;
             const curPath = backendRes.paths[selIdx] || backendRes.paths[0];
-            backendRes.matrix = curPath.matrix || {
-              S21: curPath.s21_db,
-              S12: curPath.s12_db,
-              S11: curPath.s11_db,
-              S22: curPath.s22_db,
-            };
+
+            if (!backendRes.matrix) backendRes.matrix = {};
+            if (curPath) {
+              if (!backendRes.matrix.S21 && curPath.s21_db) backendRes.matrix.S21 = curPath.s21_db;
+              if (!backendRes.matrix.S12 && curPath.s12_db) backendRes.matrix.S12 = curPath.s12_db;
+              if (!backendRes.matrix.S11 && curPath.s11_db) backendRes.matrix.S11 = curPath.s11_db;
+              if (!backendRes.matrix.S22 && curPath.s22_db) backendRes.matrix.S22 = curPath.s22_db;
+              if (curPath.fwdKey && !backendRes.matrix[curPath.fwdKey] && curPath.s21_db) {
+                backendRes.matrix[curPath.fwdKey] = curPath.s21_db;
+              }
+            }
             activeTab.res = backendRes;
           } else {
             activeTab.res = localRes;
@@ -8638,17 +10693,15 @@ function renderLinearAnalysis() {
   }
 
   if (!res.error && (portsList.length >= 2 || (res.paths && res.paths.length > 0))) {
-    renderSvgPlot(res);
-    renderMarkerTable(res);
-
     const btnAddM = $("spAddMarker");
     if (btnAddM) {
       btnAddM.onclick = () => {
         if (linearMarkers.length >= 5) return;
         const midIdx = Math.floor(res.freqs.length / 2);
         linearMarkers.push({ id: "M" + (linearMarkers.length + 1), f: res.freqs[midIdx] });
-        renderSvgPlot(res);
-        renderMarkerTable(res);
+        renderSvgPlot(res, activeMetric, yScale);
+        renderMarkerTable(res, activeMetric);
+        if ($("spMatrixTableContainer")) renderSParamMatrixTable(res, "spMatrixTableContainer");
       };
     }
 
@@ -8657,7 +10710,7 @@ function renderLinearAnalysis() {
     if ($("spExportPng")) $("spExportPng").onclick = () => exportSParamsPng();
     if ($("spExportS2p")) $("spExportS2p").onclick = () => exportTouchstoneS2p(res);
 
-    if ($("chkCompare")) $("chkCompare").onchange = () => renderSvgPlot(res);
+    if ($("chkCompare")) $("chkCompare").onchange = () => renderSvgPlot(res, activeMetric, yScale);
   }
 }
 
@@ -8666,7 +10719,9 @@ if (typeof module !== "undefined" && module.exports) {
     toggleSParamsDrawer,
     fetchBackendSParams,
     runNewSParamSweep,
-    renderLinearAnalysis
+    renderLinearAnalysis,
+    highlightSignalPath,
+    clearSignalPathHighlight
   };
 }
 
@@ -9811,8 +11866,7 @@ function initEvents() {
 
   if ($("btnSvg")) $("btnSvg").onclick = () => {
     const s = buildExportSVG(1); if (!s) { hint("Nothing to export yet."); return; }
-    const blob = new Blob([s], { type: "image/svg+xml" }), url = URL.createObjectURL(blob), a = document.createElement("a");
-    a.href = url; a.download = "rf-chain.svg"; a.click(); URL.revokeObjectURL(url); hint("Exported rf-chain.svg");
+    downloadFile(s, "rf-chain.svg", "image/svg+xml");
   };
 
   if ($("btnPng")) $("btnPng").onclick = async () => {
@@ -9827,7 +11881,9 @@ function initEvents() {
       g.fillStyle = "#ffffff"; g.fillRect(0, 0, cv.width, cv.height);
       g.imageSmoothingEnabled = true; g.imageSmoothingQuality = "high";
       g.drawImage(img, 0, 0);
-      cv.toBlob(b => { const u = URL.createObjectURL(b), a = document.createElement("a"); a.href = u; a.download = "rf-chain.png"; a.click(); URL.revokeObjectURL(u); hint("Exported rf-chain.png"); });
+      cv.toBlob(b => {
+        downloadFile(b, "rf-chain.png", "image/png");
+      });
     };
     img.onerror = () => hint("PNG export failed in this browser — try SVG."); img.src = url;
   };
@@ -9844,14 +11900,16 @@ function initEvents() {
       rows.push([b.params.label || c.name, c.name, b.params.mpn || "", sh ? sh.name : "", paramsText]);
     });
     const blob = xlsxBlob(rows, widths, "BOM");
-    const u = URL.createObjectURL(blob), a = document.createElement("a");
-    a.href = u; a.download = "bom.xlsx"; a.click(); URL.revokeObjectURL(u);
-    hint("Exported bom.xlsx");
+    downloadFile(blob, "bom.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
   };
 
   if ($("btnBudget")) $("btnBudget").onclick = toggleBudget;
   if ($("bgClose")) $("bgClose").onclick = toggleBudget;
   if ($("bgCsv")) $("bgCsv").onclick = exportBudgetCsv;
+  if ($("bgXlsx")) $("bgXlsx").onclick = exportBudgetXlsx;
+  if ($("bgToggleExpand")) $("bgToggleExpand").onclick = toggleBudgetExpand;
+  if ($("bgTabTable")) $("bgTabTable").onclick = () => { budgetViewMode = "table"; renderBudget(); };
+  if ($("bgTabPlot")) $("bgTabPlot").onclick = () => { budgetViewMode = "plot"; renderBudget(); };
 
   if ($("btnAnalyser")) $("btnAnalyser").onclick = toggleAnalyserDrawer;
   if ($("anClose")) $("anClose").onclick = toggleAnalyserDrawer;

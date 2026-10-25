@@ -246,6 +246,7 @@ function buildExportSVG(scale = 1) {
       }
       const nm = c.isInterconnect ? "" : (b.params.label || c.name);
       const v = c.val ? c.val(b.params) : "";
+      const valLines = Array.isArray(v) ? v : (v ? String(v).split("\n").filter(Boolean) : []);
       const lblY = (typeof blockLabelY === "function") ? blockLabelY(b, f, settings) : { valY: -13, nameY: f.h + 18, infoY: f.h + 33 };
       const valOffX = Number(b.params._valOffX != null ? b.params._valOffX : b.params._lblOffX) || 0;
       const valOffY = Number(b.params._valOffY != null ? b.params._valOffY : b.params._lblOffY) || 0;
@@ -254,7 +255,17 @@ function buildExportSVG(scale = 1) {
       const infoOffX = Number(b.params._infoOffX != null ? b.params._infoOffX : b.params._lblOffX) || 0;
       const infoOffY = Number(b.params._infoOffY != null ? b.params._infoOffY : b.params._lblOffY) || 0;
       const info = c.info ? c.info(b.params) : "";
-      if (v)    blocksBody += `<text x="${f.w / 2 + valOffX}" y="${lblY.valY + valOffY}" text-anchor="middle" fill="#000000" font-family="${fontSans}" font-size="${fontSizes.normal}px" font-weight="600">${esc(v)}</text>`;
+      if (valLines.length === 1) {
+        blocksBody += `<text x="${f.w / 2 + valOffX}" y="${lblY.valY + valOffY}" text-anchor="middle" fill="#000000" font-family="${fontSans}" font-size="${fontSizes.normal}px" font-weight="600">${esc(valLines[0])}</text>`;
+      } else if (valLines.length > 1) {
+        const lineH = 15;
+        const startY = lblY.valY + valOffY - (valLines.length - 1) * lineH;
+        blocksBody += `<text x="${f.w / 2 + valOffX}" y="${startY}" text-anchor="middle" fill="#000000" font-family="${fontSans}" font-size="${fontSizes.normal}px" font-weight="600">`;
+        for (let i = 0; i < valLines.length; i++) {
+          blocksBody += `<tspan x="${f.w / 2 + valOffX}" dy="${i === 0 ? 0 : lineH + 'px'}">${esc(valLines[i])}</tspan>`;
+        }
+        blocksBody += `</text>`;
+      }
       if (nm)   blocksBody += `<text x="${f.w / 2 + nameOffX}" y="${lblY.nameY + nameOffY}" text-anchor="middle" fill="#000000" font-family="${fontSans}" font-size="${fontSizes.large}px" font-weight="700">${esc(nm)}</text>`;
       if (info) blocksBody += `<text x="${f.w / 2 + infoOffX}" y="${lblY.infoY + infoOffY}" text-anchor="middle" fill="#000000" font-family="${fontSans}" font-size="${fontSizes.small}px" font-weight="500">${esc(info)}</text>`;
     }

@@ -56,10 +56,7 @@ async function writeTo(h, text) {
 }
 
 function downloadFallback(text, name) {
-  const blob = new Blob([text], { type: "application/json" });
-  const url = URL.createObjectURL(blob), a = document.createElement("a");
-  a.href = url; a.download = name; a.click();
-  setTimeout(() => URL.revokeObjectURL(url), 2000);
+  downloadFile(text, name, "application/json");
 }
 
 async function saveDoc(forceSaveAs) {
@@ -220,10 +217,7 @@ function exportVsdx() {
     const blob = buildVsdxBlob(blocks, conns, P, NFm, PSecondary, null, settings);
     const base = (fileName || "rf-chain").replace(/\.(rfbd|json|vsdx|png|svg)$/i, "");
     const name = `${base}.vsdx`;
-    const url = URL.createObjectURL(blob), a = document.createElement("a");
-    a.href = url; a.download = name; a.click();
-    setTimeout(() => URL.revokeObjectURL(url), 2000);
-    hint(`Exported ${name}`);
+    downloadFile(blob, name, "application/vnd.ms-visio.drawing.main+xml");
   } catch (err) {
     console.error(err);
     alert("Error generating Visio VSDX file: " + (err.message || err));

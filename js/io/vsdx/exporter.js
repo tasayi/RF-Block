@@ -194,6 +194,7 @@ function buildVsdxBlob(blocksList, connsList, Pdict, NFdict, PSecondaryDict, com
         name = `${owner ? (owner.params.label || "Section") : "Section"} · ${subTagPort(b.params.tag)}`;
       }
       const value = typeof c.val === "function" ? c.val(b.params || {}) : "";
+      const valLines = Array.isArray(value) ? value : (value ? String(value).split("\n").filter(Boolean) : []);
       const info = typeof c.info === "function" ? c.info(b.params || {}) : "";
       const fontSizes = (typeof DESIGN_TOKENS !== "undefined" && DESIGN_TOKENS.fontSizes) || { normal: 13.33, large: 14, small: 12 };
 
@@ -206,8 +207,12 @@ function buildVsdxBlob(blocksList, connsList, Pdict, NFdict, PSecondaryDict, com
       const infoOffY = Number(p._infoOffY != null ? p._infoOffY : p._lblOffY) || 0;
 
       const lblY = (typeof blockLabelY === "function") ? blockLabelY(b, f, effectiveSettings) : { valY: -13, nameY: f.h + 18, infoY: f.h + 33 };
-      if (value) {
-        addText(value, b.x + f.w / 2 + valOffX, b.y + lblY.valY + valOffY, Math.max(f.w + 32, value.length * 9.5 + 16), 18, fontSizes.normal || 13.33, "#1e293b", true, "middle");
+      if (valLines.length) {
+        const textVal = valLines.join("\n");
+        const boxH = Math.max(18, valLines.length * 16);
+        const shiftY = valLines.length > 1 ? -((valLines.length - 1) * 8) : 0;
+        const maxLen = Math.max(...valLines.map(l => l.length));
+        addText(textVal, b.x + f.w / 2 + valOffX, b.y + lblY.valY + valOffY + shiftY, Math.max(f.w + 32, maxLen * 9.5 + 16), boxH, fontSizes.normal || 13.33, "#1e293b", true, "middle");
       }
       if (name) {
         addText(name, b.x + f.w / 2 + nameOffX, b.y + lblY.nameY + nameOffY, Math.max(f.w + 32, name.length * 10 + 16), 20, fontSizes.large || 14, "#000000", true, "middle");

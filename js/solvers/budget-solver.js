@@ -46,11 +46,16 @@ function buildBudget(startId) {
   const c0 = COMP[s0.type];
   let curB = s0, curPort = srcPorts(c0, s0.params)[0], curIn = null;
   let lvl = P[key(s0.id, curPort)];
+  const p0 = c0.p1db ? c0.p1db(s0.params) : undefined;
+  let cumG = 0, cumOip3Lin = Infinity, cumP1dbLin = (p0 !== undefined && isFinite(p0)) ? Math.pow(10, p0 / 10) : Infinity;
+  const p0Cum = (cumP1dbLin === Infinity) ? undefined : 10 * Math.log10(cumP1dbLin);
   const rows = [{
     id: s0.id, name: s0.params.label || c0.name, type: c0.name, gain: undefined,
-    nf: 0, lvl, cumG: 0, cumNF: 0, oip3: Infinity, p1db: undefined, over: false, src: true
+    nf: 0, lvl, cumG: 0, cumNF: 0, oip3: Infinity,
+    p1db: p0Cum, cumP1db: p0Cum, p1dbStage: p0,
+    head: (p0Cum !== undefined && isFinite(p0Cum) && lvl !== undefined) ? (p0Cum - lvl) : undefined,
+    over: false, src: true
   }];
-  let cumG = 0, cumOip3Lin = Infinity;
   const seen = new Set([s0.id]);
   const total = allBlocks().length;
 
@@ -62,10 +67,16 @@ function buildBudget(startId) {
       const pp = getPorts(partner)[0];
       if (!pp) break;
       const sh = sheetOfBlock(partner.id);
+      const icLvl = P[key(partner.id, pp.id)];
+      const icP1Cum = (cumP1dbLin === Infinity) ? undefined : 10 * Math.log10(cumP1dbLin);
       rows.push({
         id: partner.id, name: (partner.params.tag || "?") + " \u2192" + (sh ? " " + sh.name : ""), type: "Interconnect",
-        gain: 0, nfStage: 0, lvl: P[key(partner.id, pp.id)], cumG, cumNF: nfDb(N[key(partner.id, pp.id)]),
-        oip3: (cumOip3Lin === Infinity) ? undefined : 10 * Math.log10(cumOip3Lin), link: true
+        gain: 0, nfStage: 0, lvl: icLvl, cumG, cumNF: nfDb(N[key(partner.id, pp.id)]),
+        oip3: (cumOip3Lin === Infinity) ? undefined : 10 * Math.log10(cumOip3Lin),
+        p1db: icP1Cum, cumP1db: icP1Cum, p1dbStage: undefined,
+        head: (icP1Cum !== undefined && isFinite(icP1Cum) && icLvl !== undefined) ? (icP1Cum - icLvl) : undefined,
+        over: (icP1Cum !== undefined && isFinite(icP1Cum) && icLvl !== undefined && icLvl >= icP1Cum),
+        link: true
       });
       curB = partner; curIn = null; curPort = pp.id; continue;
     }
@@ -88,18 +99,26 @@ function buildBudget(startId) {
     const nfHere = nc.nf ? Math.max(0, +nc.nf(nb.params) || 0) : 0;
     const cumNF = hasOut ? (nfDb(N[key(nb.id, outPort)])) : (nfDb(N[key(cn.from.block, cn.from.port)]));
     const oi = nc.oip3 ? nc.oip3(nb.params) : undefined;
+    const p1 = nc.p1db ? nc.p1db(nb.params) : undefined;
     if (hasOut) {
       const gl = Math.pow(10, g / 10);
-      const prev = (cumOip3Lin === Infinity) ? Infinity : cumOip3Lin * gl;
-      const own = (oi === undefined) ? Infinity : Math.pow(10, oi / 10);
-      cumOip3Lin = (prev === Infinity && own === Infinity) ? Infinity : 1 / ((prev === Infinity ? 0 : 1 / prev) + (own === Infinity ? 0 : 1 / own));
+      const prevOi = (cumOip3Lin === Infinity) ? Infinity : cumOip3Lin * gl;
+      const ownOi = (oi === undefined || !isFinite(oi)) ? Infinity : Math.pow(10, oi / 10);
+      cumOip3Lin = (prevOi === Infinity && ownOi === Infinity) ? Infinity : 1 / ((prevOi === Infinity ? 0 : 1 / prevOi) + (ownOi === Infinity ? 0 : 1 / ownOi));
+
+      const prevP1 = (cumP1dbLin === Infinity) ? Infinity : cumP1dbLin * gl;
+      const ownP1 = (p1 === undefined || !isFinite(p1)) ? Infinity : Math.pow(10, p1 / 10);
+      cumP1dbLin = (prevP1 === Infinity && ownP1 === Infinity) ? Infinity : 1 / ((prevP1 === Infinity ? 0 : 1 / prevP1) + (ownP1 === Infinity ? 0 : 1 / ownP1));
     }
-    const p1 = nc.p1db ? nc.p1db(nb.params) : undefined;
-    const over = (p1 !== undefined && isFinite(p1) && hasOut && outLvl >= p1);
+    const cumP1Val = (cumP1dbLin === Infinity) ? undefined : 10 * Math.log10(cumP1dbLin);
+    const effLvl = hasOut ? outLvl : inLvl;
+    const over = (cumP1Val !== undefined && isFinite(cumP1Val) && hasOut && outLvl >= cumP1Val) || (p1 !== undefined && isFinite(p1) && hasOut && outLvl >= p1);
+    const head = (cumP1Val !== undefined && isFinite(cumP1Val) && hasOut) ? (cumP1Val - outLvl) : ((p1 !== undefined && isFinite(p1) && hasOut) ? (p1 - outLvl) : undefined);
     rows.push({
       id: nb.id, name: nb.params.label || nc.name, type: nc.isSubsystem ? "Section" : nc.name, gain: g, nfStage: nfHere,
-      lvl: hasOut ? outLvl : inLvl, cumG, cumNF, p1db: p1,
-      head: (p1 !== undefined && hasOut) ? (p1 - outLvl) : undefined, over,
+      lvl: effLvl, cumG, cumNF,
+      p1db: cumP1Val, cumP1db: cumP1Val, p1dbStage: p1,
+      head, over,
       oip3: (cumOip3Lin === Infinity) ? undefined : 10 * Math.log10(cumOip3Lin)
     });
     if (!hasOut) {
@@ -108,6 +127,13 @@ function buildBudget(startId) {
     }
     curB = nb; curIn = cn.to.port; curPort = outPort;
   }
+  const bwHz = (typeof settings !== "undefined" && settings.bandwidthHz && settings.bandwidthHz > 0) ? settings.bandwidthHz : 1e6;
+  const s0Lvl = rows.length ? rows[0].lvl : 0;
+  rows.forEach(r => {
+    r.nfloor = (typeof computeNoiseFloor === "function")
+      ? computeNoiseFloor(r.cumNF, r.lvl, s0Lvl, bwHz)
+      : (-173.98 + 10 * Math.log10(Math.max(1, bwHz)) + (r.cumNF || 0) + (r.cumG || 0));
+  });
   return { rows, P, N, start: s0 };
 }
 
@@ -164,5 +190,5 @@ function runChecks(P) {
   return w;
 }
 
-const noiseFloor = (nfDbv, bwHz) => (-174 + 10 * Math.log10(Math.max(1, bwHz)) + (nfDbv || 0));
+const noiseFloor = (nfDbv, bwHz, gCum = 0) => (-173.98 + 10 * Math.log10(Math.max(1, bwHz)) + (nfDbv || 0) + gCum);
 

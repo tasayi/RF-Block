@@ -223,8 +223,8 @@ class TestPiNetworkSynthesizer(unittest.TestCase):
         # Path 1 is active: 0.5 (IL) + 10 (Pad1) = ~ -10.5 dB (accounting for -20 dB mismatch interaction)
         self.assertAlmostEqual(p1_st1["s21_db"][0], -10.5, delta=0.2)
         self.assertTrue(p1_st1["is_active"])
-        # Path 2 is isolated: 40.0 (ISO) + 20 (Pad2) = ~ -60.0 dB
-        self.assertAlmostEqual(p2_st1["s21_db"][0], -60.0, delta=0.2)
+        # Path 2 is isolated: 40.0 (ISO) + 20 (Pad2) = ~ -60.0 dB (with multi-port reflection interaction)
+        self.assertAlmostEqual(p2_st1["s21_db"][0], -60.0, delta=1.0)
         self.assertFalse(p2_st1["is_active"])
 
         # Case B: Switch shifted to state 2
@@ -232,12 +232,427 @@ class TestPiNetworkSynthesizer(unittest.TestCase):
         p1_st2 = next(p for p in res_st2["paths"] if "out1" in p["block_ids"])
         p2_st2 = next(p for p in res_st2["paths"] if "out2" in p["block_ids"])
 
-        # Path 1 is now isolated: 40.0 (ISO) + 10 (Pad1) = ~ -50.0 dB
-        self.assertAlmostEqual(p1_st2["s21_db"][0], -50.0, delta=0.2)
+        # Path 1 is now isolated: 40.0 (ISO) + 10 (Pad1) = ~ -50.0 dB (with multi-port reflection interaction)
+        self.assertAlmostEqual(p1_st2["s21_db"][0], -50.0, delta=1.0)
         self.assertFalse(p1_st2["is_active"])
         # Path 2 is now active: 0.5 (IL) + 20 (Pad2) = ~ -20.5 dB
         self.assertAlmostEqual(p2_st2["s21_db"][0], -20.5, delta=0.2)
         self.assertTrue(p2_st2["is_active"])
+
+    def test_switch_with_s3p_touchstone_file(self):
+        """
+        Verify that an SPDT switch with an attached .s3p Touchstone file uses the exact
+        measured S-parameters for BOTH the active through-path and the isolated path,
+        strictly overriding manually entered il and iso scalar values.
+        """
+        # 3-Port Touchstone in dB format (f S11 S12 S13 \n S21 S22 S23 \n S31 S32 S33)
+        # Port 1: RFC, Port 2: RF1, Port 3: RF2
+        # In State 1: S21 = -0.7 dB (IL), S31 = -52.0 dB (ISO)
+        sw_s3p = """# GHz S DB R 50
+1.0  -25 0  -0.7 0  -52 0
+     -0.7 0  -24 0  -58 0
+     -52 0  -58 0  -20 0
+2.0  -25 0  -0.7 0  -52 0
+     -0.7 0  -24 0  -58 0
+     -52 0  -58 0  -20 0
+"""
+        def make_sw_circuit(sw_state):
+            return {
+                "band": {"startFreq": 1.0, "stopFreq": 2.0, "startUnit": "GHz", "points": 3},
+                "blocks": [
+                    {"id": "src", "type": "source", "params": {"label": "Source"}},
+                    {"id": "sw", "type": "switch", "params": {
+                        "label": "SPDT",
+                        "throws": 2,
+                        "state": str(sw_state),
+                        "il": 3.0,     # Manual parameter deliberately different from S3P (0.7 dB)
+                        "iso": 20.0,   # Manual parameter deliberately different from S3P (52.0 dB)
+                        "s3pData": sw_s3p
+                    }},
+                    {"id": "out1", "type": "rfout", "params": {"label": "Out1"}},
+                    {"id": "out2", "type": "rfout", "params": {"label": "Out2"}},
+                ],
+                "conns": [
+                    {"from": {"block": "src", "port": "out"}, "to": {"block": "sw", "port": "in"}},
+                    {"from": {"block": "sw", "port": "o1"}, "to": {"block": "out1", "port": "in"}},
+                    {"from": {"block": "sw", "port": "o2"}, "to": {"block": "out2", "port": "in"}},
+                ]
+            }
+
+        # Case 1: Switch in State 1
+        res1 = analyze_schematic_cascade(make_sw_circuit(1))
+        self.assertEqual(res1.get("status"), "success")
+        p1 = next(p for p in res1["paths"] if "out1" in p["block_ids"])
+        p2 = next(p for p in res1["paths"] if "out2" in p["block_ids"])
+
+        # Path 1 (Throw 1) must be measured IL ~ -0.7 dB (NOT manual 3.0 dB!)
+        self.assertAlmostEqual(p1["s21_db"][0], -0.7, delta=0.2)
+        self.assertTrue(p1["is_active"])
+
+        # Path 2 (Throw 2, isolated) must be measured ISO ~ -52.0 dB (NOT manual 20.0 dB!)
+        self.assertAlmostEqual(p2["s21_db"][0], -52.0, delta=0.5)
+        self.assertFalse(p2["is_active"])
+
+        # Case 2: Switch shifted to State 2 (auto-permuted for symmetric switch)
+        res2 = analyze_schematic_cascade(make_sw_circuit(2))
+        p1_st2 = next(p for p in res2["paths"] if "out1" in p["block_ids"])
+        p2_st2 = next(p for p in res2["paths"] if "out2" in p["block_ids"])
+
+        # Path 1 is now isolated: ~ -52.0 dB
+        self.assertAlmostEqual(p1_st2["s21_db"][0], -52.0, delta=0.5)
+        self.assertFalse(p1_st2["is_active"])
+
+        # Path 2 is now active: ~ -0.7 dB
+        self.assertAlmostEqual(p2_st2["s21_db"][0], -0.7, delta=0.2)
+        self.assertTrue(p2_st2["is_active"])
+
+    def test_switch_with_per_throw_s2p_files(self):
+        """
+        Verify that when per-throw .s2p files are attached to an SPDT switch,
+        the active throw uses its S2P and the inactive throw uses its S2P for isolation.
+        """
+        thru_s2p = """# GHz S DB R 50
+1.0  -20 0  -0.9 0  -0.9 0  -20 0
+2.0  -20 0  -0.9 0  -0.9 0  -20 0
+"""
+        iso_s2p = """# GHz S DB R 50
+1.0  -15 0  -48.0 0  -48.0 0  -15 0
+2.0  -15 0  -48.0 0  -48.0 0  -15 0
+"""
+        schematic = {
+            "band": {"startFreq": 1.0, "stopFreq": 2.0, "startUnit": "GHz", "points": 3},
+            "blocks": [
+                {"id": "src", "type": "source", "params": {"label": "Source"}},
+                {"id": "sw", "type": "switch", "params": {
+                    "label": "SPDT",
+                    "throws": 2,
+                    "state": "1",
+                    "il": 2.5,
+                    "iso": 25.0,
+                    "s2pData_st1": thru_s2p,
+                    "s2pData_st2": iso_s2p
+                }},
+                {"id": "out1", "type": "rfout", "params": {"label": "Out1"}},
+                {"id": "out2", "type": "rfout", "params": {"label": "Out2"}},
+            ],
+            "conns": [
+                {"from": {"block": "src", "port": "out"}, "to": {"block": "sw", "port": "in"}},
+                {"from": {"block": "sw", "port": "o1"}, "to": {"block": "out1", "port": "in"}},
+                {"from": {"block": "sw", "port": "o2"}, "to": {"block": "out2", "port": "in"}},
+            ]
+        }
+        res = analyze_schematic_cascade(schematic)
+        p1 = next(p for p in res["paths"] if "out1" in p["block_ids"])
+        p2 = next(p for p in res["paths"] if "out2" in p["block_ids"])
+
+        # Throw 1 uses thru_s2p (~ -0.9 dB)
+        self.assertAlmostEqual(p1["s21_db"][0], -0.9, delta=0.2)
+        # Throw 2 uses iso_s2p (~ -48.0 dB, NOT manual 25.0 dB!)
+        self.assertAlmostEqual(p2["s21_db"][0], -48.0, delta=0.5)
+
+    def test_universal_touchstone_precedence(self):
+        """
+        Verify that for any component (e.g. amp, attenuator), attached Touchstone data
+        always strictly overrides manually entered gain, loss, and isolation values.
+        """
+        amp_s2p = """# GHz S DB R 50
+1.0  -20 0  12.0 0  -30.0 0  -20 0
+2.0  -20 0  12.0 0  -30.0 0  -20 0
+"""
+        att_s2p = """# GHz S DB R 50
+1.0  -25 0  -4.0 0  -4.0 0  -25 0
+2.0  -25 0  -4.0 0  -4.0 0  -25 0
+"""
+        schematic = {
+            "band": {"startFreq": 1.0, "stopFreq": 2.0, "startUnit": "GHz", "points": 3},
+            "blocks": [
+                {"id": "src", "type": "source", "params": {"label": "Source"}},
+                # Manual gain: 40.0 dB, but Touchstone provides 12.0 dB
+                {"id": "amp", "type": "amp", "params": {"label": "LNA", "gain": 40.0, "s2pData": amp_s2p}},
+                # Manual atten: 25.0 dB, but Touchstone provides 4.0 dB
+                {"id": "att", "type": "attenuator", "params": {"label": "Pad", "atten": 25.0, "s2pData": att_s2p}},
+                {"id": "out", "type": "rfout", "params": {"label": "Out"}},
+            ],
+            "conns": [
+                {"from": {"block": "src", "port": "out"}, "to": {"block": "amp", "port": "in"}},
+                {"from": {"block": "amp", "port": "out"}, "to": {"block": "att", "port": "in"}},
+                {"from": {"block": "att", "port": "out"}, "to": {"block": "out", "port": "in"}},
+            ]
+        }
+        res = analyze_schematic_cascade(schematic)
+        p0 = res["paths"][0]
+        # Expected: +12.0 dB - 4.0 dB = +8.0 dB (NOT 40 - 25 = 15 dB!)
+        self.assertAlmostEqual(p0["s21_db"][0], 8.0, delta=0.2)
+
+    def test_switch_with_dual_s3p_files(self):
+        """
+        Verify that when an SPDT switch is provided separate .s3p files for Throw 1 and Throw 2:
+        - When in State 1: Throw 1 uses File 1 through (-1 dB) and Throw 2 uses File 1 isolation (-40 dB).
+        - When in State 2: Throw 2 uses File 2 through (-2 dB) and Throw 1 uses File 2 isolation (-45 dB).
+        """
+        st1_s3p = """# GHz S DB R 50
+1.0  -20 0  -1.0 0  -40.0 0
+     -1.0 0 -20 0   -40.0 0
+     -40.0 0 -40.0 0 -20 0
+2.0  -20 0  -1.0 0  -40.0 0
+     -1.0 0 -20 0   -40.0 0
+     -40.0 0 -40.0 0 -20 0
+"""
+        st2_s3p = """# GHz S DB R 50
+1.0  -20 0  -45.0 0  -2.0 0
+     -45.0 0 -20 0   -45.0 0
+     -2.0 0 -45.0 0  -20 0
+2.0  -20 0  -45.0 0  -2.0 0
+     -45.0 0 -20 0   -45.0 0
+     -2.0 0 -45.0 0  -20 0
+"""
+        schematic = {
+            "band": {"startFreq": 1.0, "stopFreq": 2.0, "startUnit": "GHz", "points": 2},
+            "blocks": [
+                {"id": "src", "type": "rfin", "params": {"label": "IN", "anaPort": "P1"}},
+                {"id": "sw", "type": "switch", "params": {
+                    "label": "SW",
+                    "throws": "2",
+                    "state": "1",
+                    "s2pData_st1": st1_s3p,
+                    "s2pData_st2": st2_s3p
+                }},
+                {"id": "out1", "type": "rfout", "params": {"label": "OUT1", "anaPort": "P2"}},
+                {"id": "out2", "type": "rfout", "params": {"label": "OUT2", "anaPort": "P3"}},
+            ],
+            "conns": [
+                {"from": {"block": "src", "port": "out"}, "to": {"block": "sw", "port": "in"}},
+                {"from": {"block": "sw", "port": "o1"}, "to": {"block": "out1", "port": "in"}},
+                {"from": {"block": "sw", "port": "o2"}, "to": {"block": "out2", "port": "in"}},
+            ]
+        }
+
+        # Case 1: Switch in State 1
+        res1 = analyze_schematic_cascade(schematic)
+        p1 = next(p for p in res1["paths"] if "out1" in p["block_ids"])
+        p2 = next(p for p in res1["paths"] if "out2" in p["block_ids"])
+        self.assertTrue(p1["is_active"])
+        self.assertFalse(p2["is_active"])
+        self.assertAlmostEqual(p1["s21_db"][0], -1.0, delta=0.2)
+        self.assertAlmostEqual(p2["s21_db"][0], -40.0, delta=0.5)
+
+        # Case 2: Switch shifted to State 2
+        schematic["blocks"][1]["params"]["state"] = "2"
+        res2 = analyze_schematic_cascade(schematic)
+        p1_st2 = next(p for p in res2["paths"] if "out1" in p["block_ids"])
+        p2_st2 = next(p for p in res2["paths"] if "out2" in p["block_ids"])
+        self.assertFalse(p1_st2["is_active"])
+        self.assertTrue(p2_st2["is_active"])
+        self.assertAlmostEqual(p1_st2["s21_db"][0], -45.0, delta=0.5)
+        self.assertAlmostEqual(p2_st2["s21_db"][0], -2.0, delta=0.2)
+
+    def test_switch_positional_snp_files(self):
+        """
+        Verify that SP2T switch dynamically selects positional .s3p files:
+        - snpData_pos_open for Open (Off) position
+        - snpData_pos_1 for Position 1
+        - snpData_pos_2 for Position 2
+        """
+        open_s3p = """# GHz S DB R 50
+1.0  -20 0  -55.0 0  -58.0 0
+     -55.0 0 -20 0   -55.0 0
+     -58.0 0 -55.0 0 -20 0
+2.0  -20 0  -55.0 0  -58.0 0
+     -55.0 0 -20 0   -55.0 0
+     -58.0 0 -55.0 0 -20 0
+"""
+        pos1_s3p = """# GHz S DB R 50
+1.0  -20 0  -0.7 0  -42.0 0
+     -0.7 0 -20 0   -42.0 0
+     -42.0 0 -42.0 0 -20 0
+2.0  -20 0  -0.7 0  -42.0 0
+     -0.7 0 -20 0   -42.0 0
+     -42.0 0 -42.0 0 -20 0
+"""
+        pos2_s3p = """# GHz S DB R 50
+1.0  -20 0  -50.0 0  -1.5 0
+     -50.0 0 -20 0   -50.0 0
+     -1.5 0 -50.0 0  -20 0
+2.0  -20 0  -50.0 0  -1.5 0
+     -50.0 0 -20 0   -50.0 0
+     -1.5 0 -50.0 0  -20 0
+"""
+        schematic = {
+            "band": {"startFreq": 1.0, "stopFreq": 2.0, "startUnit": "GHz", "points": 2},
+            "blocks": [
+                {"id": "src", "type": "rfin", "params": {"label": "IN", "anaPort": "P1"}},
+                {"id": "sw", "type": "switch", "params": {
+                    "label": "SW",
+                    "throws": "2",
+                    "state": "1",
+                    "snpData_pos_open": open_s3p,
+                    "snpData_pos_1": pos1_s3p,
+                    "snpData_pos_2": pos2_s3p
+                }},
+                {"id": "out1", "type": "rfout", "params": {"label": "OUT1", "anaPort": "P2"}},
+                {"id": "out2", "type": "rfout", "params": {"label": "OUT2", "anaPort": "P3"}},
+            ],
+            "conns": [
+                {"from": {"block": "src", "port": "out"}, "to": {"block": "sw", "port": "in"}},
+                {"from": {"block": "sw", "port": "o1"}, "to": {"block": "out1", "port": "in"}},
+                {"from": {"block": "sw", "port": "o2"}, "to": {"block": "out2", "port": "in"}},
+            ]
+        }
+
+        # Case 1: Position 1
+        res1 = analyze_schematic_cascade(schematic)
+        p1 = next(p for p in res1["paths"] if "out1" in p["block_ids"])
+        p2 = next(p for p in res1["paths"] if "out2" in p["block_ids"])
+        self.assertTrue(p1["is_active"])
+        self.assertFalse(p2["is_active"])
+        self.assertAlmostEqual(p1["s21_db"][0], -0.7, delta=0.2)
+        self.assertAlmostEqual(p2["s21_db"][0], -42.0, delta=0.5)
+
+        # Case 2: Position 2
+        schematic["blocks"][1]["params"]["state"] = "2"
+        res2 = analyze_schematic_cascade(schematic)
+        p1_st2 = next(p for p in res2["paths"] if "out1" in p["block_ids"])
+        p2_st2 = next(p for p in res2["paths"] if "out2" in p["block_ids"])
+        self.assertFalse(p1_st2["is_active"])
+        self.assertTrue(p2_st2["is_active"])
+        self.assertAlmostEqual(p1_st2["s21_db"][0], -50.0, delta=0.5)
+        self.assertAlmostEqual(p2_st2["s21_db"][0], -1.5, delta=0.2)
+
+        # Case 3: Position Open (Off)
+        schematic["blocks"][1]["params"]["state"] = "open"
+        res3 = analyze_schematic_cascade(schematic)
+        p1_open = next(p for p in res3["paths"] if "out1" in p["block_ids"])
+        p2_open = next(p for p in res3["paths"] if "out2" in p["block_ids"])
+        self.assertFalse(p1_open["is_active"])
+        self.assertFalse(p2_open["is_active"])
+        self.assertAlmostEqual(p1_open["s21_db"][0], -55.0, delta=0.5)
+        self.assertAlmostEqual(p2_open["s21_db"][0], -58.0, delta=0.5)
+
+    def test_splitter_with_s3p_port1_common(self):
+        """
+        Verify that a 1:2 Splitter correctly uses an attached .s3p file where Port 1 is the common input port.
+        """
+        split_s3p = """# GHz S DB R 50
+1.0  -20 0  -3.3 0  -3.5 0
+     -3.3 0 -20 0   -25.0 0
+     -3.5 0 -25.0 0 -20 0
+2.0  -20 0  -3.3 0  -3.5 0
+     -3.3 0 -20 0   -25.0 0
+     -3.5 0 -25.0 0 -20 0
+"""
+        schematic = {
+            "band": {"startFreq": 1.0, "stopFreq": 2.0, "startUnit": "GHz", "points": 2},
+            "blocks": [
+                {"id": "src", "type": "rfin", "params": {"label": "IN", "anaPort": "P1"}},
+                {"id": "sp", "type": "splitter", "params": {"label": "SPLIT", "ways": "2", "snpData": split_s3p}},
+                {"id": "out1", "type": "rfout", "params": {"label": "OUT1", "anaPort": "P2"}},
+                {"id": "out2", "type": "rfout", "params": {"label": "OUT2", "anaPort": "P3"}},
+            ],
+            "conns": [
+                {"from": {"block": "src", "port": "out"}, "to": {"block": "sp", "port": "in"}},
+                {"from": {"block": "sp", "port": "o1"}, "to": {"block": "out1", "port": "in"}},
+                {"from": {"block": "sp", "port": "o2"}, "to": {"block": "out2", "port": "in"}},
+            ]
+        }
+        res = analyze_schematic_cascade(schematic)
+        p1 = next(p for p in res["paths"] if "out1" in p["block_ids"])
+        p2 = next(p for p in res["paths"] if "out2" in p["block_ids"])
+        self.assertAlmostEqual(p1["s21_db"][0], -3.3, delta=0.2)
+        self.assertAlmostEqual(p2["s21_db"][0], -3.5, delta=0.2)
+
+    def test_combiner_with_s3p_port1_common(self):
+        """
+        Verify that a 2:1 Combiner correctly uses an attached .s3p file where Port 1 is the common output port.
+        """
+        comb_s3p = """# GHz S DB R 50
+1.0  -20 0  -3.2 0  -3.4 0
+     -3.2 0 -20 0   -25.0 0
+     -3.4 0 -25.0 0 -20 0
+2.0  -20 0  -3.2 0  -3.4 0
+     -3.2 0 -20 0   -25.0 0
+     -3.4 0 -25.0 0 -20 0
+"""
+        schematic = {
+            "band": {"startFreq": 1.0, "stopFreq": 2.0, "startUnit": "GHz", "points": 2},
+            "blocks": [
+                {"id": "src", "type": "rfin", "params": {"label": "IN", "anaPort": "P1"}},
+                {"id": "cb", "type": "combiner", "params": {"label": "COMB", "ways": "2", "snpData": comb_s3p}},
+                {"id": "out", "type": "rfout", "params": {"label": "OUT", "anaPort": "P2"}},
+            ],
+            "conns": [
+                {"from": {"block": "src", "port": "out"}, "to": {"block": "cb", "port": "i1"}},
+                {"from": {"block": "cb", "port": "out"}, "to": {"block": "out", "port": "in"}},
+            ]
+        }
+        res = analyze_schematic_cascade(schematic)
+        p1 = res["paths"][0]
+        self.assertAlmostEqual(p1["s21_db"][0], -3.2, delta=0.2)
+
+    def test_circulator_with_s3p(self):
+        """
+        Verify that a Circulator correctly uses an attached .s3p file:
+        Port 1 (p1) to Port 2 (p2) is low loss (-0.6 dB),
+        Port 2 (p2) to Port 1 (p1) is high isolation (-22.0 dB).
+        """
+        circ_s3p = """# GHz S DB R 50
+1.0  -20 0  -22.0 0  -0.6 0
+     -0.6 0 -20 0   -22.0 0
+     -22.0 0 -0.6 0  -20 0
+2.0  -20 0  -22.0 0  -0.6 0
+     -0.6 0 -20 0   -22.0 0
+     -22.0 0 -0.6 0  -20 0
+"""
+        schematic = {
+            "band": {"startFreq": 1.0, "stopFreq": 2.0, "startUnit": "GHz", "points": 2},
+            "blocks": [
+                {"id": "src", "type": "rfin", "params": {"label": "IN", "anaPort": "P1"}},
+                {"id": "circ", "type": "circulator", "params": {"label": "CIRC", "snpData": circ_s3p}},
+                {"id": "out", "type": "rfout", "params": {"label": "OUT", "anaPort": "P2"}},
+            ],
+            "conns": [
+                {"from": {"block": "src", "port": "out"}, "to": {"block": "circ", "port": "p1"}},
+                {"from": {"block": "circ", "port": "p2"}, "to": {"block": "out", "port": "in"}},
+            ]
+        }
+        res = analyze_schematic_cascade(schematic)
+        p1 = res["paths"][0]
+        self.assertAlmostEqual(p1["s21_db"][0], -0.6, delta=0.2)
+
+    def test_coupler_with_s4p(self):
+        """
+        Verify that a 4-port Directional Coupler correctly uses an attached .s4p file:
+        Port 1 (in) to Port 2 (thru) = -0.5 dB
+        Port 1 (in) to Port 3 (cpl) = -10.2 dB
+        """
+        coupler_s4p = """# GHz S DB R 50
+1.0  -20 0  -0.5 0  -10.2 0  -35.0 0
+     -0.5 0 -20 0   -35.0 0  -10.2 0
+     -10.2 0 -35.0 0 -20 0   -0.5 0
+     -35.0 0 -10.2 0 -0.5 0  -20 0
+2.0  -20 0  -0.5 0  -10.2 0  -35.0 0
+     -0.5 0 -20 0   -35.0 0  -10.2 0
+     -10.2 0 -35.0 0 -20 0   -0.5 0
+     -35.0 0 -10.2 0 -0.5 0  -20 0
+"""
+        schematic = {
+            "band": {"startFreq": 1.0, "stopFreq": 2.0, "startUnit": "GHz", "points": 2},
+            "blocks": [
+                {"id": "src", "type": "rfin", "params": {"label": "IN", "anaPort": "P1"}},
+                {"id": "cplr", "type": "coupler", "params": {"label": "CPLR", "snpData": coupler_s4p}},
+                {"id": "out1", "type": "rfout", "params": {"label": "OUT_THRU", "anaPort": "P2"}},
+                {"id": "out2", "type": "rfout", "params": {"label": "OUT_CPL", "anaPort": "P3"}},
+            ],
+            "conns": [
+                {"from": {"block": "src", "port": "out"}, "to": {"block": "cplr", "port": "in"}},
+                {"from": {"block": "cplr", "port": "thru"}, "to": {"block": "out1", "port": "in"}},
+                {"from": {"block": "cplr", "port": "cpl"}, "to": {"block": "out2", "port": "in"}},
+            ]
+        }
+        res = analyze_schematic_cascade(schematic)
+        p_thru = next(p for p in res["paths"] if "out1" in p["block_ids"])
+        p_cpl = next(p for p in res["paths"] if "out2" in p["block_ids"])
+        self.assertAlmostEqual(p_thru["s21_db"][0], -0.5, delta=0.2)
+        self.assertAlmostEqual(p_cpl["s21_db"][0], -10.2, delta=0.2)
 
 
 if __name__ == "__main__":

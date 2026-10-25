@@ -8,6 +8,60 @@ let sparamsTabs = []; // Array of { id, name, band, res }
 let activeTabIdx = 0;
 let linearMarkers = [{ id: "M1", f: 0 }];
 let invokedTraces = new Set(["S21", "S12"]); // Default to Forward Gain S21 and Reverse Isolation S12
+let isPanelDocked = false;
+
+/* Canvas Signal Path Highlighting */
+function highlightSignalPath(path) {
+  if (!path || !path.block_ids || !path.block_ids.length) {
+    clearSignalPathHighlight();
+    return;
+  }
+  const bSet = new Set(path.block_ids);
+
+  // Highlight blocks in layerBlock
+  const blockEls = document.querySelectorAll("#layerBlock .block");
+  blockEls.forEach(el => {
+    const bid = el.getAttribute("data-block");
+    if (bSet.has(bid)) {
+      el.classList.add("sp-path-block-active");
+      el.classList.remove("sp-path-dimmed");
+    } else {
+      el.classList.remove("sp-path-block-active");
+      el.classList.add("sp-path-dimmed");
+    }
+  });
+
+  // Highlight wires in layerConn
+  const connEls = document.querySelectorAll("#layerConn .conn");
+  if (typeof conns !== "undefined") {
+    const pairs = new Set();
+    for (let i = 0; i < path.block_ids.length - 1; i++) {
+      pairs.add(`${path.block_ids[i]}->${path.block_ids[i+1]}`);
+      pairs.add(`${path.block_ids[i+1]}->${path.block_ids[i]}`);
+    }
+
+    connEls.forEach(el => {
+      const cid = el.getAttribute("data-conn");
+      const cn = conns.find(c => c.id === cid);
+      if (cn && (pairs.has(`${cn.from.block}->${cn.to.block}`) || pairs.has(`${cn.to.block}->${cn.from.block}`))) {
+        el.classList.add("sp-path-wire-active");
+        el.classList.remove("sp-path-dimmed");
+      } else {
+        el.classList.remove("sp-path-wire-active");
+        el.classList.add("sp-path-dimmed");
+      }
+    });
+  }
+}
+
+function clearSignalPathHighlight() {
+  document.querySelectorAll("#layerBlock .block").forEach(el => {
+    el.classList.remove("sp-path-block-active", "sp-path-dimmed");
+  });
+  document.querySelectorAll("#layerConn .conn").forEach(el => {
+    el.classList.remove("sp-path-wire-active", "sp-path-dimmed");
+  });
+}
 
 /* --- Full-Stage Multi-Port S-Params Panel & Tab Management --- */
 function toggleSParamsDrawer() {
@@ -18,7 +72,9 @@ function toggleSParamsDrawer() {
   const btn = $("btnSParams");
   if (btn) btn.style.borderColor = isHidden ? "var(--accent)" : "";
 
-  if (isHidden) {
+  if (!isHidden) {
+    clearSignalPathHighlight();
+  } else {
     if (!sparamsTabs.length) {
       const band = settings.analysisBand || { startFreq: 1, startUnit: "GHz", stopFreq: 10, stopUnit: "GHz", points: 101, sweepType: "lin" };
       runNewSParamSweep(band, "Sweep 1");
@@ -59,7 +115,7 @@ async function fetchBackendSParams(band) {
 
 function runNewSParamSweep(band, tabName) {
   const name = tabName || `Sweep ${sparamsTabs.length + 1}`;
-  const newTab = { id: "sp_tab_" + Date.now(), name, band: { ...band }, res: null, selectedPathIdx: null, activeMetric: "mag" };
+  const newTab = { id: "sp_tab_" + Date.now(), name, band: { ...band }, res: null, selectedPathIdx: null, activeMetric: "mag", yScale: "auto" };
   sparamsTabs.push(newTab);
   activeTabIdx = sparamsTabs.length - 1;
 
@@ -67,18 +123,28 @@ function runNewSParamSweep(band, tabName) {
   fetchBackendSParams(band).then(backendRes => {
     const localRes = withAllSheets(() => computeLinearAnalysis(band));
     if (backendRes && backendRes.status === "success" && backendRes.paths && backendRes.paths.length) {
-      backendRes.portsList = localRes.portsList || [];
+      if (!backendRes.portsList || !backendRes.portsList.length) {
+        backendRes.portsList = localRes.portsList || [];
+      }
       if (backendRes.freq_hz) backendRes.freqs = new Float64Array(backendRes.freq_hz);
       const activeIdx = backendRes.paths.findIndex(p => p.is_active || p.isActive);
       const selIdx = activeIdx >= 0 ? activeIdx : 0;
       newTab.selectedPathIdx = selIdx;
       const curPath = backendRes.paths[selIdx] || backendRes.paths[0];
-      backendRes.matrix = curPath.matrix || {
-        S21: curPath.s21_db,
-        S12: curPath.s12_db,
-        S11: curPath.s11_db,
-        S22: curPath.s22_db,
-      };
+
+      // Retain global multi-port matrix! Only fallback to curPath if matrix is empty
+      if (!backendRes.matrix) {
+        backendRes.matrix = curPath.matrix || {};
+      }
+      if (curPath) {
+        if (!backendRes.matrix.S21 && curPath.s21_db) backendRes.matrix.S21 = curPath.s21_db;
+        if (!backendRes.matrix.S12 && curPath.s12_db) backendRes.matrix.S12 = curPath.s12_db;
+        if (!backendRes.matrix.S11 && curPath.s11_db) backendRes.matrix.S11 = curPath.s11_db;
+        if (!backendRes.matrix.S22 && curPath.s22_db) backendRes.matrix.S22 = curPath.s22_db;
+        if (curPath.fwdKey && !backendRes.matrix[curPath.fwdKey] && curPath.s21_db) {
+          backendRes.matrix[curPath.fwdKey] = curPath.s21_db;
+        }
+      }
       newTab.res = backendRes;
     } else {
       newTab.res = localRes;
@@ -91,8 +157,22 @@ function renderLinearAnalysis() {
   const box = $("spStagePanel");
   if (!box) return;
 
-  if (!sparamsTabs.length || activeTabIdx >= sparamsTabs.length) activeTabIdx = Math.max(0, sparamsTabs.length - 1);
+  if (isPanelDocked) {
+    box.classList.add("docked");
+  } else {
+    box.classList.remove("docked");
+  }
+
+  if (!sparamsTabs.length) {
+    const bandDef = settings.analysisBand || { startFreq: 1, startUnit: "GHz", stopFreq: 10, stopUnit: "GHz", points: 101, sweepType: "lin" };
+    sparamsTabs.push({ id: "sp_tab_1", name: "Sweep 1", band: { ...bandDef }, res: null, selectedPathIdx: null, activeMetric: "mag", yScale: "auto" });
+    activeTabIdx = 0;
+  } else if (activeTabIdx >= sparamsTabs.length) {
+    activeTabIdx = Math.max(0, sparamsTabs.length - 1);
+  }
   const activeTab = sparamsTabs[activeTabIdx];
+  const activeMetric = (activeTab && activeTab.activeMetric) || "mag";
+  const yScale = (activeTab && activeTab.yScale) || "auto";
 
   // Data persistence: evaluate for current state if not cached
   const band = (activeTab && activeTab.band) || settings.analysisBand || { startFreq: 1, startUnit: "GHz", stopFreq: 10, stopUnit: "GHz", points: 101, sweepType: "lin" };
@@ -107,20 +187,26 @@ function renderLinearAnalysis() {
 
   // Sync selected path: allow user to select and KEEP any path without forcing it back
   if (res && res.paths && res.paths.length) {
-    if (activeTab.selectedPathIdx === null || activeTab.selectedPathIdx === undefined || activeTab.selectedPathIdx >= res.paths.length) {
+    if (activeTab && (activeTab.selectedPathIdx === null || activeTab.selectedPathIdx === undefined || activeTab.selectedPathIdx >= res.paths.length)) {
       const activeIdx = res.paths.findIndex(p => p.isActive || p.is_active);
       activeTab.selectedPathIdx = activeIdx >= 0 ? activeIdx : 0;
     }
-    const selIdx = activeTab.selectedPathIdx;
+    const selIdx = (activeTab && activeTab.selectedPathIdx !== null && activeTab.selectedPathIdx !== undefined) ? activeTab.selectedPathIdx : 0;
     const curPath = res.paths[selIdx];
-    if (curPath && curPath.matrix) {
-      // Merge path matrix with global matrix without destroying multi-port keys
-      Object.assign(res.matrix, curPath.matrix);
-      if (curPath.s21_db) res.matrix.S21 = new Float64Array(curPath.s21_db);
-      if (curPath.s12_db) res.matrix.S12 = new Float64Array(curPath.s12_db);
-      if (curPath.fwdKey && curPath.matrix[curPath.fwdKey]) {
-        res.matrix[curPath.fwdKey] = new Float64Array(curPath.matrix[curPath.fwdKey]);
+    if (curPath) {
+      if (curPath.matrix) {
+        // Merge without overwriting existing global matrix keys
+        for (const k in curPath.matrix) {
+          if (!res.matrix[k]) res.matrix[k] = curPath.matrix[k];
+        }
       }
+      if (curPath.fwdKey) {
+        if (!res.matrix[curPath.fwdKey] && curPath.s21_db) {
+          res.matrix[curPath.fwdKey] = new Float64Array(curPath.s21_db);
+        }
+        invokedTraces.add(curPath.fwdKey);
+      }
+      highlightSignalPath(curPath);
     }
   }
 
@@ -134,6 +220,7 @@ function renderLinearAnalysis() {
       </h3>
       <button class="btn btn-sm primary" id="spRerunSweep" title="Re-evaluate sweep for current schematic state">⚡ Re-run Sweep</button>
       <button class="btn btn-sm" id="spOpenSettings" title="Open Analyser Settings">⚙️ Analyser Settings</button>
+      <button class="btn btn-sm" id="spToggleDock" title="Toggle Docked to Bottom or Fullscreen">${isPanelDocked ? "⛶ Maximize View" : "⬍ Dock to Bottom"}</button>
     </div>
     <button class="btn btn-sm" id="spClosePanel">✕ Close Analysis View</button>
   </div>`;
@@ -186,6 +273,26 @@ function renderLinearAnalysis() {
     </div>`;
   }
 
+  // Metric Switcher & Y-Scale Controls
+  html += `<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap; gap:8px; background:var(--chrome-2,#1f2937); border:1px solid var(--line,#374151); border-radius:8px; padding:8px 14px">
+    <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap">
+      <span style="font-size:12px; font-weight:700; color:var(--ink-dim,#94a3b8)">Display Metric:</span>
+      <button class="sp-metric-pill ${activeMetric==='mag'?'active':''}" data-metric="mag">📈 Magnitude (dB)</button>
+      <button class="sp-metric-pill ${activeMetric==='phase'?'active':''}" data-metric="phase">∿ Phase (°)</button>
+      <button class="sp-metric-pill ${activeMetric==='delay'?'active':''}" data-metric="delay">⏱️ Group Delay (ns)</button>
+      <button class="sp-metric-pill ${activeMetric==='k'?'active':''}" data-metric="k">🛡️ Stability (K)</button>
+    </div>
+    <div style="display:flex; align-items:center; gap:6px">
+      <label style="font-size:11.5px; font-weight:600; color:var(--ink-dim)">Y-Scale:</label>
+      <select id="spYScaleSelect" style="padding:4px 8px; font-size:11.5px; border-radius:5px; border:1px solid var(--line); background:var(--chrome-2); color:var(--ink)">
+        <option value="auto" ${yScale==='auto'?'selected':''}>Auto-Scale</option>
+        <option value="pos20_to_neg60" ${yScale==='pos20_to_neg60'?'selected':''}>+20 to -60 dB</option>
+        <option value="0_to_neg100" ${yScale==='0_to_neg100'?'selected':''}>0 to -100 dB</option>
+        <option value="0_to_neg40" ${yScale==='0_to_neg40'?'selected':''}>0 to -40 dB</option>
+      </select>
+    </div>
+  </div>`;
+
   // Warning Alerts Banner
   if (res.error) {
     html += `<div style="background:#3f1717; color:#fca5a5; padding:12px 16px; border-radius:8px; margin-bottom:14px; font-size:12.5px; border:1px solid #991b1b">
@@ -198,18 +305,24 @@ function renderLinearAnalysis() {
     </div>`;
   }
 
+  // Interactive N x N Matrix Grid Container
+  html += `<div id="spMatrixTableContainer"></div>`;
+
   if (!res.error && (portsList.length >= 2 || (res.paths && res.paths.length > 0))) {
     const P = Math.max(2, portsList.length);
 
+    // Build Contextual Port-Aware Trace List
     const availableTraces = [];
     for (let i = 1; i <= P; i++) {
+      const pOutObj = portsList.find(p => p.num === i);
+      const pOutName = pOutObj && pOutObj.label ? pOutObj.label : `P${i}`;
       for (let j = 1; j <= P; j++) {
+        const pInObj = portsList.find(p => p.num === j);
+        const pInName = pInObj && pInObj.label ? pInObj.label : `P${j}`;
         const sKey = `S${i}${j}`;
         let label = sKey;
-        if (i === j) label += ` (Return Loss P${i})`;
-        else if (j === 1) label += ` (Forward Transmission P1 → P${i})`;
-        else if (i === 1) label += ` (Reverse Isolation P${j} → P1)`;
-        else label += ` (Transmission P${j} → P${i})`;
+        if (i === j) label += ` (Match at ${pInName})`;
+        else label += ` (${pOutName} ← ${pInName})`;
         availableTraces.push({ key: sKey, label });
       }
       if (res.matrix && res.matrix[`S${i}Σ`]) {
@@ -254,7 +367,7 @@ function renderLinearAnalysis() {
       <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap">
         <div style="display:flex; align-items:center; gap:6px">
           <label style="font-size:12px; font-weight:600; color:var(--ink-dim)">Add Trace:</label>
-          <select id="spTraceSelect" style="padding:6px 10px; font-size:12px; border-radius:6px; border:1px solid var(--line); background:var(--chrome-2); color:var(--ink); min-width:240px">
+          <select id="spTraceSelect" style="padding:6px 10px; font-size:12px; border-radius:6px; border:1px solid var(--line); background:var(--chrome-2); color:var(--ink); min-width:260px">
             <option value="">-- Select S-Parameter Trace --</option>`;
 
     availableTraces.forEach(tr => {
@@ -285,7 +398,7 @@ function renderLinearAnalysis() {
     html += `<div style="position:relative; background:var(--chrome-2); border:1px solid var(--line); border-radius:8px; padding:16px; margin-bottom:16px; box-shadow:var(--shadow-md)">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; font-size:12px; flex-wrap:wrap; gap:8px">
         <div style="display:flex; gap:14px; align-items:center; flex-wrap:wrap">
-          <span style="font-weight:700; color:var(--ink)">Transmission Traces (${invokedTraces.size}):</span>`;
+          <span style="font-weight:700; color:var(--ink)">Active Traces (${invokedTraces.size}):</span>`;
     invokedTraces.forEach(sKey => {
       const col = getTraceColor(sKey);
       html += `<span style="color:${col}; font-weight:700; font-size:12px">■ ${sKey}</span>`;
@@ -310,6 +423,15 @@ function renderLinearAnalysis() {
   html += `</div>`;
   box.innerHTML = html;
 
+  // Render Interactive N x N Matrix Table
+  if (!res.error && (portsList.length >= 2 || (res.paths && res.paths.length > 0))) {
+    renderSParamMatrixTable(res, "spMatrixTableContainer", () => {
+      renderLinearAnalysis();
+    });
+    renderSvgPlot(res, activeMetric, yScale);
+    renderMarkerTable(res, activeMetric);
+  }
+
   // Bind Path Selector
   const selPath = $("spPathSelect");
   if (selPath && activeTab && res && res.paths) {
@@ -318,16 +440,44 @@ function renderLinearAnalysis() {
       activeTab.selectedPathIdx = pIdx;
       const pData = res.paths[pIdx];
       if (pData) {
-        if (pData.matrix) Object.assign(res.matrix, pData.matrix);
-        if (pData.s21_db) res.matrix.S21 = new Float64Array(pData.s21_db);
-        if (pData.s12_db) res.matrix.S12 = new Float64Array(pData.s12_db);
-        if (pData.fwdKey && pData.matrix && pData.matrix[pData.fwdKey]) {
-          res.matrix[pData.fwdKey] = new Float64Array(pData.matrix[pData.fwdKey]);
+        if (pData.matrix) {
+          for (const k in pData.matrix) {
+            if (!res.matrix[k]) res.matrix[k] = pData.matrix[k];
+          }
         }
         if (pData.fwdKey) invokedTraces.add(pData.fwdKey);
-        invokedTraces.add("S21");
+        highlightSignalPath(pData);
       }
       renderLinearAnalysis();
+    };
+  }
+
+  // Bind Dock Toggle
+  if ($("spToggleDock")) {
+    $("spToggleDock").onclick = () => {
+      isPanelDocked = !isPanelDocked;
+      renderLinearAnalysis();
+    };
+  }
+
+  // Bind Metric Switcher Pills
+  box.querySelectorAll(".sp-metric-pill").forEach(pill => {
+    pill.onclick = () => {
+      const m = pill.getAttribute("data-metric");
+      if (m && activeTab) {
+        activeTab.activeMetric = m;
+        renderLinearAnalysis();
+      }
+    };
+  });
+
+  // Bind Y-Scale Select
+  if ($("spYScaleSelect")) {
+    $("spYScaleSelect").onchange = e => {
+      if (activeTab) {
+        activeTab.yScale = e.target.value;
+        renderSvgPlot(res, activeMetric, activeTab.yScale);
+      }
     };
   }
 
@@ -340,16 +490,23 @@ function renderLinearAnalysis() {
         fetchBackendSParams(activeTab.band).then(backendRes => {
           const localRes = withAllSheets(() => computeLinearAnalysis(activeTab.band));
           if (backendRes && backendRes.status === "success" && backendRes.paths && backendRes.paths.length) {
-            backendRes.portsList = localRes.portsList || [];
+            if (!backendRes.portsList || !backendRes.portsList.length) {
+              backendRes.portsList = localRes.portsList || [];
+            }
             if (backendRes.freq_hz) backendRes.freqs = new Float64Array(backendRes.freq_hz);
             const selIdx = activeTab.selectedPathIdx || 0;
             const curPath = backendRes.paths[selIdx] || backendRes.paths[0];
-            backendRes.matrix = curPath.matrix || {
-              S21: curPath.s21_db,
-              S12: curPath.s12_db,
-              S11: curPath.s11_db,
-              S22: curPath.s22_db,
-            };
+
+            if (!backendRes.matrix) backendRes.matrix = {};
+            if (curPath) {
+              if (!backendRes.matrix.S21 && curPath.s21_db) backendRes.matrix.S21 = curPath.s21_db;
+              if (!backendRes.matrix.S12 && curPath.s12_db) backendRes.matrix.S12 = curPath.s12_db;
+              if (!backendRes.matrix.S11 && curPath.s11_db) backendRes.matrix.S11 = curPath.s11_db;
+              if (!backendRes.matrix.S22 && curPath.s22_db) backendRes.matrix.S22 = curPath.s22_db;
+              if (curPath.fwdKey && !backendRes.matrix[curPath.fwdKey] && curPath.s21_db) {
+                backendRes.matrix[curPath.fwdKey] = curPath.s21_db;
+              }
+            }
             activeTab.res = backendRes;
           } else {
             activeTab.res = localRes;
@@ -467,17 +624,15 @@ function renderLinearAnalysis() {
   }
 
   if (!res.error && (portsList.length >= 2 || (res.paths && res.paths.length > 0))) {
-    renderSvgPlot(res);
-    renderMarkerTable(res);
-
     const btnAddM = $("spAddMarker");
     if (btnAddM) {
       btnAddM.onclick = () => {
         if (linearMarkers.length >= 5) return;
         const midIdx = Math.floor(res.freqs.length / 2);
         linearMarkers.push({ id: "M" + (linearMarkers.length + 1), f: res.freqs[midIdx] });
-        renderSvgPlot(res);
-        renderMarkerTable(res);
+        renderSvgPlot(res, activeMetric, yScale);
+        renderMarkerTable(res, activeMetric);
+        if ($("spMatrixTableContainer")) renderSParamMatrixTable(res, "spMatrixTableContainer");
       };
     }
 
@@ -486,7 +641,7 @@ function renderLinearAnalysis() {
     if ($("spExportPng")) $("spExportPng").onclick = () => exportSParamsPng();
     if ($("spExportS2p")) $("spExportS2p").onclick = () => exportTouchstoneS2p(res);
 
-    if ($("chkCompare")) $("chkCompare").onchange = () => renderSvgPlot(res);
+    if ($("chkCompare")) $("chkCompare").onchange = () => renderSvgPlot(res, activeMetric, yScale);
   }
 }
 
@@ -495,6 +650,8 @@ if (typeof module !== "undefined" && module.exports) {
     toggleSParamsDrawer,
     fetchBackendSParams,
     runNewSParamSweep,
-    renderLinearAnalysis
+    renderLinearAnalysis,
+    highlightSignalPath,
+    clearSignalPathHighlight
   };
 }
