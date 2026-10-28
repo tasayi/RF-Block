@@ -533,6 +533,49 @@ def synthesize_mixer_network(
     return skrf.Network(frequency=freq, s=s_mat, z0=z0, name=name)
 
 
+def synthesize_equalizer_network(
+    slope_db: float,
+    min_loss_db: float,
+    f1_hz: float,
+    f2_hz: float,
+    slope_type: str,
+    freq: skrf.Frequency,
+    z0: float = 50.0,
+    return_loss_db: float = 20.0,
+    name: str = "Equalizer"
+) -> skrf.Network:
+    """
+    Synthesizes a frequency-dependent 2-port skrf.Network modeling an RF slope equalizer.
+    """
+    n_pts = len(freq)
+    f_arr = freq.f
+    s_mat = np.zeros((n_pts, 2, 2), dtype=complex)
+    s11_mag = 10.0 ** (-abs(return_loss_db) / 20.0)
+
+    slope_val = abs(float(slope_db))
+    min_loss_val = abs(float(min_loss_db))
+
+    if f2_hz <= f1_hz:
+        loss_arr = np.full(n_pts, min_loss_val + slope_val / 2.0)
+    else:
+        clamped_f = np.clip(f_arr, f1_hz, f2_hz)
+        frac = (clamped_f - f1_hz) / (f2_hz - f1_hz)
+        if str(slope_type).strip().lower() == "negative":
+            loss_arr = min_loss_val + slope_val * frac
+        else:
+            loss_arr = min_loss_val + slope_val * (1.0 - frac)
+
+    s21_mag = 10.0 ** (-np.maximum(0.0, loss_arr) / 20.0)
+
+    for k in range(n_pts):
+        s_mat[k, 0, 0] = s11_mag
+        s_mat[k, 1, 1] = s11_mag
+        s_mat[k, 0, 1] = s21_mag[k]
+        s_mat[k, 1, 0] = s21_mag[k]
+
+    return skrf.Network(frequency=freq, s=s_mat, z0=z0, name=name)
+
+
 def extract_subnetwork_2port(
     network: skrf.Network,
     port_a_idx: int,

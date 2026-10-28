@@ -5,7 +5,7 @@ Unit tests for the physical Pi-attenuator network synthesizer and behavioral S-p
 import unittest
 import numpy as np
 import skrf as rf
-from rfblock.physics.synthesizer import calculate_pi_resistors, synthesize_pi_network
+from rfblock.physics.synthesizer import calculate_pi_resistors, synthesize_pi_network, synthesize_equalizer_network
 from rfblock.physics.network_builder import build_block_network, extract_component_loss_db
 from rfblock.physics.cascade import analyze_schematic_cascade
 
@@ -653,6 +653,76 @@ class TestPiNetworkSynthesizer(unittest.TestCase):
         p_cpl = next(p for p in res["paths"] if "out2" in p["block_ids"])
         self.assertAlmostEqual(p_thru["s21_db"][0], -0.5, delta=0.2)
         self.assertAlmostEqual(p_cpl["s21_db"][0], -10.2, delta=0.2)
+
+    def test_equalizer_frequency_dependent_s_parameters(self):
+        """
+        Verify that an Equalizer synthesizes frequency-dependent S-parameters:
+        Positive slope: f1=1GHz, f2=2GHz, slope=4dB, minLoss=1dB.
+        At 1.0 GHz: IL = 5 dB (S21 = -5 dB)
+        At 1.5 GHz: IL = 3 dB (S21 = -3 dB)
+        At 2.0 GHz: IL = 1 dB (S21 = -1 dB)
+        """
+        freq = rf.Frequency(1.0, 2.0, 3, "ghz")
+        eq_pos = synthesize_equalizer_network(
+            slope_db=4.0,
+            min_loss_db=1.0,
+            f1_hz=1e9,
+            f2_hz=2e9,
+            slope_type="Positive",
+            freq=freq
+        )
+        s21_pos_db = eq_pos.s_db[:, 1, 0]
+        self.assertAlmostEqual(s21_pos_db[0], -5.0, delta=0.05)
+        self.assertAlmostEqual(s21_pos_db[1], -3.0, delta=0.05)
+        self.assertAlmostEqual(s21_pos_db[2], -1.0, delta=0.05)
+
+        # Negative slope: IL increases with frequency
+        eq_neg = synthesize_equalizer_network(
+            slope_db=4.0,
+            min_loss_db=1.0,
+            f1_hz=1e9,
+            f2_hz=2e9,
+            slope_type="Negative",
+            freq=freq
+        )
+        s21_neg_db = eq_neg.s_db[:, 1, 0]
+        self.assertAlmostEqual(s21_neg_db[0], -1.0, delta=0.05)
+        self.assertAlmostEqual(s21_neg_db[1], -3.0, delta=0.05)
+        self.assertAlmostEqual(s21_neg_db[2], -5.0, delta=0.05)
+
+    def test_equalizer_loss_extraction_and_cascade(self):
+        """
+        Verify scalar loss extraction with f1, f2, and opFreq, and integration in schematic cascade.
+        """
+        block_pos = {
+            "type": "eq",
+            "params": {"minLoss": 1.5, "slope": 3.0, "f1": "1 GHz", "f2": "2 GHz", "opFreq": "1.0 GHz"}
+        }
+        self.assertAlmostEqual(extract_component_loss_db(block_pos), 4.5, delta=0.01)
+
+        block_pos["params"]["opFreq"] = "2.0 GHz"
+        self.assertAlmostEqual(extract_component_loss_db(block_pos), 1.5, delta=0.01)
+
+        block_pos["params"]["opFreq"] = "1.5 GHz"
+        self.assertAlmostEqual(extract_component_loss_db(block_pos), 3.0, delta=0.01)
+
+        schematic = {
+            "band": {"startFreq": 1.0, "stopFreq": 2.0, "startUnit": "GHz", "points": 3},
+            "blocks": [
+                {"id": "src", "type": "rfin", "params": {"label": "IN", "anaPort": "P1"}},
+                {"id": "eq1", "type": "eq", "params": {"label": "EQ", "slope": 4.0, "minLoss": 1.0, "f1": "1 GHz", "f2": "2 GHz"}},
+                {"id": "out", "type": "rfout", "params": {"label": "OUT", "anaPort": "P2"}}
+            ],
+            "conns": [
+                {"from": {"block": "src", "port": "out"}, "to": {"block": "eq1", "port": "in"}},
+                {"from": {"block": "eq1", "port": "out"}, "to": {"block": "out", "port": "in"}}
+            ]
+        }
+        res = analyze_schematic_cascade(schematic)
+        p = res["paths"][0]
+        self.assertAlmostEqual(p["s21_db"][0], -5.0, delta=0.05)
+        self.assertAlmostEqual(p["s21_db"][1], -3.0, delta=0.05)
+        self.assertAlmostEqual(p["s21_db"][2], -1.0, delta=0.05)
 
 
 if __name__ == "__main__":

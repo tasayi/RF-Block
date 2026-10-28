@@ -20,6 +20,8 @@ from .synthesizer import (
     synthesize_transmission_line,
     synthesize_filter_network,
     synthesize_mixer_network,
+    synthesize_equalizer_network,
+    parse_freq_value_hz,
     extract_subnetwork_2port
 )
 
@@ -89,7 +91,20 @@ def extract_component_loss_db(
     if btype == "eq":
         min_loss = float(params.get("minLoss", 1.0))
         slope = float(params.get("slope", 3.0))
-        return min_loss + (slope / 2.0)
+        f1_hz, _ = parse_freq_value_hz(params.get("f1", "1 GHz"), default_hz=1e9)
+        f2_hz, _ = parse_freq_value_hz(params.get("f2", "2 GHz"), default_hz=2e9)
+        op_val = params.get("opFreq", params.get("freq"))
+        if op_val:
+            f_op_hz, _ = parse_freq_value_hz(op_val, default_hz=(f1_hz + f2_hz) / 2.0)
+        else:
+            f_op_hz = (f1_hz + f2_hz) / 2.0
+        if f2_hz <= f1_hz:
+            return min_loss + (slope / 2.0)
+        clamped_f = max(f1_hz, min(f2_hz, f_op_hz))
+        frac = (clamped_f - f1_hz) / (f2_hz - f1_hz)
+        is_neg = (str(params.get("slopeType")).strip().lower() == "negative")
+        loss = min_loss + slope * frac if is_neg else min_loss + slope * (1.0 - frac)
+        return max(0.0, loss)
 
     if btype == "isolator":
         if (in_port, out_port) == ("out", "in"):
@@ -524,6 +539,25 @@ def build_block_network(
         idx_a = get_block_port_index(btype, in_port, params)
         idx_b = get_block_port_index(btype, out_port, params)
         return extract_subnetwork_2port(full_net, idx_a, idx_b)
+
+    # Equalizer
+    if btype == "eq":
+        slope_db = float(params.get("slope", 3.0))
+        min_loss_db = float(params.get("minLoss", 1.0))
+        f1_hz, _ = parse_freq_value_hz(params.get("f1", "1 GHz"), default_hz=1e9)
+        f2_hz, _ = parse_freq_value_hz(params.get("f2", "2 GHz"), default_hz=2e9)
+        slope_type = str(params.get("slopeType", "Positive"))
+        return synthesize_equalizer_network(
+            slope_db=slope_db,
+            min_loss_db=min_loss_db,
+            f1_hz=f1_hz,
+            f2_hz=f2_hz,
+            slope_type=slope_type,
+            freq=freq,
+            z0=z0,
+            return_loss_db=rl_db,
+            name=label
+        )
 
     # For all other 2-port passive elements, synthesize using Pi-network model
     loss_db = extract_component_loss_db(block, in_port=in_port, out_port=out_port)

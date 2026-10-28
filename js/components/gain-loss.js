@@ -91,14 +91,23 @@ def({
 def({
   type: "eq", keys: "equalizer equaliser slope cable compensation gain loss tilt pad", name: "Equalizer", group: "Gain / Loss", w: 60, h: 60,
   ports: [{ id: "in", side: "left", kind: "inout", dx: 0, dy: 30 }, { id: "out", side: "right", kind: "inout", dx: 60, dy: 30 }],
-  params: { label: "EQ", slope: 3, minLoss: 1 },
-  fields: [{ key: "slope", label: "Slope compensation", unit: "dB", step: 0.5, min: 0 },
-           { key: "minLoss", label: "Min insertion loss", unit: "dB", step: 0.1, min: 0 }],
-  nf: p => Math.abs(+p.minLoss || 0) + Math.abs(+p.slope || 0) / 2,
-  out: p => ({ out: -(Math.abs(+p.minLoss || 0) + Math.abs(+p.slope || 0) / 2) }),
-  val: p => "IL \u2212" + fmt(Math.abs(+p.minLoss || 0) + Math.abs(+p.slope || 0) / 2) + " dB",
-  info: p => "Slope " + fmt(Math.abs(+p.slope || 0)) + " dB",
-  bidi: (m, p) => rl(m, Math.abs(+p.minLoss || 0) + Math.abs(+p.slope || 0) / 2),
+  params: { label: "EQ", slope: 3, minLoss: 1, f1: "1 GHz", f2: "2 GHz", opFreq: "", slopeType: "Positive" },
+  fields: [
+    { key: "slope", label: "Slope compensation", unit: "dB", step: 0.5, min: 0 },
+    { key: "minLoss", label: "Min insertion loss", unit: "dB", step: 0.1, min: 0 },
+    { key: "f1", label: "Start frequency (f1)", type: "text" },
+    { key: "f2", label: "Stop frequency (f2)", type: "text" },
+    { key: "opFreq", label: "Operating freq (blank=auto)", type: "text" },
+    { key: "slopeType", label: "Slope direction", type: "select", options: ["Positive", "Negative"] }
+  ],
+  nf: p => eqLoss(p),
+  out: p => ({ out: -eqLoss(p) }),
+  val: p => "IL \u2212" + fmt(eqLoss(p)) + " dB",
+  info: p => {
+    const r = (p.f1 && p.f2) ? ` (${p.f1}\u2013${p.f2})` : "";
+    return "Slope " + fmt(Math.abs(+p.slope || 0)) + " dB" + r;
+  },
+  bidi: (m, p) => rl(m, eqLoss(p)),
   sym() {
     return `<rect class="blk-shape" x="0" y="6" width="60" height="48" rx="6"/>` +
            `<path class="blk-glyph" d="M12 42L48 18"/>` +
