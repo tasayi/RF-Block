@@ -230,6 +230,111 @@ body {
   width: 100%;
 }
 
+/* --- Unified Menu Dropdown Pattern --- */
+.menu-drop-wrap {
+  position: relative;
+  flex: none;
+  display: inline-block;
+}
+.menu-drop-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+}
+.menu-drop-btn .menu-drop-caret {
+  margin-left: 2px;
+  opacity: 0.6;
+  transition: transform 0.18s ease;
+}
+.menu-drop-btn.open .menu-drop-caret {
+  transform: rotate(180deg);
+  opacity: 0.95;
+}
+.menu-drop-panel {
+  display: none;
+  position: fixed;
+  background: var(--chrome);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  padding: 6px 0;
+  min-width: 220px;
+  z-index: 10000;
+  animation: mdp-in 0.12s ease;
+  user-select: none;
+}
+.menu-drop-panel.open {
+  display: block;
+}
+@keyframes mdp-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.menu-drop-section {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-dim2);
+  padding: 6px 14px 4px;
+}
+.menu-drop-divider {
+  height: 1px;
+  background: var(--line);
+  margin: 4px 0;
+  opacity: 0.6;
+}
+.menu-drop-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 7px 14px;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  text-align: left;
+  cursor: pointer;
+  color: var(--ink);
+  font-size: 12px;
+  font-family: inherit;
+  transition: background 0.12s, color 0.12s;
+  box-sizing: border-box;
+}
+.menu-drop-item:hover {
+  background: rgba(245, 158, 11, 0.12);
+  color: var(--accent);
+}
+.menu-drop-item .mico {
+  font-size: 13px;
+  width: 18px;
+  text-align: center;
+  flex: none;
+}
+.menu-drop-item .mtext {
+  flex: 1;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.menu-drop-item .badge-ext {
+  margin-left: 8px;
+  font-size: 10px;
+  font-weight: 700;
+  font-family: var(--mono);
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--ink-dim);
+  letter-spacing: 0.03em;
+  border: 1px solid var(--line-light);
+}
+.menu-drop-item:hover .badge-ext {
+  background: var(--accent);
+  color: #0b0f17;
+  border-color: transparent;
+}
+
 
 /* Buttons */
 button.btn {
@@ -1170,12 +1275,47 @@ table.bg tr:hover td { background: rgba(255, 255, 255, 0.04); cursor: pointer; }
     </div>
     <div class="tb-sep"></div>
 
-    <!-- Export group -->
-    <div class="tb-group">
-      <button class="btn" id="btnPng" title="Export PNG image">PNG</button>
-      <button class="btn" id="btnSvg" title="Export SVG vector">SVG</button>
-      <button class="btn primary" id="btnVsdx" title="Export native editable Microsoft Visio (.vsdx) diagram">VSDX</button>
-      <button class="btn" id="btnBom" title="Bill of Materials as Excel workbook">BOM</button>
+    <!-- Export dropdown -->
+    <div class="menu-drop-wrap" id="exportDropWrap">
+      <button class="btn menu-drop-btn" id="btnExportMenu" title="Export schematic figures and reports">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M2.5 10v3a1 1 0 0 0 1 1h9a1 1 0 0 0 1-1v-3"/>
+          <polyline points="5 5 8 2 11 5"/>
+          <line x1="8" y1="2" x2="8" y2="10"/>
+        </svg>
+        Export
+        <svg class="menu-drop-caret" width="9" height="9" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3.5l3 3 3-3"/></svg>
+      </button>
+      <div class="menu-drop-panel" id="exportDropPanel">
+        <div class="menu-drop-section">Drawing Figures</div>
+        <button class="menu-drop-item" id="menuExpSvg" title="Export scalable vector graphic">
+          <span class="mico">📐</span>
+          <span class="mtext">SVG Vector</span>
+          <span class="badge-ext">.svg</span>
+        </button>
+        <button class="menu-drop-item" id="menuExpEmf" title="Export Enhanced Metafile vector graphic">
+          <span class="mico">🎨</span>
+          <span class="mtext">Enhanced Metafile</span>
+          <span class="badge-ext">.emf</span>
+        </button>
+        <button class="menu-drop-item" id="menuExpPng" title="Export high-resolution raster image">
+          <span class="mico">🖼️</span>
+          <span class="mtext">PNG Image</span>
+          <span class="badge-ext">.png</span>
+        </button>
+        <button class="menu-drop-item" id="menuExpVdx" title="Export open XML vector drawing (LibreOffice Draw / Visio)">
+          <span class="mico">📄</span>
+          <span class="mtext">Visio Drawing XML</span>
+          <span class="badge-ext">.vdx</span>
+        </button>
+        <div class="menu-drop-divider"></div>
+        <div class="menu-drop-section">Reports &amp; Data</div>
+        <button class="menu-drop-item" id="menuExpBom" title="Export Bill of Materials to Excel">
+          <span class="mico">📊</span>
+          <span class="mtext">Bill of Materials</span>
+          <span class="badge-ext">.xlsx</span>
+        </button>
+      </div>
     </div>
 
     <div class="tb-spacer"></div>
@@ -1340,8 +1480,47 @@ table.bg tr:hover td { background: rgba(255, 255, 255, 0.04); cursor: pointer; }
       </div>
       <div class="tb-spacer"></div>
       <button class="btn btn-sm" id="bgToggleExpand" title="Expand / Minimize Drawer">⛶ Expand</button>
-      <button class="btn btn-sm primary" id="bgXlsx" title="Export stage budget and plot settings to Excel">📥 Export Excel (.xlsx)</button>
-      <button class="btn btn-sm" id="bgCsv" title="Export CSV">Export CSV</button>
+      <div class="menu-drop-wrap" id="bgExportDropWrap">
+        <button class="btn btn-sm menu-drop-btn" id="btnBgExportMenu" title="Export budget data and stage plots">
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M2.5 10v3a1 1 0 0 0 1 1h9a1 1 0 0 0 1-1v-3"/>
+            <polyline points="5 5 8 2 11 5"/>
+            <line x1="8" y1="2" x2="8" y2="10"/>
+          </svg>
+          Export
+          <svg class="menu-drop-caret" width="8" height="8" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3.5l3 3 3-3"/></svg>
+        </button>
+        <div class="menu-drop-panel" id="bgExportDropPanel">
+          <div class="menu-drop-section">Plot Figures</div>
+          <button class="menu-drop-item" id="bgExpPlotSvg" title="Export stage plot as transparent SVG">
+            <span class="mico">📊</span>
+            <span class="mtext">SVG Vector Plot</span>
+            <span class="badge-ext">.svg</span>
+          </button>
+          <button class="menu-drop-item" id="bgExpPlotEmf" title="Export stage plot as Enhanced Metafile">
+            <span class="mico">🎨</span>
+            <span class="mtext">Enhanced Metafile</span>
+            <span class="badge-ext">.emf</span>
+          </button>
+          <button class="menu-drop-item" id="bgExpPlotPng" title="Export stage plot as high-resolution PNG">
+            <span class="mico">🖼️</span>
+            <span class="mtext">PNG Image</span>
+            <span class="badge-ext">.png</span>
+          </button>
+          <div class="menu-drop-divider"></div>
+          <div class="menu-drop-section">Cascade Data</div>
+          <button class="menu-drop-item" id="bgExpDataXlsx" title="Export stage budget and plot settings to Excel">
+            <span class="mico">📥</span>
+            <span class="mtext">Excel Workbook</span>
+            <span class="badge-ext">.xlsx</span>
+          </button>
+          <button class="menu-drop-item" id="bgExpDataCsv" title="Export stage budget table to CSV">
+            <span class="mico">📄</span>
+            <span class="mtext">CSV Table</span>
+            <span class="badge-ext">.csv</span>
+          </button>
+        </div>
+      </div>
       <button class="btn btn-sm" id="bgClose">Close</button>
     </div>
     <div class="bg-body" id="bgBody"></div>
@@ -7488,14 +7667,14 @@ async function openDoc() {
   }
 }
 
-function exportVsdx() {
+function exportVdx() {
   commitSheet();
   if (!blocks.length) {
-    hint("Can't export Visio VSDX — the diagram is empty.");
+    hint("Can't export Visio VDX — the diagram is empty.");
     return;
   }
   if (typeof buildVsdxBlob !== "function") {
-    alert("VSDX Exporter module is not loaded.");
+    alert("Visio Drawing Exporter module is not loaded.");
     return;
   }
   try {
@@ -7504,13 +7683,18 @@ function exportVsdx() {
     const needNoise = !!(settings.showNF || settings.showNoiseFloor);
     const NFm = needNoise ? computeNoise(P) : null;
     const blob = buildVsdxBlob(blocks, conns, P, NFm, PSecondary, null, settings);
-    const base = (fileName || "rf-chain").replace(/\.(rfbd|json|vsdx|png|svg)$/i, "");
-    const name = `${base}.vsdx`;
-    downloadFile(blob, name, "application/vnd.ms-visio.drawing.main+xml");
+    const base = (fileName || "rf-chain").replace(/\.(rfbd|json|vsdx|vdx|png|svg|emf)$/i, "");
+    const name = `${base}.vdx`;
+    downloadFile(blob, name, "application/vnd.visio");
+    if (typeof hint === "function") hint(`Exported schematic vector drawing as '${name}'`);
   } catch (err) {
     console.error(err);
-    alert("Error generating Visio VSDX file: " + (err.message || err));
+    alert("Error generating Visio VDX drawing: " + (err.message || err));
   }
+}
+
+function exportVsdx() {
+  return exportVdx();
 }
 
 if (typeof module !== "undefined" && module.exports) {
@@ -7524,6 +7708,7 @@ if (typeof module !== "undefined" && module.exports) {
     saveDoc,
     loadDoc,
     openDoc,
+    exportVdx,
     exportVsdx
   };
 }
@@ -7832,6 +8017,1084 @@ if (typeof module !== "undefined" && module.exports) {
     buildFlattenedPillStack
   };
 }
+
+
+/* --- File: js/io/emf-exporter.js --- */
+"use strict";
+
+/* =====================================================================
+ * RF Block Diagram Editor - Native Enhanced Metafile (EMF) Vector Exporter
+ * Pure client-side binary Microsoft Enhanced Metafile (MS-EMF) generator
+ * ===================================================================== */
+
+(function (root, factory) {
+  if (typeof module !== "undefined" && module.exports) {
+    module.exports = factory();
+  } else {
+    const exports = factory();
+    Object.assign(root, exports);
+  }
+})(typeof globalThis !== "undefined" ? globalThis : this, function () {
+
+  /* --- GDI Record Constants --- */
+  const EMR_HEADER = 1;
+  const EMR_POLYBEZIER = 2;
+  const EMR_POLYGON = 3;
+  const EMR_POLYLINE = 4;
+  const EMR_SETWINDOWEXTEX = 9;
+  const EMR_SETVIEWPORTEXTEX = 11;
+  const EMR_EOF = 14;
+  const EMR_SETMAPMODE = 17;
+  const EMR_SETBKMODE = 18;
+  const EMR_SETTEXTCOLOR = 24;
+  const EMR_SETTEXTALIGN = 22;
+  const EMR_MOVETOEX = 27;
+  const EMR_SELECTOBJECT = 37;
+  const EMR_CREATEPEN = 38;
+  const EMR_CREATEBRUSHINDIRECT = 39;
+  const EMR_DELETEOBJECT = 40;
+  const EMR_ELLIPSE = 42;
+  const EMR_RECTANGLE = 43;
+  const EMR_ROUNDRECT = 44;
+  const EMR_LINETO = 54;
+  const EMR_BEGINPATH = 59;
+  const EMR_ENDPATH = 60;
+  const EMR_CLOSEFIGURE = 61;
+  const EMR_FILLPATH = 62;
+  const EMR_STROKEANDFILLPATH = 63;
+  const EMR_STROKEPATH = 64;
+  const EMR_EXTCREATEFONTINDIRECTW = 82;
+  const EMR_EXTTEXTOUTW = 84;
+  const EMR_POLYGON16 = 85;
+  const EMR_POLYLINE16 = 86;
+
+  /* Stock Object Constants */
+  const WHITE_BRUSH = 0x80000000;
+  const LTGRAY_BRUSH = 0x80000001;
+  const GRAY_BRUSH = 0x80000002;
+  const DKGRAY_BRUSH = 0x80000003;
+  const BLACK_BRUSH = 0x80000004;
+  const NULL_BRUSH = 0x80000005;
+  const WHITE_PEN = 0x80000006;
+  const BLACK_PEN = 0x80000007;
+  const NULL_PEN = 0x80000008;
+
+  /* Color parsing helper */
+  function parseColor(str, defaultColor = { r: 0, g: 0, b: 0, a: 1 }) {
+    if (!str || str === "none" || str === "transparent") return null;
+    const s = String(str).trim().toLowerCase();
+    if (s === "black") return { r: 0, g: 0, b: 0, a: 1 };
+    if (s === "white") return { r: 255, g: 255, b: 255, a: 1 };
+    if (s === "red") return { r: 255, g: 0, b: 0, a: 1 };
+    if (s === "green") return { r: 0, g: 128, b: 0, a: 1 };
+    if (s === "blue") return { r: 0, g: 0, b: 255, a: 1 };
+
+    // #hex
+    if (s.startsWith("#")) {
+      const hex = s.slice(1);
+      if (hex.length === 3) {
+        return {
+          r: parseInt(hex[0] + hex[0], 16),
+          g: parseInt(hex[1] + hex[1], 16),
+          b: parseInt(hex[2] + hex[2], 16),
+          a: 1
+        };
+      }
+      if (hex.length === 6 || hex.length === 8) {
+        return {
+          r: parseInt(hex.slice(0, 2), 16),
+          g: parseInt(hex.slice(2, 4), 16),
+          b: parseInt(hex.slice(4, 6), 16),
+          a: hex.length === 8 ? parseInt(hex.slice(6, 8), 16) / 255 : 1
+        };
+      }
+    }
+
+    // rgb/rgba
+    const rgbMatch = s.match(/rgba?\s*\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)(?:\s*,\s*([\d.]+))?\s*\)/);
+    if (rgbMatch) {
+      return {
+        r: Math.round(parseFloat(rgbMatch[1])),
+        g: Math.round(parseFloat(rgbMatch[2])),
+        b: Math.round(parseFloat(rgbMatch[3])),
+        a: rgbMatch[4] !== undefined ? parseFloat(rgbMatch[4]) : 1
+      };
+    }
+
+    // hsl/hsla
+    const hslMatch = s.match(/hsla?\s*\(\s*([\d.]+)\s*,\s*([\d.]+)%\s*,\s*([\d.]+)%(?:\s*,\s*([\d.]+))?\s*\)/);
+    if (hslMatch && typeof hsl2hex === "function") {
+      const hex = hsl2hex(parseFloat(hslMatch[1]), parseFloat(hslMatch[2]), parseFloat(hslMatch[3]));
+      return parseColor(hex);
+    }
+
+    return defaultColor;
+  }
+
+  /* COLORREF in GDI format: 0x00BBGGRR */
+  function colorRef(c) {
+    if (!c) return 0;
+    return (c.b << 16) | (c.g << 8) | c.r;
+  }
+
+  /* Matrix 2D Transform helper */
+  function identityMatrix() {
+    return [1, 0, 0, 1, 0, 0];
+  }
+
+  function multiplyMatrix(m1, m2) {
+    return [
+      m1[0] * m2[0] + m1[2] * m2[1],
+      m1[1] * m2[0] + m1[3] * m2[1],
+      m1[0] * m2[2] + m1[2] * m2[3],
+      m1[1] * m2[2] + m1[3] * m2[3],
+      m1[0] * m2[4] + m1[2] * m2[5] + m1[4],
+      m1[1] * m2[4] + m1[3] * m2[5] + m1[5]
+    ];
+  }
+
+  function transformPoint(m, pt) {
+    return {
+      x: m[0] * pt.x + m[2] * pt.y + m[4],
+      y: m[1] * pt.x + m[3] * pt.y + m[5]
+    };
+  }
+
+  function parseTransform(str) {
+    if (!str) return identityMatrix();
+    let m = identityMatrix();
+    const regex = /([a-zA-Z]+)\s*\(([^)]+)\)/g;
+    let match;
+    while ((match = regex.exec(str)) !== null) {
+      const type = match[1].toLowerCase();
+      const args = match[2].trim().split(/[\s,]+/).map(Number);
+      if (type === "translate") {
+        const tx = args[0] || 0, ty = args[1] || 0;
+        m = multiplyMatrix(m, [1, 0, 0, 1, tx, ty]);
+      } else if (type === "scale") {
+        const sx = args[0] || 1, sy = args[1] !== undefined ? args[1] : sx;
+        m = multiplyMatrix(m, [sx, 0, 0, sy, 0, 0]);
+      } else if (type === "rotate") {
+        const deg = args[0] || 0;
+        const rad = deg * Math.PI / 180;
+        const cos = Math.cos(rad), sin = Math.sin(rad);
+        if (args.length >= 3) {
+          const cx = args[1], cy = args[2];
+          m = multiplyMatrix(m, [1, 0, 0, 1, cx, cy]);
+          m = multiplyMatrix(m, [cos, sin, -sin, cos, 0, 0]);
+          m = multiplyMatrix(m, [1, 0, 0, 1, -cx, -cy]);
+        } else {
+          m = multiplyMatrix(m, [cos, sin, -sin, cos, 0, 0]);
+        }
+      } else if (type === "matrix" && args.length === 6) {
+        m = multiplyMatrix(m, args);
+      }
+    }
+    return m;
+  }
+
+  /* Binary EMF Buffer Builder */
+  class EmfBuffer {
+    constructor(initialCapacity = 65536) {
+      this.buffer = new Uint8Array(initialCapacity);
+      this.view = new DataView(this.buffer.buffer);
+      this.offset = 0;
+      this.recordCount = 0;
+      this.handlesCount = 0;
+      this.penCache = new Map();
+      this.brushCache = new Map();
+      this.fontCache = new Map();
+    }
+
+    ensureCapacity(additionalBytes) {
+      if (this.offset + additionalBytes > this.buffer.length) {
+        let newSize = Math.max(this.buffer.length * 2, this.offset + additionalBytes + 16384);
+        const newBuf = new Uint8Array(newSize);
+        newBuf.set(this.buffer);
+        this.buffer = newBuf;
+        this.view = new DataView(this.buffer.buffer);
+      }
+    }
+
+    writeUInt8(val) {
+      this.ensureCapacity(1);
+      this.view.setUint8(this.offset, val);
+      this.offset += 1;
+    }
+
+    writeInt16(val) {
+      this.ensureCapacity(2);
+      this.view.setInt16(this.offset, val, true);
+      this.offset += 2;
+    }
+
+    writeUInt16(val) {
+      this.ensureCapacity(2);
+      this.view.setUint16(this.offset, val, true);
+      this.offset += 2;
+    }
+
+    writeInt32(val) {
+      this.ensureCapacity(4);
+      this.view.setInt32(this.offset, val, true);
+      this.offset += 4;
+    }
+
+    writeUInt32(val) {
+      this.ensureCapacity(4);
+      this.view.setUint32(this.offset, val, true);
+      this.offset += 4;
+    }
+
+    writeFloat(val) {
+      this.ensureCapacity(4);
+      this.view.setFloat32(this.offset, val, true);
+      this.offset += 4;
+    }
+
+    writeBytes(bytes) {
+      this.ensureCapacity(bytes.length);
+      this.buffer.set(bytes, this.offset);
+      this.offset += bytes.length;
+    }
+
+    beginRecord(type) {
+      const startOffset = this.offset;
+      this.writeUInt32(type);
+      this.writeUInt32(0); // placeholder for record size
+      return startOffset;
+    }
+
+    endRecord(startOffset) {
+      // Align record size to 4-byte boundary
+      const unalignedSize = this.offset - startOffset;
+      const pad = (4 - (unalignedSize % 4)) % 4;
+      for (let i = 0; i < pad; i++) this.writeUInt8(0);
+
+      const recordSize = this.offset - startOffset;
+      this.view.setUint32(startOffset + 4, recordSize, true);
+      this.recordCount++;
+    }
+
+    allocHandle() {
+      this.handlesCount++;
+      return this.handlesCount;
+    }
+
+    getPen(c, width = 1, isDashed = false) {
+      if (!c) return NULL_PEN;
+      const key = `${c.r},${c.g},${c.b},${width},${isDashed}`;
+      if (this.penCache.has(key)) return this.penCache.get(key);
+
+      const handle = this.allocHandle();
+      const start = this.beginRecord(EMR_CREATEPEN);
+      this.writeUInt32(handle);
+      this.writeUInt32(isDashed ? 1 : 0); // PS_SOLID = 0, PS_DASH = 1
+      this.writeInt32(Math.max(1, Math.round(width)));
+      this.writeInt32(0);
+      this.writeUInt32(colorRef(c));
+      this.endRecord(start);
+
+      this.penCache.set(key, handle);
+      return handle;
+    }
+
+    getBrush(c) {
+      if (!c) return NULL_BRUSH;
+      const key = `${c.r},${c.g},${c.b}`;
+      if (this.brushCache.has(key)) return this.brushCache.get(key);
+
+      const handle = this.allocHandle();
+      const start = this.beginRecord(EMR_CREATEBRUSHINDIRECT);
+      this.writeUInt32(handle);
+      this.writeUInt32(0); // BS_SOLID = 0
+      this.writeUInt32(colorRef(c));
+      this.writeUInt32(0); // Hatch = 0
+      this.endRecord(start);
+
+      this.brushCache.set(key, handle);
+      return handle;
+    }
+
+    getFont(family = "Arial", sizePx = 13, isBold = false) {
+      const key = `${family},${sizePx},${isBold}`;
+      if (this.fontCache.has(key)) return this.fontCache.get(key);
+
+      const handle = this.allocHandle();
+      const start = this.beginRecord(EMR_EXTCREATEFONTINDIRECTW);
+      this.writeUInt32(handle);
+
+      // EXTLOGFONTW (320 bytes)
+      this.writeInt32(-Math.round(sizePx)); // lfHeight
+      this.writeInt32(0); // lfWidth
+      this.writeInt32(0); // lfEscapement
+      this.writeInt32(0); // lfOrientation
+      this.writeInt32(isBold ? 700 : 400); // lfWeight
+      this.writeUInt8(0); // lfItalic
+      this.writeUInt8(0); // lfUnderline
+      this.writeUInt8(0); // lfStrikeOut
+      this.writeUInt8(1); // lfCharSet = DEFAULT_CHARSET
+      this.writeUInt8(0); // lfOutPrecision
+      this.writeUInt8(0); // lfClipPrecision
+      this.writeUInt8(4); // lfQuality = ANTIALIASED_QUALITY
+      this.writeUInt8(0x20); // lfPitchAndFamily = DEFAULT_PITCH | FF_SWISS
+
+      // lfFaceName (32 WCHAR = 64 bytes)
+      const cleanFont = String(family || "Arial").replace(/['"]/g, "").trim();
+      const faceBytes = new Uint8Array(64);
+      for (let i = 0; i < Math.min(31, cleanFont.length); i++) {
+        const code = cleanFont.charCodeAt(i);
+        faceBytes[i * 2] = code & 0xff;
+        faceBytes[i * 2 + 1] = (code >> 8) & 0xff;
+      }
+      this.writeBytes(faceBytes);
+
+      // Pad remaining EXTLOGFONTW fields with zeros (256 bytes)
+      const padBytes = new Uint8Array(256);
+      this.writeBytes(padBytes);
+
+      this.endRecord(start);
+      this.fontCache.set(key, handle);
+      return handle;
+    }
+
+    selectObject(handle) {
+      const start = this.beginRecord(EMR_SELECTOBJECT);
+      this.writeUInt32(handle);
+      this.endRecord(start);
+    }
+
+    setTextColor(c) {
+      const start = this.beginRecord(EMR_SETTEXTCOLOR);
+      this.writeUInt32(colorRef(c));
+      this.endRecord(start);
+    }
+
+    setTextAlign(alignMode) {
+      const start = this.beginRecord(EMR_SETTEXTALIGN);
+      this.writeUInt32(alignMode);
+      this.endRecord(start);
+    }
+
+    drawRectangle(x1, y1, x2, y2) {
+      const start = this.beginRecord(EMR_RECTANGLE);
+      this.writeInt32(Math.round(Math.min(x1, x2)));
+      this.writeInt32(Math.round(Math.min(y1, y2)));
+      this.writeInt32(Math.round(Math.max(x1, x2)));
+      this.writeInt32(Math.round(Math.max(y1, y2)));
+      this.endRecord(start);
+    }
+
+    drawRoundRect(x1, y1, x2, y2, rw, rh) {
+      const start = this.beginRecord(EMR_ROUNDRECT);
+      this.writeInt32(Math.round(Math.min(x1, x2)));
+      this.writeInt32(Math.round(Math.min(y1, y2)));
+      this.writeInt32(Math.round(Math.max(x1, x2)));
+      this.writeInt32(Math.round(Math.max(y1, y2)));
+      this.writeInt32(Math.round(rw * 2));
+      this.writeInt32(Math.round(rh * 2));
+      this.endRecord(start);
+    }
+
+    drawEllipse(x1, y1, x2, y2) {
+      const start = this.beginRecord(EMR_ELLIPSE);
+      this.writeInt32(Math.round(Math.min(x1, x2)));
+      this.writeInt32(Math.round(Math.min(y1, y2)));
+      this.writeInt32(Math.round(Math.max(x1, x2)));
+      this.writeInt32(Math.round(Math.max(y1, y2)));
+      this.endRecord(start);
+    }
+
+    drawLine(x1, y1, x2, y2) {
+      const mStart = this.beginRecord(EMR_MOVETOEX);
+      this.writeInt32(Math.round(x1));
+      this.writeInt32(Math.round(y1));
+      this.endRecord(mStart);
+
+      const lStart = this.beginRecord(EMR_LINETO);
+      this.writeInt32(Math.round(x2));
+      this.writeInt32(Math.round(y2));
+      this.endRecord(lStart);
+    }
+
+    drawPolygon16(pts) {
+      if (!pts || pts.length < 3) return;
+      let minX = pts[0].x, minY = pts[0].y, maxX = pts[0].x, maxY = pts[0].y;
+      for (const p of pts) {
+        if (p.x < minX) minX = p.x;
+        if (p.y < minY) minY = p.y;
+        if (p.x > maxX) maxX = p.x;
+        if (p.y > maxY) maxY = p.y;
+      }
+
+      const start = this.beginRecord(EMR_POLYGON16);
+      this.writeInt32(Math.round(minX));
+      this.writeInt32(Math.round(minY));
+      this.writeInt32(Math.round(maxX));
+      this.writeInt32(Math.round(maxY));
+      this.writeUInt32(pts.length);
+      for (const p of pts) {
+        this.writeInt16(Math.round(p.x));
+        this.writeInt16(Math.round(p.y));
+      }
+      this.endRecord(start);
+    }
+
+    drawPolyline16(pts) {
+      if (!pts || pts.length < 2) return;
+      let minX = pts[0].x, minY = pts[0].y, maxX = pts[0].x, maxY = pts[0].y;
+      for (const p of pts) {
+        if (p.x < minX) minX = p.x;
+        if (p.y < minY) minY = p.y;
+        if (p.x > maxX) maxX = p.x;
+        if (p.y > maxY) maxY = p.y;
+      }
+
+      const start = this.beginRecord(EMR_POLYLINE16);
+      this.writeInt32(Math.round(minX));
+      this.writeInt32(Math.round(minY));
+      this.writeInt32(Math.round(maxX));
+      this.writeInt32(Math.round(maxY));
+      this.writeUInt32(pts.length);
+      for (const p of pts) {
+        this.writeInt16(Math.round(p.x));
+        this.writeInt16(Math.round(p.y));
+      }
+      this.endRecord(start);
+    }
+
+    drawText(str, x, y) {
+      if (!str) return;
+      const strLen = str.length;
+      const strBytes = new Uint8Array(strLen * 2);
+      for (let i = 0; i < strLen; i++) {
+        const code = str.charCodeAt(i);
+        strBytes[i * 2] = code & 0xff;
+        strBytes[i * 2 + 1] = (code >> 8) & 0xff;
+      }
+
+      const start = this.beginRecord(EMR_EXTTEXTOUTW);
+      this.writeInt32(0);
+      this.writeInt32(0);
+      this.writeInt32(-1);
+      this.writeInt32(-1);
+      this.writeUInt32(1); // GM_COMPATIBLE
+      this.writeFloat(1.0);
+      this.writeFloat(1.0);
+      this.writeInt32(Math.round(x));
+      this.writeInt32(Math.round(y));
+      this.writeUInt32(strLen);
+      this.writeUInt32(76); // offString from record start (8 bytes type/size + 68 bytes fields)
+      this.writeUInt32(0); // fOptions
+      // rcl [48..63]
+      this.writeInt32(0);
+      this.writeInt32(0);
+      this.writeInt32(0);
+      this.writeInt32(0);
+      this.writeUInt32(0); // offDx
+      this.writeBytes(strBytes);
+      this.endRecord(start);
+    }
+  }
+
+  /* SVG Path 'd' Parser into Polylines and Closed Polygons */
+  function parseSvgPathD(d) {
+    if (!d) return [];
+    const tokens = [];
+    const re = /([a-df-z])|(-?(?:\d*\.\d+|\d+)(?:[eE][-+]?\d+)?)/gi;
+    let m;
+    while ((m = re.exec(d)) !== null) {
+      if (m[1]) tokens.push(m[1]);
+      else if (m[2]) tokens.push(parseFloat(m[2]));
+    }
+
+    const subpaths = [];
+    let curPts = [];
+    let isClosed = false;
+    let cx = 0, cy = 0;
+    let startX = 0, startY = 0;
+    let i = 0;
+
+    function flush() {
+      if (curPts.length > 1) {
+        subpaths.push({ pts: curPts, closed: isClosed });
+      }
+      curPts = [];
+      isClosed = false;
+    }
+
+    while (i < tokens.length) {
+      const tok = tokens[i];
+      if (typeof tok !== "string") { i++; continue; }
+      i++;
+
+      const cmd = tok;
+      const isRel = cmd === cmd.toLowerCase() && cmd !== "z";
+
+      switch (cmd.toUpperCase()) {
+        case "M": {
+          flush();
+          const x = isRel ? cx + tokens[i] : tokens[i];
+          const y = isRel ? cy + tokens[i + 1] : tokens[i + 1];
+          i += 2;
+          cx = x; cy = y;
+          startX = x; startY = y;
+          curPts.push({ x, y });
+          while (i < tokens.length && typeof tokens[i] === "number") {
+            const lx = isRel ? cx + tokens[i] : tokens[i];
+            const ly = isRel ? cy + tokens[i + 1] : tokens[i + 1];
+            i += 2;
+            cx = lx; cy = ly;
+            curPts.push({ x: lx, y: ly });
+          }
+          break;
+        }
+        case "L": {
+          while (i < tokens.length && typeof tokens[i] === "number") {
+            const x = isRel ? cx + tokens[i] : tokens[i];
+            const y = isRel ? cy + tokens[i + 1] : tokens[i + 1];
+            i += 2;
+            cx = x; cy = y;
+            curPts.push({ x, y });
+          }
+          break;
+        }
+        case "H": {
+          while (i < tokens.length && typeof tokens[i] === "number") {
+            const x = isRel ? cx + tokens[i] : tokens[i];
+            i += 1;
+            cx = x;
+            curPts.push({ x, y: cy });
+          }
+          break;
+        }
+        case "V": {
+          while (i < tokens.length && typeof tokens[i] === "number") {
+            const y = isRel ? cy + tokens[i] : tokens[i];
+            i += 1;
+            cy = y;
+            curPts.push({ x: cx, y });
+          }
+          break;
+        }
+        case "C": {
+          while (i < tokens.length && typeof tokens[i] === "number") {
+            const cp1x = isRel ? cx + tokens[i] : tokens[i];
+            const cp1y = isRel ? cy + tokens[i + 1] : tokens[i + 1];
+            const cp2x = isRel ? cx + tokens[i + 2] : tokens[i + 2];
+            const cp2y = isRel ? cy + tokens[i + 3] : tokens[i + 3];
+            const ex = isRel ? cx + tokens[i + 4] : tokens[i + 4];
+            const ey = isRel ? cy + tokens[i + 5] : tokens[i + 5];
+            i += 6;
+
+            // Interpolate cubic bezier curve
+            const steps = 10;
+            for (let step = 1; step <= steps; step++) {
+              const t = step / steps, mt = 1 - t;
+              const px = mt * mt * mt * cx + 3 * mt * mt * t * cp1x + 3 * mt * t * t * cp2x + t * t * t * ex;
+              const py = mt * mt * mt * cy + 3 * mt * mt * t * cp1y + 3 * mt * t * t * cp2y + t * t * t * ey;
+              curPts.push({ x: px, y: py });
+            }
+            cx = ex; cy = ey;
+          }
+          break;
+        }
+        case "Q": {
+          while (i < tokens.length && typeof tokens[i] === "number") {
+            const cpx = isRel ? cx + tokens[i] : tokens[i];
+            const cpy = isRel ? cy + tokens[i + 1] : tokens[i + 1];
+            const ex = isRel ? cx + tokens[i + 2] : tokens[i + 2];
+            const ey = isRel ? cy + tokens[i + 3] : tokens[i + 3];
+            i += 4;
+
+            const steps = 8;
+            for (let step = 1; step <= steps; step++) {
+              const t = step / steps, mt = 1 - t;
+              const px = mt * mt * cx + 2 * mt * t * cpx + t * t * ex;
+              const py = mt * mt * cy + 2 * mt * t * cpy + t * t * ey;
+              curPts.push({ x: px, y: py });
+            }
+            cx = ex; cy = ey;
+          }
+          break;
+        }
+        case "Z": {
+          isClosed = true;
+          cx = startX; cy = startY;
+          if (curPts.length && (curPts[curPts.length - 1].x !== startX || curPts[curPts.length - 1].y !== startY)) {
+            curPts.push({ x: startX, y: startY });
+          }
+          flush();
+          break;
+        }
+        default:
+          break;
+      }
+    }
+    flush();
+    return subpaths;
+  }
+
+  /* Lightweight XML element tree parser for non-browser / Node.js environments */
+  function parseSvgXmlString(xmlStr) {
+    function Element(tagName) {
+      this.tagName = tagName;
+      this.nodeType = 1;
+      this.attributes = Object.create(null);
+      this.children = [];
+      this.textContent = "";
+    }
+    Element.prototype.getAttribute = function(name) {
+      return this.attributes[name] !== undefined ? this.attributes[name] : null;
+    };
+    Element.prototype.querySelector = function(sel) {
+      if (this.tagName.toLowerCase() === sel.toLowerCase()) return this;
+      for (const ch of this.children) {
+        const found = ch.querySelector(sel);
+        if (found) return found;
+      }
+      return null;
+    };
+
+    let root = null;
+    const stack = [];
+    const tagRegex = /<(\/?)([a-zA-Z0-9_\-:]+)([^>]*)>|([^<]+)/g;
+    let match;
+
+    while ((match = tagRegex.exec(xmlStr)) !== null) {
+      const isClose = match[1];
+      const tagName = match[2];
+      const rawAttrs = match[3];
+      const textContent = match[4];
+
+      if (textContent) {
+        if (stack.length > 0) {
+          stack[stack.length - 1].textContent += textContent;
+        }
+        continue;
+      }
+      if (isClose) {
+        if (stack.length > 0 && stack[stack.length - 1].tagName.toLowerCase() === tagName.toLowerCase()) {
+          stack.pop();
+        }
+      } else {
+        const selfCloseExplicit = (rawAttrs && rawAttrs.trim().endsWith("/"));
+        const isSelfClosing = selfCloseExplicit || (["circle", "line", "rect", "ellipse", "path", "polygon", "polyline"].includes(tagName.toLowerCase()) && !xmlStr.includes(`</${tagName}>`));
+        const elem = new Element(tagName);
+        if (rawAttrs) {
+          const attrRegex = /([a-zA-Z0-9_\-:]+)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/g;
+          let attrMatch;
+          while ((attrMatch = attrRegex.exec(rawAttrs)) !== null) {
+            const key = attrMatch[1];
+            const val = attrMatch[2] !== undefined ? attrMatch[2] : (attrMatch[3] !== undefined ? attrMatch[3] : attrMatch[4]);
+            elem.attributes[key] = val;
+          }
+        }
+        if (!root) root = elem;
+        if (stack.length > 0) {
+          stack[stack.length - 1].children.push(elem);
+        }
+        if (!isSelfClosing) {
+          stack.push(elem);
+        }
+      }
+    }
+    return root;
+  }
+
+  /* Core SVG to EMF Converter */
+  function svgToEmf(svgInput) {
+    let svgDoc = null;
+    let svgElement = null;
+
+    if (typeof svgInput === "string") {
+      if (typeof DOMParser !== "undefined") {
+        svgDoc = new DOMParser().parseFromString(svgInput, "image/svg+xml");
+        svgElement = svgDoc.querySelector("svg");
+      } else {
+        const rootElem = parseSvgXmlString(svgInput);
+        svgElement = rootElem ? (rootElem.tagName.toLowerCase() === "svg" ? rootElem : rootElem.querySelector("svg")) : null;
+      }
+    } else if (svgInput && svgInput.nodeType === 1) {
+      svgElement = svgInput;
+    }
+
+    if (!svgElement) {
+      throw new Error("Unable to parse SVG input into a valid SVG DOM tree.");
+    }
+
+    // Determine dimensions from viewBox or width/height
+    const viewBoxAttr = svgElement.getAttribute("viewBox");
+    let vx = 0, vy = 0, vw = 800, vh = 600;
+    if (viewBoxAttr) {
+      const parts = viewBoxAttr.trim().split(/[\s,]+/).map(Number);
+      if (parts.length === 4 && parts[2] > 0 && parts[3] > 0) {
+        vx = parts[0]; vy = parts[1]; vw = parts[2]; vh = parts[3];
+      }
+    } else {
+      vw = parseFloat(svgElement.getAttribute("width")) || 800;
+      vh = parseFloat(svgElement.getAttribute("height")) || 600;
+    }
+
+    const width = Math.max(10, Math.round(vw));
+    const height = Math.max(10, Math.round(vh));
+    const dpi = 96;
+    const mmW = Math.max(1, Math.round(width * 25.4 / dpi));
+    const mmH = Math.max(1, Math.round(height * 25.4 / dpi));
+
+    const emf = new EmfBuffer(131072);
+
+    // Reserve 88 bytes for EMR_HEADER (offset 0..87)
+    const hdrOffset = emf.offset;
+    for (let i = 0; i < 88; i++) emf.writeUInt8(0);
+    emf.recordCount = 1;
+
+    // Initial setup records
+    // SetMapMode = MM_ANISOTROPIC (8)
+    const sMap = emf.beginRecord(EMR_SETMAPMODE);
+    emf.writeUInt32(8);
+    emf.endRecord(sMap);
+
+    // SetWindowExtEx
+    const sWin = emf.beginRecord(EMR_SETWINDOWEXTEX);
+    emf.writeInt32(width);
+    emf.writeInt32(height);
+    emf.endRecord(sWin);
+
+    // SetViewportExtEx
+    const sVp = emf.beginRecord(EMR_SETVIEWPORTEXTEX);
+    emf.writeInt32(width);
+    emf.writeInt32(height);
+    emf.endRecord(sVp);
+
+    // SetBkMode = TRANSPARENT (1)
+    const sBk = emf.beginRecord(EMR_SETBKMODE);
+    emf.writeUInt32(1);
+    emf.endRecord(sBk);
+
+    // Base viewBox offset matrix
+    const baseMatrix = multiplyMatrix(identityMatrix(), [1, 0, 0, 1, -vx, -vy]);
+
+    // Recursive DOM Traversal
+    function processNode(node, curMatrix, inherited) {
+      if (node.nodeType !== 1) return;
+      const tag = node.tagName.toLowerCase();
+      if (tag === "defs" || tag === "style" || tag === "clippath" || tag === "pattern" || tag === "marker") return;
+
+      const transformAttr = node.getAttribute("transform");
+      const nodeMatrix = transformAttr ? multiplyMatrix(curMatrix, parseTransform(transformAttr)) : curMatrix;
+
+      const fillAttr = node.getAttribute("fill");
+      const strokeAttr = node.getAttribute("stroke");
+      const strokeWidthAttr = node.getAttribute("stroke-width");
+      const strokeDashAttr = node.getAttribute("stroke-dasharray");
+      const isDashed = !!(strokeDashAttr && strokeDashAttr !== "none");
+
+      const fill = fillAttr !== null ? (fillAttr === "none" ? null : parseColor(fillAttr)) : inherited.fill;
+      const stroke = strokeAttr !== null ? (strokeAttr === "none" ? null : parseColor(strokeAttr)) : inherited.stroke;
+      const strokeWidth = strokeWidthAttr !== null ? parseFloat(strokeWidthAttr) || 1 : inherited.strokeWidth;
+
+      const style = { fill, stroke, strokeWidth, isDashed };
+
+      function applyPenAndBrush(f, s, w, dashed) {
+        const penHandle = s ? emf.getPen(s, w, dashed) : NULL_PEN;
+        const brushHandle = f ? emf.getBrush(f) : NULL_BRUSH;
+        emf.selectObject(penHandle);
+        emf.selectObject(brushHandle);
+      }
+
+      switch (tag) {
+        case "rect": {
+          const x = parseFloat(node.getAttribute("x")) || 0;
+          const y = parseFloat(node.getAttribute("y")) || 0;
+          const w = parseFloat(node.getAttribute("width")) || 0;
+          const h = parseFloat(node.getAttribute("height")) || 0;
+          const rx = parseFloat(node.getAttribute("rx")) || 0;
+          const ry = parseFloat(node.getAttribute("ry")) || rx;
+          if (w <= 0 || h <= 0) break;
+
+          applyPenAndBrush(style.fill, style.stroke, style.strokeWidth, style.isDashed);
+
+          // If no rotation, use standard rectangle / roundrect
+          if (nodeMatrix[1] === 0 && nodeMatrix[2] === 0) {
+            const p1 = transformPoint(nodeMatrix, { x, y });
+            const p2 = transformPoint(nodeMatrix, { x: x + w, y: y + h });
+            if (rx > 0 || ry > 0) {
+              emf.drawRoundRect(p1.x, p1.y, p2.x, p2.y, rx * nodeMatrix[0], ry * nodeMatrix[3]);
+            } else {
+              emf.drawRectangle(p1.x, p1.y, p2.x, p2.y);
+            }
+          } else {
+            // Transformed rect as polygon
+            const pts = [
+              transformPoint(nodeMatrix, { x, y }),
+              transformPoint(nodeMatrix, { x: x + w, y }),
+              transformPoint(nodeMatrix, { x: x + w, y: y + h }),
+              transformPoint(nodeMatrix, { x, y: y + h })
+            ];
+            emf.drawPolygon16(pts);
+          }
+          break;
+        }
+
+        case "circle": {
+          const cx = parseFloat(node.getAttribute("cx")) || 0;
+          const cy = parseFloat(node.getAttribute("cy")) || 0;
+          const r = parseFloat(node.getAttribute("r")) || 0;
+          if (r <= 0) break;
+
+          applyPenAndBrush(style.fill, style.stroke, style.strokeWidth, style.isDashed);
+          const cp = transformPoint(nodeMatrix, { x: cx, y: cy });
+          const rx = r * Math.hypot(nodeMatrix[0], nodeMatrix[1]);
+          const ry = r * Math.hypot(nodeMatrix[2], nodeMatrix[3]);
+          emf.drawEllipse(cp.x - rx, cp.y - ry, cp.x + rx, cp.y + ry);
+          break;
+        }
+
+        case "ellipse": {
+          const cx = parseFloat(node.getAttribute("cx")) || 0;
+          const cy = parseFloat(node.getAttribute("cy")) || 0;
+          const rx = parseFloat(node.getAttribute("rx")) || 0;
+          const ry = parseFloat(node.getAttribute("ry")) || 0;
+          if (rx <= 0 || ry <= 0) break;
+
+          applyPenAndBrush(style.fill, style.stroke, style.strokeWidth, style.isDashed);
+          const cp = transformPoint(nodeMatrix, { x: cx, y: cy });
+          emf.drawEllipse(cp.x - rx, cp.y - ry, cp.x + rx, cp.y + ry);
+          break;
+        }
+
+        case "line": {
+          const x1 = parseFloat(node.getAttribute("x1")) || 0;
+          const y1 = parseFloat(node.getAttribute("y1")) || 0;
+          const x2 = parseFloat(node.getAttribute("x2")) || 0;
+          const y2 = parseFloat(node.getAttribute("y2")) || 0;
+
+          if (style.stroke) {
+            applyPenAndBrush(null, style.stroke, style.strokeWidth, style.isDashed);
+            const p1 = transformPoint(nodeMatrix, { x: x1, y: y1 });
+            const p2 = transformPoint(nodeMatrix, { x: x2, y: y2 });
+            emf.drawLine(p1.x, p1.y, p2.x, p2.y);
+          }
+          break;
+        }
+
+        case "polyline":
+        case "polygon": {
+          const pointsAttr = node.getAttribute("points");
+          if (!pointsAttr) break;
+          const rawNums = pointsAttr.trim().split(/[\s,]+/).map(Number);
+          const pts = [];
+          for (let k = 0; k < rawNums.length - 1; k += 2) {
+            pts.push(transformPoint(nodeMatrix, { x: rawNums[k], y: rawNums[k + 1] }));
+          }
+          if (pts.length < 2) break;
+
+          applyPenAndBrush(tag === "polygon" ? style.fill : null, style.stroke, style.strokeWidth, style.isDashed);
+          if (tag === "polygon") {
+            emf.drawPolygon16(pts);
+          } else {
+            emf.drawPolyline16(pts);
+          }
+          break;
+        }
+
+        case "path": {
+          const d = node.getAttribute("d");
+          if (!d) break;
+          const subpaths = parseSvgPathD(d);
+          for (const sp of subpaths) {
+            const transformedPts = sp.pts.map(pt => transformPoint(nodeMatrix, pt));
+            if (sp.closed && style.fill) {
+              applyPenAndBrush(style.fill, style.stroke, style.strokeWidth, style.isDashed);
+              emf.drawPolygon16(transformedPts);
+            } else if (style.stroke) {
+              applyPenAndBrush(null, style.stroke, style.strokeWidth, style.isDashed);
+              emf.drawPolyline16(transformedPts);
+            }
+          }
+          break;
+        }
+
+        case "text": {
+          const x = parseFloat(node.getAttribute("x")) || 0;
+          const y = parseFloat(node.getAttribute("y")) || 0;
+          const text = (node.textContent || "").trim();
+          if (!text) break;
+
+          const textColor = style.fill || { r: 0, g: 0, b: 0, a: 1 };
+          const fontSize = parseFloat(node.getAttribute("font-size")) || 13;
+          const fontWeight = (node.getAttribute("font-weight") || "").toLowerCase();
+          const isBold = fontWeight === "bold" || fontWeight === "700" || fontWeight === "600";
+          const fontFamily = node.getAttribute("font-family") || "Arial";
+          const textAnchor = (node.getAttribute("text-anchor") || "start").toLowerCase();
+
+          const pt = transformPoint(nodeMatrix, { x, y });
+          const fontHandle = emf.getFont(fontFamily, fontSize, isBold);
+
+          emf.selectObject(fontHandle);
+          emf.setTextColor(textColor);
+
+          // TA_BASELINE = 24. Combine with alignment:
+          // TA_LEFT = 0, TA_RIGHT = 2, TA_CENTER = 6
+          let alignMode = 24; // BASELINE
+          if (textAnchor === "middle") alignMode |= 6;
+          else if (textAnchor === "end") alignMode |= 2;
+          else alignMode |= 0;
+
+          emf.setTextAlign(alignMode);
+          emf.drawText(text, pt.x, pt.y);
+          break;
+        }
+
+        default:
+          break;
+      }
+
+      // Recurse children
+      const kids = node.children || [];
+      for (let i = 0; i < kids.length; i++) {
+        processNode(kids[i], nodeMatrix, style);
+      }
+    }
+
+    const rootStyle = { fill: null, stroke: null, strokeWidth: 1, isDashed: false };
+    const rootKids = svgElement.children || [];
+    for (let i = 0; i < rootKids.length; i++) {
+      processNode(rootKids[i], baseMatrix, rootStyle);
+    }
+
+    // Write EMR_EOF (14)
+    const sEof = emf.beginRecord(EMR_EOF);
+    emf.writeUInt32(0); // nPalEntries
+    emf.writeUInt32(0); // offPalEntries
+    emf.writeUInt32(20); // nSizeLast
+    emf.endRecord(sEof);
+
+    // Finalize EMR_HEADER at offset 0
+    const totalBytes = emf.offset;
+    const numRecords = emf.recordCount;
+    const numHandles = emf.handlesCount + 1;
+
+    emf.view.setUint32(0, EMR_HEADER, true);
+    emf.view.setUint32(4, 88, true);
+    // rclBounds (pixels)
+    emf.view.setInt32(8, 0, true);
+    emf.view.setInt32(12, 0, true);
+    emf.view.setInt32(16, width, true);
+    emf.view.setInt32(20, height, true);
+    // rclFrame (0.01 mm)
+    emf.view.setInt32(24, 0, true);
+    emf.view.setInt32(28, 0, true);
+    emf.view.setInt32(32, mmW * 100, true);
+    emf.view.setInt32(36, mmH * 100, true);
+    // dSignature = " EMF" (0x464D4520, [MS-EMF] 2.2.9)
+    emf.view.setUint32(40, 0x464D4520, true);
+    emf.view.setUint32(44, 0x00010000, true); // nVersion
+    emf.view.setUint32(48, totalBytes, true);
+    emf.view.setUint32(52, numRecords, true);
+    emf.view.setUint16(56, numHandles, true);
+    emf.view.setUint16(58, 0, true); // sReserved
+    emf.view.setUint32(60, 0, true); // nDescription
+    emf.view.setUint32(64, 0, true); // offDescription
+    emf.view.setUint32(68, 0, true); // nPalEntries
+    emf.view.setInt32(72, width, true); // szlDevice.cx
+    emf.view.setInt32(76, height, true); // szlDevice.cy
+    emf.view.setInt32(80, mmW, true); // szlMillimeters.cx
+    emf.view.setInt32(84, mmH, true); // szlMillimeters.cy
+
+    return emf.buffer.subarray(0, totalBytes);
+  }
+
+  /* Export Action Triggers */
+  function exportSchematicEmf() {
+    if (typeof commitSheet === "function") commitSheet();
+    if (typeof blocks !== "undefined" && !blocks.length) {
+      if (typeof hint === "function") hint("Can't export EMF — the diagram is empty.");
+      return;
+    }
+    try {
+      const svgStr = (typeof buildExportSVG === "function")
+        ? buildExportSVG(1)
+        : ((typeof buildSvgString === "function") ? buildSvgString() : null);
+      if (!svgStr) {
+        if (typeof hint === "function") hint("SVG export engine is unavailable.");
+        return;
+      }
+      const emfBytes = svgToEmf(svgStr);
+      const blob = new Blob([emfBytes], { type: "image/emf" });
+      const base = (typeof fileName !== "undefined" && fileName ? fileName : "rf-chain").replace(/\.(rfbd|json|vsdx|vdx|png|svg|emf)$/i, "");
+      const name = `${base}.emf`;
+      if (typeof downloadFile === "function") {
+        downloadFile(blob, name, "image/emf");
+        if (typeof hint === "function") hint(`Exported schematic vector figure as '${name}'`);
+      }
+    } catch (err) {
+      console.error("EMF export error:", err);
+      if (typeof hint === "function") hint("Error exporting EMF: " + (err.message || err));
+    }
+  }
+
+  function exportBudgetPlotEmf() {
+    const sel = typeof $ === "function" ? $("bgStart") : null;
+    const startId = sel ? sel.value : null;
+    const pathIdx = (typeof budgetSelectedPathIdx !== "undefined") ? budgetSelectedPathIdx : 0;
+    const { rows } = (typeof buildBudget === "function") ? buildBudget(startId, pathIdx) : { rows: [] };
+    if (!rows || !rows.length) {
+      if (typeof hint === "function") hint("No budget plot data to export.");
+      return;
+    }
+    try {
+      const bwHz = (typeof settings !== "undefined" && settings.bandwidthHz && settings.bandwidthHz > 0) ? settings.bandwidthHz : 1e6;
+      const res = (typeof generateBudgetPlotSvg === "function") ? generateBudgetPlotSvg(rows, bwHz, true) : null;
+      if (!res || !res.svg) {
+        if (typeof hint === "function") hint("Budget plot SVG generator is unavailable.");
+        return;
+      }
+      const emfBytes = svgToEmf(res.svg);
+      const blob = new Blob([emfBytes], { type: "image/emf" });
+      if (typeof downloadFile === "function") {
+        downloadFile(blob, "cascade_budget_plot.emf", "image/emf");
+        if (typeof hint === "function") hint("Exported Cascade Budget Plot as Enhanced Metafile (.emf)");
+      }
+    } catch (err) {
+      console.error("Budget EMF export error:", err);
+      if (typeof hint === "function") hint("Error exporting Budget EMF: " + (err.message || err));
+    }
+  }
+
+  function exportSParamsEmf() {
+    try {
+      let svgStr = null;
+      if (typeof buildSParamsExportSvg === "function") {
+        svgStr = buildSParamsExportSvg();
+      } else if (typeof buildStandaloneSvg === "function") {
+        const container = (typeof $ === "function") ? $("spChartContainer") : null;
+        if (container) svgStr = buildStandaloneSvg(container);
+      }
+      if (!svgStr) {
+        if (typeof hint === "function") hint("S-Parameters graph SVG generator is unavailable.");
+        return;
+      }
+      const emfBytes = svgToEmf(svgStr);
+      const blob = new Blob([emfBytes], { type: "image/emf" });
+      if (typeof downloadFile === "function") {
+        downloadFile(blob, "sparams_graph.emf", "image/emf");
+        if (typeof hint === "function") hint("Exported S-Parameters Graph as Enhanced Metafile (.emf)");
+      }
+    } catch (err) {
+      console.error("S-Params EMF export error:", err);
+      if (typeof hint === "function") hint("Error exporting S-Params EMF: " + (err.message || err));
+    }
+  }
+
+  return {
+    svgToEmf,
+    exportSchematicEmf,
+    exportBudgetPlotEmf,
+    exportSParamsEmf
+  };
+});
 
 
 /* --- File: js/ui/canvas-renderer.js --- */
@@ -9053,9 +10316,6 @@ function renderBudgetPlot(rows, bwHz, bwMHz, P, container) {
 
   topBarHtml += `</div>
     <div style="display:flex; align-items:center; gap:6px;">
-      <button class="btn btn-sm" id="bgPlotExportSvg" title="Export stage plot as standalone transparent SVG">📊 Export SVG</button>
-      <button class="btn btn-sm" id="bgPlotExportPng" title="Export stage plot as high-resolution transparent PNG">🖼️ Export PNG</button>
-      <button class="btn btn-sm" id="bgPlotExportVsdx" title="Export stage plot as native Microsoft Visio (.vsdx) document">📐 Export VSDX</button>
       <button class="btn btn-sm" id="bgToggleScaleOpt">⚙️ ${budgetCustomScaling.showScaleOptions ? "Hide Scales" : "Axis Scales"}</button>
     </div>
   </div>`;
@@ -9127,14 +10387,6 @@ function renderBudgetPlot(rows, bwHz, bwMHz, P, container) {
       renderBudget();
     };
   }
-
-  // Export Buttons
-  const btnSvg = $("bgPlotExportSvg");
-  if (btnSvg) btnSvg.onclick = exportBudgetPlotSvg;
-  const btnPng = $("bgPlotExportPng");
-  if (btnPng) btnPng.onclick = exportBudgetPlotPng;
-  const btnVsdx = $("bgPlotExportVsdx");
-  if (btnVsdx) btnVsdx.onclick = exportBudgetPlotVsdx;
 
   // Scale inputs
   const chkLeftAuto = $("bgScaleLeftAuto");
@@ -9210,204 +10462,6 @@ function exportBudgetPlotPng() {
     });
   };
   img.src = url;
-}
-
-/* Export Budget Plot as Native Microsoft Visio (.vsdx) Document */
-function exportBudgetPlotVsdx() {
-  const sel = $("bgStart");
-  const startId = sel ? sel.value : null;
-  const { rows } = buildBudget(startId, budgetSelectedPathIdx);
-  if (!rows || !rows.length) { hint("No budget plot data to export."); return; }
-  if (typeof zipStore !== "function" || typeof getVsdxDocXml !== "function") {
-    hint("Visio packager is unavailable.");
-    return;
-  }
-
-  const bwHz = (settings.bandwidthHz && settings.bandwidthHz > 0) ? settings.bandwidthHz : 1e6;
-  const numStages = rows.length;
-
-  const W_px = 1000, H_px = 560;
-  const dpi = 96;
-  const toInX = x => x / dpi, toInY = y => (H_px - y) / dpi, toInLen = len => len / dpi;
-  const pageWidthIn = W_px / dpi, pageHeightIn = H_px / dpi;
-
-  const margin = { top: 60, right: 80, bottom: 90, left: 80 };
-  const pw = W_px - margin.left - margin.right;
-  const ph = H_px - margin.top - margin.bottom;
-
-  // Compute Left and Right axis ranges
-  let leftVals = [], rightVals = [];
-  for (const mKey of budgetPlotMetrics) {
-    const m = BUDGET_METRICS[mKey];
-    if (!m) continue;
-    rows.forEach(r => {
-      const v = m.getVal(r, bwHz);
-      if (v !== null && v !== undefined && isFinite(v)) {
-        if (m.axis === "right") rightVals.push(v);
-        else leftVals.push(v);
-      }
-    });
-  }
-
-  let yLeftMin = -40, yLeftMax = 40;
-  if (budgetCustomScaling.leftAuto) {
-    if (leftVals.length) {
-      const minV = Math.min(...leftVals), maxV = Math.max(...leftVals);
-      const span = maxV - minV || 20;
-      yLeftMin = Math.floor(minV - span * 0.12);
-      yLeftMax = Math.ceil(maxV + span * 0.12);
-      if (yLeftMin === yLeftMax) { yLeftMin -= 5; yLeftMax += 5; }
-    }
-  } else {
-    yLeftMin = budgetCustomScaling.leftMin;
-    yLeftMax = budgetCustomScaling.leftMax;
-  }
-
-  let yRightMin = 0, yRightMax = 15;
-  if (budgetCustomScaling.rightAuto) {
-    if (rightVals.length) {
-      const minV = Math.min(...rightVals), maxV = Math.max(...rightVals);
-      yRightMin = Math.max(0, Math.floor(minV - 0.5));
-      yRightMax = Math.max(yRightMin + 3, Math.ceil(maxV + 1.5));
-    }
-  } else {
-    yRightMin = budgetCustomScaling.rightMin;
-    yRightMax = budgetCustomScaling.rightMax;
-  }
-
-  const getX = idx => margin.left + (idx / Math.max(1, numStages - 1)) * pw;
-  const getYLeft = val => margin.top + ph - ((val - yLeftMin) / (yLeftMax - yLeftMin || 1)) * ph;
-  const getYRight = val => margin.top + ph - ((val - yRightMin) / (yRightMax - yRightMin || 1)) * ph;
-
-  let nextShapeId = 1;
-  let shapesXml = "";
-
-  // Title shape
-  shapesXml += buildTextShapeXml(nextShapeId++, "Cascade Stage Budget Analysis", W_px / 2, 25, 450, 30, 18, "#000000", true, "middle", dpi, toInX, toInY);
-
-  // Plot Area Border
-  const plotRectPts = [
-    { x: 0, y: toInLen(ph) },
-    { x: toInLen(pw), y: toInLen(ph) },
-    { x: toInLen(pw), y: 0 },
-    { x: 0, y: 0 }
-  ];
-  const plotGeom = makeGeometrySection(plotRectPts, 0, true, true);
-  shapesXml += buildShapeXml(nextShapeId++, "Plot Area", toInX(margin.left + pw / 2), toInY(margin.top + ph / 2), toInLen(pw), toInLen(ph), plotGeom, { stroke: true, strokeColor: "#334155", lineWidth: 1.5, fill: false });
-
-  // Horizontal Grid Lines & Y-axis labels (6 divisions)
-  const numGridTicks = 6;
-  for (let k = 0; k <= numGridTicks; k++) {
-    const frac = k / numGridTicks;
-    const y = margin.top + frac * ph;
-    const valL = yLeftMax - frac * (yLeftMax - yLeftMin);
-    const valR = yRightMax - frac * (yRightMax - yRightMin);
-
-    // Horizontal line
-    const linePts = [{ x: 0, y: 0 }, { x: toInLen(pw), y: 0 }];
-    const lineGeom = makeGeometrySection(linePts, 0, true, false);
-    shapesXml += buildShapeXml(nextShapeId++, "Gridline", toInX(margin.left + pw / 2), toInY(y), toInLen(pw), 0.01, lineGeom, { stroke: true, strokeColor: "#e2e8f0", lineWidth: 1, linePattern: 2, fill: false });
-
-    // Left tick text
-    shapesXml += buildTextShapeXml(nextShapeId++, valL.toFixed(0), margin.left - 26, y, 40, 16, 11, "#000000", true, "end", dpi, toInX, toInY);
-
-    // Right tick text
-    shapesXml += buildTextShapeXml(nextShapeId++, valR.toFixed(1), margin.left + pw + 26, y, 40, 16, 11, "#000000", true, "start", dpi, toInX, toInY);
-  }
-
-  // Axis Titles
-  shapesXml += buildTextShapeXml(nextShapeId++, "Power & Gain (dB / dBm)", margin.left - 55, margin.top + ph / 2, 220, 20, 12, "#000000", true, "middle", dpi, toInX, toInY, -Math.PI / 2);
-  shapesXml += buildTextShapeXml(nextShapeId++, "Noise Figure (dB)", margin.left + pw + 55, margin.top + ph / 2, 220, 20, 12, "#000000", true, "middle", dpi, toInX, toInY, Math.PI / 2);
-
-  // Vertical Stage Lines and Stage Labels
-  rows.forEach((r, idx) => {
-    const x = getX(idx);
-    const vLinePts = [{ x: 0, y: toInLen(ph) }, { x: 0, y: 0 }];
-    const vGeom = makeGeometrySection(vLinePts, 0, true, false);
-    shapesXml += buildShapeXml(nextShapeId++, `Stage Line ${idx+1}`, toInX(x), toInY(margin.top + ph / 2), 0.01, toInLen(ph), vGeom, { stroke: true, strokeColor: "#e2e8f0", lineWidth: 1, linePattern: 1, fill: false });
-
-    const stageName = r.name || `Stage ${idx + 1}`;
-    shapesXml += buildTextShapeXml(nextShapeId++, stageName, x, margin.top + ph + 20, 110, 18, 11, "#000000", true, "middle", dpi, toInX, toInY);
-    shapesXml += buildTextShapeXml(nextShapeId++, r.type, x, margin.top + ph + 34, 110, 16, 9.5, "#475569", false, "middle", dpi, toInX, toInY);
-  });
-
-  // Plot Traces (Polylines) & Stage Points
-  for (const mKey of budgetPlotMetrics) {
-    const m = BUDGET_METRICS[mKey];
-    if (!m) continue;
-
-    const isRight = (m.axis === "right");
-    const getY = isRight ? getYRight : getYLeft;
-
-    const pts = [];
-    rows.forEach((r, idx) => {
-      const v = m.getVal(r, bwHz);
-      if (v !== null && v !== undefined && isFinite(v)) {
-        pts.push({ x: getX(idx), y: getY(v), v });
-      }
-    });
-
-    if (pts.length >= 2) {
-      let minX = pts[0].x, maxX = pts[0].x, minY = pts[0].y, maxY = pts[0].y;
-      pts.forEach(p => {
-        if (p.x < minX) minX = p.x; if (p.x > maxX) maxX = p.x;
-        if (p.y < minY) minY = p.y; if (p.y > maxY) maxY = p.y;
-      });
-      const tW = Math.max(1, maxX - minX), tH = Math.max(1, maxY - minY);
-      const localPts = pts.map(p => ({
-        x: toInLen(p.x - minX),
-        y: toInLen(maxY - p.y)
-      }));
-      const traceGeom = makeGeometrySection(localPts, 0, true, false);
-      const traceStyle = { stroke: true, strokeColor: m.color, lineWidth: 2.5, linePattern: 1, fill: false };
-      shapesXml += buildShapeXml(nextShapeId++, `Trace ${m.label}`, toInX((minX + maxX) / 2), toInY((minY + maxY) / 2), toInLen(tW), toInLen(tH), traceGeom, traceStyle);
-
-      // Points
-      pts.forEach(p => {
-        const d = 8;
-        const ptGeom = `<Section N="Geometry" IX="0"><Cell N="NoFill" V="0"/><Cell N="NoLine" V="0"/><Row T="Ellipse" IX="1"><Cell N="X" V="${toInLen(d/2)}"/><Cell N="Y" V="${toInLen(d/2)}"/><Cell N="A" V="${toInLen(d)}"/><Cell N="B" V="${toInLen(d/2)}"/><Cell N="C" V="${toInLen(d/2)}"/><Cell N="D" V="${toInLen(d)}"/></Row></Section>`;
-        const ptStyle = { stroke: true, strokeColor: "#ffffff", lineWidth: 1.2, fill: true, fillColor: m.color };
-        shapesXml += buildShapeXml(nextShapeId++, "Marker", toInX(p.x), toInY(p.y), toInLen(d), toInLen(d), ptGeom, ptStyle);
-      });
-    }
-  }
-
-  // Legend
-  let legX = margin.left + 20;
-  for (const mKey of budgetPlotMetrics) {
-    const m = BUDGET_METRICS[mKey];
-    if (!m) continue;
-    const d = 7;
-    const ptGeom = `<Section N="Geometry" IX="0"><Cell N="NoFill" V="0"/><Cell N="NoLine" V="0"/><Row T="Ellipse" IX="1"><Cell N="X" V="${toInLen(d/2)}"/><Cell N="Y" V="${toInLen(d/2)}"/><Cell N="A" V="${toInLen(d)}"/><Cell N="B" V="${toInLen(d/2)}"/><Cell N="C" V="${toInLen(d/2)}"/><Cell N="D" V="${toInLen(d)}"/></Row></Section>`;
-    shapesXml += buildShapeXml(nextShapeId++, "Legend Dot", toInX(legX), toInY(H_px - 20), toInLen(d), toInLen(d), ptGeom, { stroke: false, fill: true, fillColor: m.color });
-    shapesXml += buildTextShapeXml(nextShapeId++, `${m.label} (${m.unit || (m.axis === 'right' ? 'dB' : 'dB/dBm')})`, legX + 50, H_px - 20, 90, 16, 10.5, "#000000", true, "start", dpi, toInX, toInY);
-    legX += 115;
-  }
-
-  const page1Xml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n`
-    + `<PageContents xmlns="http://schemas.microsoft.com/office/visio/2012/main">\n`
-    + `  <Shapes>\n${shapesXml}  </Shapes>\n`
-    + `</PageContents>`;
-
-  const entries = [
-    { name: "[Content_Types].xml", data: getVsdxContentTypesXml() },
-    { name: "_rels/.rels", data: getVsdxRootRelsXml() },
-    { name: "docProps/app.xml", data: getVsdxAppXml() },
-    { name: "docProps/core.xml", data: getVsdxCoreXml() },
-    { name: "visio/document.xml", data: getVsdxDocXml() },
-    { name: "visio/_rels/document.xml.rels", data: getVsdxDocRelsXml() },
-    { name: "visio/pages/pages.xml", data: getVsdxPagesXml(pageWidthIn, pageHeightIn) },
-    { name: "visio/pages/_rels/pages.xml.rels", data: getVsdxPagesRelsXml() },
-    { name: "visio/pages/page1.xml", data: page1Xml },
-    { name: "visio/masters/masters.xml", data: getVsdxMastersXml() },
-    { name: "visio/windows.xml", data: getVsdxWindowsXml() }
-  ];
-
-  if (typeof validateVsdxPackage === "function") validateVsdxPackage(entries);
-  const res = zipStore(entries);
-  const blob = (typeof Blob !== "undefined" && res instanceof Blob) ? res : new Blob([res], { type: "application/vnd.ms-visio.drawing" });
-  downloadFile(blob, "cascade_budget_plot.vsdx", "application/vnd.ms-visio.drawing");
-  hint("Exported Stage Plot as native Microsoft Visio (.vsdx) drawing.");
 }
 
 /* =====================================================================
@@ -9614,7 +10668,6 @@ if (typeof module !== "undefined" && module.exports) {
     generateBudgetPlotSvg,
     exportBudgetPlotSvg,
     exportBudgetPlotPng,
-    exportBudgetPlotVsdx,
     exportBudgetXlsx,
     exportBudgetCsv,
     BUDGET_METRICS
@@ -10216,6 +11269,29 @@ function exportSParamsSvg() {
   downloadFile(svgText, "multi_port_s_parameters.svg", "image/svg+xml");
 }
 
+/* Export EMF Vector Graph File */
+function exportSParamsEmf() {
+  const container = typeof $ === "function" ? $("spChartContainer") : null;
+  if (!container) return;
+  const svgText = buildStandaloneSvg(container);
+  if (!svgText) return;
+  if (typeof svgToEmf !== "function") {
+    if (typeof hint === "function") hint("EMF Exporter module is not loaded.");
+    return;
+  }
+  try {
+    const emfBytes = svgToEmf(svgText);
+    const blob = new Blob([emfBytes], { type: "image/emf" });
+    if (typeof downloadFile === "function") {
+      downloadFile(blob, "sparams_graph.emf", "image/emf");
+      if (typeof hint === "function") hint("Exported S-Parameters Graph as Enhanced Metafile (.emf)");
+    }
+  } catch (err) {
+    console.error("EMF export error:", err);
+    if (typeof hint === "function") hint("Error exporting S-Parameters EMF: " + (err.message || err));
+  }
+}
+
 /* Export PNG Raster Graph Image File */
 function exportSParamsPng() {
   const container = $("spChartContainer");
@@ -10299,8 +11375,10 @@ if (typeof module !== "undefined" && module.exports) {
     FALLBACK_COLORS,
     getTraceColor,
     renderSvgPlot,
+    buildStandaloneSvg,
     exportSParamsCsv,
     exportSParamsSvg,
+    exportSParamsEmf,
     exportSParamsPng,
     exportTouchstoneS2p
   };
@@ -10885,13 +11963,50 @@ function renderLinearAnalysis() {
       Defined Ports (${portsList.length}): ${portsStr} | Active Tab: <b style="color:#f8fafc">${esc(activeTab ? activeTab.name : "Sweep")}</b>
     </div>
 
-    <!-- Export Action Buttons -->
+    <!-- Export Action Menu -->
     <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap">
       ${sparamsTabs.length > 1 ? `<label style="font-size:12px; font-weight:600; cursor:pointer"><input type="checkbox" id="chkCompare" /> Compare with Benchmark Overlay</label>` : ""}
-      <button class="btn btn-sm" id="spExportCsv">📄 Export CSV</button>
-      <button class="btn btn-sm" id="spExportSvg">📊 Export SVG</button>
-      <button class="btn btn-sm" id="spExportPng">🖼️ Export PNG</button>
-      <button class="btn btn-sm" id="spExportS2p">📁 Export Touchstone (.sNp)</button>
+      <div class="menu-drop-wrap" id="spExportDropWrap">
+        <button class="btn btn-sm menu-drop-btn" id="btnSpExportMenu" title="Export S-Parameters graphs and network data">
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M2.5 10v3a1 1 0 0 0 1 1h9a1 1 0 0 0 1-1v-3"/>
+            <polyline points="5 5 8 2 11 5"/>
+            <line x1="8" y1="2" x2="8" y2="10"/>
+          </svg>
+          Export
+          <svg class="menu-drop-caret" width="8" height="8" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3.5l3 3 3-3"/></svg>
+        </button>
+        <div class="menu-drop-panel" id="spExportDropPanel">
+          <div class="menu-drop-section">Graph Figures</div>
+          <button class="menu-drop-item" id="spExpSvg" title="Export S-Parameters plot as SVG vector graphic">
+            <span class="mico">📊</span>
+            <span class="mtext">SVG Vector Graph</span>
+            <span class="badge-ext">.svg</span>
+          </button>
+          <button class="menu-drop-item" id="spExpEmf" title="Export S-Parameters plot as Enhanced Metafile">
+            <span class="mico">🎨</span>
+            <span class="mtext">Enhanced Metafile</span>
+            <span class="badge-ext">.emf</span>
+          </button>
+          <button class="menu-drop-item" id="spExpPng" title="Export S-Parameters plot as PNG image">
+            <span class="mico">🖼️</span>
+            <span class="mtext">PNG Image</span>
+            <span class="badge-ext">.png</span>
+          </button>
+          <div class="menu-drop-divider"></div>
+          <div class="menu-drop-section">Network Data</div>
+          <button class="menu-drop-item" id="spExpS2p" title="Export standard Touchstone multi-port network data">
+            <span class="mico">📁</span>
+            <span class="mtext">Touchstone Multiport</span>
+            <span class="badge-ext">.sNp</span>
+          </button>
+          <button class="menu-drop-item" id="spExpCsv" title="Export frequency response table to CSV">
+            <span class="mico">📄</span>
+            <span class="mtext">CSV Response Table</span>
+            <span class="badge-ext">.csv</span>
+          </button>
+        </div>
+      </div>
     </div>
   </div>`;
 
@@ -11275,6 +12390,44 @@ function renderLinearAnalysis() {
       };
     }
 
+    // Export dropdown toggle & actions
+    const spBtn = $("btnSpExportMenu");
+    const spPanel = $("spExportDropPanel");
+    const spWrap = $("spExportDropWrap");
+    if (spBtn && spPanel && spWrap) {
+      spBtn.onclick = e => {
+        e.stopPropagation();
+        const isOpen = spPanel.classList.toggle("open");
+        spBtn.classList.toggle("open", isOpen);
+        if (isOpen) {
+          const r = spBtn.getBoundingClientRect();
+          spPanel.style.top = (r.bottom + 6) + "px";
+          const panelW = spPanel.offsetWidth || 220;
+          let left = r.right - panelW;
+          if (left < 8) left = 8;
+          spPanel.style.left = left + "px";
+          spPanel.style.right = "";
+        }
+      };
+      document.addEventListener("click", e => {
+        if (!spWrap.contains(e.target) && !spPanel.contains(e.target)) {
+          spPanel.classList.remove("open");
+          spBtn.classList.remove("open");
+        }
+      });
+    }
+    const closeSpDrop = () => {
+      if (spPanel) spPanel.classList.remove("open");
+      if (spBtn) spBtn.classList.remove("open");
+    };
+
+    if ($("spExpSvg")) $("spExpSvg").onclick = () => { closeSpDrop(); exportSParamsSvg(); };
+    if ($("spExpEmf")) $("spExpEmf").onclick = () => { closeSpDrop(); (typeof exportSParamsEmf === "function") && exportSParamsEmf(); };
+    if ($("spExpPng")) $("spExpPng").onclick = () => { closeSpDrop(); exportSParamsPng(); };
+    if ($("spExpS2p")) $("spExpS2p").onclick = () => { closeSpDrop(); exportTouchstoneS2p(res); };
+    if ($("spExpCsv")) $("spExpCsv").onclick = () => { closeSpDrop(); exportSParamsCsv(res); };
+
+    // Backward-compatible handlers if standalone buttons exist
     if ($("spExportCsv")) $("spExportCsv").onclick = () => exportSParamsCsv(res);
     if ($("spExportSvg")) $("spExportSvg").onclick = () => exportSParamsSvg();
     if ($("spExportPng")) $("spExportPng").onclick = () => exportSParamsPng();
@@ -12434,16 +13587,18 @@ function initEvents() {
 
   window.addEventListener("beforeunload", e => { if (dirty && blocks.length) { e.preventDefault(); e.returnValue = ""; } });
 
-  if ($("btnSvg")) $("btnSvg").onclick = () => {
-    const s = buildExportSVG(1); if (!s) { hint("Nothing to export yet."); return; }
+  function doExportSvg() {
+    const s = (typeof buildExportSVG === "function") ? buildExportSVG(1) : null;
+    if (!s) { hint("Nothing to export yet."); return; }
     downloadFile(s, "rf-chain.svg", "image/svg+xml");
-  };
+  }
 
-  if ($("btnPng")) $("btnPng").onclick = async () => {
+  async function doExportPng() {
     if (document.fonts && document.fonts.ready) {
       try { await document.fonts.ready; } catch (e) {}
     }
-    const s = buildExportSVG(2); if (!s) { hint("Nothing to export yet."); return; }
+    const s = (typeof buildExportSVG === "function") ? buildExportSVG(2) : null;
+    if (!s) { hint("Nothing to export yet."); return; }
     const img = new Image(), url = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(s);
     img.onload = () => {
       const cv = document.createElement("canvas"); cv.width = img.width; cv.height = img.height;
@@ -12455,12 +13610,11 @@ function initEvents() {
         downloadFile(b, "rf-chain.png", "image/png");
       });
     };
-    img.onerror = () => hint("PNG export failed in this browser — try SVG."); img.src = url;
-  };
+    img.onerror = () => hint("PNG export failed in this browser — try SVG.");
+    img.src = url;
+  }
 
-  if ($("btnVsdx")) $("btnVsdx").onclick = exportVsdx;
-
-  if ($("btnBom")) $("btnBom").onclick = () => {
+  function doExportBom() {
     const rows = [["Ref", "Type", "MPN", "Sheet", "Parameters"]];
     const widths = [12, 18, 24, 14, 40];
     allBlocks().forEach(b => {
@@ -12471,7 +13625,71 @@ function initEvents() {
     });
     const blob = xlsxBlob(rows, widths, "BOM");
     downloadFile(blob, "bom.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-  };
+  }
+
+  function initDropdownMenu(btnId, panelId, wrapId, defaultWidth, align) {
+    const btn = $(btnId);
+    const panel = $(panelId);
+    const wrap = $(wrapId);
+    if (!btn || !panel || !wrap) return { close: () => {} };
+
+    function positionPanel() {
+      const r = btn.getBoundingClientRect();
+      panel.style.top = (r.bottom + 6) + "px";
+      const panelW = panel.offsetWidth || (defaultWidth || 220);
+      let left = (align === "right") ? (r.right - panelW) : r.left;
+      if (left + panelW > window.innerWidth - 8) left = window.innerWidth - panelW - 8;
+      if (left < 8) left = 8;
+      panel.style.left = left + "px";
+      panel.style.right = "";
+    }
+
+    btn.onclick = e => {
+      e.stopPropagation();
+      const open = panel.classList.toggle("open");
+      btn.classList.toggle("open", open);
+      if (open) positionPanel();
+    };
+
+    const close = () => {
+      panel.classList.remove("open");
+      btn.classList.remove("open");
+    };
+
+    document.addEventListener("click", e => {
+      if (!wrap.contains(e.target) && !panel.contains(e.target)) {
+        close();
+      }
+    });
+
+    window.addEventListener("resize", () => {
+      if (panel.classList.contains("open")) positionPanel();
+    });
+
+    return { close, position: positionPanel };
+  }
+
+  /* Main Toolbar Unified Export Menu */
+  const exportDrop = initDropdownMenu("btnExportMenu", "exportDropPanel", "exportDropWrap", 220, "left");
+  if ($("menuExpSvg")) $("menuExpSvg").onclick = () => { exportDrop.close(); doExportSvg(); };
+  if ($("menuExpEmf")) $("menuExpEmf").onclick = () => { exportDrop.close(); (typeof exportSchematicEmf === "function") && exportSchematicEmf(); };
+  if ($("menuExpPng")) $("menuExpPng").onclick = () => { exportDrop.close(); doExportPng(); };
+  if ($("menuExpVdx")) $("menuExpVdx").onclick = () => { exportDrop.close(); (typeof exportVdx === "function") ? exportVdx() : exportVsdx(); };
+  if ($("menuExpBom")) $("menuExpBom").onclick = () => { exportDrop.close(); doExportBom(); };
+
+  /* Standalone main toolbar export fallback handlers */
+  if ($("btnSvg")) $("btnSvg").onclick = doExportSvg;
+  if ($("btnPng")) $("btnPng").onclick = doExportPng;
+  if ($("btnVsdx")) $("btnVsdx").onclick = () => { (typeof exportVdx === "function") ? exportVdx() : exportVsdx(); };
+  if ($("btnBom")) $("btnBom").onclick = doExportBom;
+
+  /* Budget Drawer Unified Export Menu */
+  const bgExportDrop = initDropdownMenu("btnBgExportMenu", "bgExportDropPanel", "bgExportDropWrap", 220, "right");
+  if ($("bgExpPlotSvg")) $("bgExpPlotSvg").onclick = () => { bgExportDrop.close(); (typeof exportBudgetPlotSvg === "function") && exportBudgetPlotSvg(); };
+  if ($("bgExpPlotEmf")) $("bgExpPlotEmf").onclick = () => { bgExportDrop.close(); (typeof exportBudgetPlotEmf === "function") && exportBudgetPlotEmf(); };
+  if ($("bgExpPlotPng")) $("bgExpPlotPng").onclick = () => { bgExportDrop.close(); (typeof exportBudgetPlotPng === "function") && exportBudgetPlotPng(); };
+  if ($("bgExpDataXlsx")) $("bgExpDataXlsx").onclick = () => { bgExportDrop.close(); (typeof exportBudgetXlsx === "function") && exportBudgetXlsx(); };
+  if ($("bgExpDataCsv")) $("bgExpDataCsv").onclick = () => { bgExportDrop.close(); (typeof exportBudgetCsv === "function") && exportBudgetCsv(); };
 
   if ($("btnBudget")) $("btnBudget").onclick = toggleBudget;
   if ($("bgClose")) $("bgClose").onclick = toggleBudget;

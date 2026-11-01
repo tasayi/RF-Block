@@ -591,6 +591,29 @@ function exportSParamsSvg() {
   downloadFile(svgText, "multi_port_s_parameters.svg", "image/svg+xml");
 }
 
+/* Export EMF Vector Graph File */
+function exportSParamsEmf() {
+  const container = typeof $ === "function" ? $("spChartContainer") : null;
+  if (!container) return;
+  const svgText = buildStandaloneSvg(container);
+  if (!svgText) return;
+  if (typeof svgToEmf !== "function") {
+    if (typeof hint === "function") hint("EMF Exporter module is not loaded.");
+    return;
+  }
+  try {
+    const emfBytes = svgToEmf(svgText);
+    const blob = new Blob([emfBytes], { type: "image/emf" });
+    if (typeof downloadFile === "function") {
+      downloadFile(blob, "sparams_graph.emf", "image/emf");
+      if (typeof hint === "function") hint("Exported S-Parameters Graph as Enhanced Metafile (.emf)");
+    }
+  } catch (err) {
+    console.error("EMF export error:", err);
+    if (typeof hint === "function") hint("Error exporting S-Parameters EMF: " + (err.message || err));
+  }
+}
+
 /* Export PNG Raster Graph Image File */
 function exportSParamsPng() {
   const container = $("spChartContainer");
@@ -674,8 +697,10 @@ if (typeof module !== "undefined" && module.exports) {
     FALLBACK_COLORS,
     getTraceColor,
     renderSvgPlot,
+    buildStandaloneSvg,
     exportSParamsCsv,
     exportSParamsSvg,
+    exportSParamsEmf,
     exportSParamsPng,
     exportTouchstoneS2p
   };

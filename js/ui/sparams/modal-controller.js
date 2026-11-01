@@ -246,13 +246,50 @@ function renderLinearAnalysis() {
       Defined Ports (${portsList.length}): ${portsStr} | Active Tab: <b style="color:#f8fafc">${esc(activeTab ? activeTab.name : "Sweep")}</b>
     </div>
 
-    <!-- Export Action Buttons -->
+    <!-- Export Action Menu -->
     <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap">
       ${sparamsTabs.length > 1 ? `<label style="font-size:12px; font-weight:600; cursor:pointer"><input type="checkbox" id="chkCompare" /> Compare with Benchmark Overlay</label>` : ""}
-      <button class="btn btn-sm" id="spExportCsv">📄 Export CSV</button>
-      <button class="btn btn-sm" id="spExportSvg">📊 Export SVG</button>
-      <button class="btn btn-sm" id="spExportPng">🖼️ Export PNG</button>
-      <button class="btn btn-sm" id="spExportS2p">📁 Export Touchstone (.sNp)</button>
+      <div class="menu-drop-wrap" id="spExportDropWrap">
+        <button class="btn btn-sm menu-drop-btn" id="btnSpExportMenu" title="Export S-Parameters graphs and network data">
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M2.5 10v3a1 1 0 0 0 1 1h9a1 1 0 0 0 1-1v-3"/>
+            <polyline points="5 5 8 2 11 5"/>
+            <line x1="8" y1="2" x2="8" y2="10"/>
+          </svg>
+          Export
+          <svg class="menu-drop-caret" width="8" height="8" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3.5l3 3 3-3"/></svg>
+        </button>
+        <div class="menu-drop-panel" id="spExportDropPanel">
+          <div class="menu-drop-section">Graph Figures</div>
+          <button class="menu-drop-item" id="spExpSvg" title="Export S-Parameters plot as SVG vector graphic">
+            <span class="mico">📊</span>
+            <span class="mtext">SVG Vector Graph</span>
+            <span class="badge-ext">.svg</span>
+          </button>
+          <button class="menu-drop-item" id="spExpEmf" title="Export S-Parameters plot as Enhanced Metafile">
+            <span class="mico">🎨</span>
+            <span class="mtext">Enhanced Metafile</span>
+            <span class="badge-ext">.emf</span>
+          </button>
+          <button class="menu-drop-item" id="spExpPng" title="Export S-Parameters plot as PNG image">
+            <span class="mico">🖼️</span>
+            <span class="mtext">PNG Image</span>
+            <span class="badge-ext">.png</span>
+          </button>
+          <div class="menu-drop-divider"></div>
+          <div class="menu-drop-section">Network Data</div>
+          <button class="menu-drop-item" id="spExpS2p" title="Export standard Touchstone multi-port network data">
+            <span class="mico">📁</span>
+            <span class="mtext">Touchstone Multiport</span>
+            <span class="badge-ext">.sNp</span>
+          </button>
+          <button class="menu-drop-item" id="spExpCsv" title="Export frequency response table to CSV">
+            <span class="mico">📄</span>
+            <span class="mtext">CSV Response Table</span>
+            <span class="badge-ext">.csv</span>
+          </button>
+        </div>
+      </div>
     </div>
   </div>`;
 
@@ -636,6 +673,44 @@ function renderLinearAnalysis() {
       };
     }
 
+    // Export dropdown toggle & actions
+    const spBtn = $("btnSpExportMenu");
+    const spPanel = $("spExportDropPanel");
+    const spWrap = $("spExportDropWrap");
+    if (spBtn && spPanel && spWrap) {
+      spBtn.onclick = e => {
+        e.stopPropagation();
+        const isOpen = spPanel.classList.toggle("open");
+        spBtn.classList.toggle("open", isOpen);
+        if (isOpen) {
+          const r = spBtn.getBoundingClientRect();
+          spPanel.style.top = (r.bottom + 6) + "px";
+          const panelW = spPanel.offsetWidth || 220;
+          let left = r.right - panelW;
+          if (left < 8) left = 8;
+          spPanel.style.left = left + "px";
+          spPanel.style.right = "";
+        }
+      };
+      document.addEventListener("click", e => {
+        if (!spWrap.contains(e.target) && !spPanel.contains(e.target)) {
+          spPanel.classList.remove("open");
+          spBtn.classList.remove("open");
+        }
+      });
+    }
+    const closeSpDrop = () => {
+      if (spPanel) spPanel.classList.remove("open");
+      if (spBtn) spBtn.classList.remove("open");
+    };
+
+    if ($("spExpSvg")) $("spExpSvg").onclick = () => { closeSpDrop(); exportSParamsSvg(); };
+    if ($("spExpEmf")) $("spExpEmf").onclick = () => { closeSpDrop(); (typeof exportSParamsEmf === "function") && exportSParamsEmf(); };
+    if ($("spExpPng")) $("spExpPng").onclick = () => { closeSpDrop(); exportSParamsPng(); };
+    if ($("spExpS2p")) $("spExpS2p").onclick = () => { closeSpDrop(); exportTouchstoneS2p(res); };
+    if ($("spExpCsv")) $("spExpCsv").onclick = () => { closeSpDrop(); exportSParamsCsv(res); };
+
+    // Backward-compatible handlers if standalone buttons exist
     if ($("spExportCsv")) $("spExportCsv").onclick = () => exportSParamsCsv(res);
     if ($("spExportSvg")) $("spExportSvg").onclick = () => exportSParamsSvg();
     if ($("spExportPng")) $("spExportPng").onclick = () => exportSParamsPng();

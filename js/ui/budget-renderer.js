@@ -352,9 +352,6 @@ function renderBudgetPlot(rows, bwHz, bwMHz, P, container) {
 
   topBarHtml += `</div>
     <div style="display:flex; align-items:center; gap:6px;">
-      <button class="btn btn-sm" id="bgPlotExportSvg" title="Export stage plot as standalone transparent SVG">📊 Export SVG</button>
-      <button class="btn btn-sm" id="bgPlotExportPng" title="Export stage plot as high-resolution transparent PNG">🖼️ Export PNG</button>
-      <button class="btn btn-sm" id="bgPlotExportVsdx" title="Export stage plot as native Microsoft Visio (.vsdx) document">📐 Export VSDX</button>
       <button class="btn btn-sm" id="bgToggleScaleOpt">⚙️ ${budgetCustomScaling.showScaleOptions ? "Hide Scales" : "Axis Scales"}</button>
     </div>
   </div>`;
@@ -426,14 +423,6 @@ function renderBudgetPlot(rows, bwHz, bwMHz, P, container) {
       renderBudget();
     };
   }
-
-  // Export Buttons
-  const btnSvg = $("bgPlotExportSvg");
-  if (btnSvg) btnSvg.onclick = exportBudgetPlotSvg;
-  const btnPng = $("bgPlotExportPng");
-  if (btnPng) btnPng.onclick = exportBudgetPlotPng;
-  const btnVsdx = $("bgPlotExportVsdx");
-  if (btnVsdx) btnVsdx.onclick = exportBudgetPlotVsdx;
 
   // Scale inputs
   const chkLeftAuto = $("bgScaleLeftAuto");
@@ -509,204 +498,6 @@ function exportBudgetPlotPng() {
     });
   };
   img.src = url;
-}
-
-/* Export Budget Plot as Native Microsoft Visio (.vsdx) Document */
-function exportBudgetPlotVsdx() {
-  const sel = $("bgStart");
-  const startId = sel ? sel.value : null;
-  const { rows } = buildBudget(startId, budgetSelectedPathIdx);
-  if (!rows || !rows.length) { hint("No budget plot data to export."); return; }
-  if (typeof zipStore !== "function" || typeof getVsdxDocXml !== "function") {
-    hint("Visio packager is unavailable.");
-    return;
-  }
-
-  const bwHz = (settings.bandwidthHz && settings.bandwidthHz > 0) ? settings.bandwidthHz : 1e6;
-  const numStages = rows.length;
-
-  const W_px = 1000, H_px = 560;
-  const dpi = 96;
-  const toInX = x => x / dpi, toInY = y => (H_px - y) / dpi, toInLen = len => len / dpi;
-  const pageWidthIn = W_px / dpi, pageHeightIn = H_px / dpi;
-
-  const margin = { top: 60, right: 80, bottom: 90, left: 80 };
-  const pw = W_px - margin.left - margin.right;
-  const ph = H_px - margin.top - margin.bottom;
-
-  // Compute Left and Right axis ranges
-  let leftVals = [], rightVals = [];
-  for (const mKey of budgetPlotMetrics) {
-    const m = BUDGET_METRICS[mKey];
-    if (!m) continue;
-    rows.forEach(r => {
-      const v = m.getVal(r, bwHz);
-      if (v !== null && v !== undefined && isFinite(v)) {
-        if (m.axis === "right") rightVals.push(v);
-        else leftVals.push(v);
-      }
-    });
-  }
-
-  let yLeftMin = -40, yLeftMax = 40;
-  if (budgetCustomScaling.leftAuto) {
-    if (leftVals.length) {
-      const minV = Math.min(...leftVals), maxV = Math.max(...leftVals);
-      const span = maxV - minV || 20;
-      yLeftMin = Math.floor(minV - span * 0.12);
-      yLeftMax = Math.ceil(maxV + span * 0.12);
-      if (yLeftMin === yLeftMax) { yLeftMin -= 5; yLeftMax += 5; }
-    }
-  } else {
-    yLeftMin = budgetCustomScaling.leftMin;
-    yLeftMax = budgetCustomScaling.leftMax;
-  }
-
-  let yRightMin = 0, yRightMax = 15;
-  if (budgetCustomScaling.rightAuto) {
-    if (rightVals.length) {
-      const minV = Math.min(...rightVals), maxV = Math.max(...rightVals);
-      yRightMin = Math.max(0, Math.floor(minV - 0.5));
-      yRightMax = Math.max(yRightMin + 3, Math.ceil(maxV + 1.5));
-    }
-  } else {
-    yRightMin = budgetCustomScaling.rightMin;
-    yRightMax = budgetCustomScaling.rightMax;
-  }
-
-  const getX = idx => margin.left + (idx / Math.max(1, numStages - 1)) * pw;
-  const getYLeft = val => margin.top + ph - ((val - yLeftMin) / (yLeftMax - yLeftMin || 1)) * ph;
-  const getYRight = val => margin.top + ph - ((val - yRightMin) / (yRightMax - yRightMin || 1)) * ph;
-
-  let nextShapeId = 1;
-  let shapesXml = "";
-
-  // Title shape
-  shapesXml += buildTextShapeXml(nextShapeId++, "Cascade Stage Budget Analysis", W_px / 2, 25, 450, 30, 18, "#000000", true, "middle", dpi, toInX, toInY);
-
-  // Plot Area Border
-  const plotRectPts = [
-    { x: 0, y: toInLen(ph) },
-    { x: toInLen(pw), y: toInLen(ph) },
-    { x: toInLen(pw), y: 0 },
-    { x: 0, y: 0 }
-  ];
-  const plotGeom = makeGeometrySection(plotRectPts, 0, true, true);
-  shapesXml += buildShapeXml(nextShapeId++, "Plot Area", toInX(margin.left + pw / 2), toInY(margin.top + ph / 2), toInLen(pw), toInLen(ph), plotGeom, { stroke: true, strokeColor: "#334155", lineWidth: 1.5, fill: false });
-
-  // Horizontal Grid Lines & Y-axis labels (6 divisions)
-  const numGridTicks = 6;
-  for (let k = 0; k <= numGridTicks; k++) {
-    const frac = k / numGridTicks;
-    const y = margin.top + frac * ph;
-    const valL = yLeftMax - frac * (yLeftMax - yLeftMin);
-    const valR = yRightMax - frac * (yRightMax - yRightMin);
-
-    // Horizontal line
-    const linePts = [{ x: 0, y: 0 }, { x: toInLen(pw), y: 0 }];
-    const lineGeom = makeGeometrySection(linePts, 0, true, false);
-    shapesXml += buildShapeXml(nextShapeId++, "Gridline", toInX(margin.left + pw / 2), toInY(y), toInLen(pw), 0.01, lineGeom, { stroke: true, strokeColor: "#e2e8f0", lineWidth: 1, linePattern: 2, fill: false });
-
-    // Left tick text
-    shapesXml += buildTextShapeXml(nextShapeId++, valL.toFixed(0), margin.left - 26, y, 40, 16, 11, "#000000", true, "end", dpi, toInX, toInY);
-
-    // Right tick text
-    shapesXml += buildTextShapeXml(nextShapeId++, valR.toFixed(1), margin.left + pw + 26, y, 40, 16, 11, "#000000", true, "start", dpi, toInX, toInY);
-  }
-
-  // Axis Titles
-  shapesXml += buildTextShapeXml(nextShapeId++, "Power & Gain (dB / dBm)", margin.left - 55, margin.top + ph / 2, 220, 20, 12, "#000000", true, "middle", dpi, toInX, toInY, -Math.PI / 2);
-  shapesXml += buildTextShapeXml(nextShapeId++, "Noise Figure (dB)", margin.left + pw + 55, margin.top + ph / 2, 220, 20, 12, "#000000", true, "middle", dpi, toInX, toInY, Math.PI / 2);
-
-  // Vertical Stage Lines and Stage Labels
-  rows.forEach((r, idx) => {
-    const x = getX(idx);
-    const vLinePts = [{ x: 0, y: toInLen(ph) }, { x: 0, y: 0 }];
-    const vGeom = makeGeometrySection(vLinePts, 0, true, false);
-    shapesXml += buildShapeXml(nextShapeId++, `Stage Line ${idx+1}`, toInX(x), toInY(margin.top + ph / 2), 0.01, toInLen(ph), vGeom, { stroke: true, strokeColor: "#e2e8f0", lineWidth: 1, linePattern: 1, fill: false });
-
-    const stageName = r.name || `Stage ${idx + 1}`;
-    shapesXml += buildTextShapeXml(nextShapeId++, stageName, x, margin.top + ph + 20, 110, 18, 11, "#000000", true, "middle", dpi, toInX, toInY);
-    shapesXml += buildTextShapeXml(nextShapeId++, r.type, x, margin.top + ph + 34, 110, 16, 9.5, "#475569", false, "middle", dpi, toInX, toInY);
-  });
-
-  // Plot Traces (Polylines) & Stage Points
-  for (const mKey of budgetPlotMetrics) {
-    const m = BUDGET_METRICS[mKey];
-    if (!m) continue;
-
-    const isRight = (m.axis === "right");
-    const getY = isRight ? getYRight : getYLeft;
-
-    const pts = [];
-    rows.forEach((r, idx) => {
-      const v = m.getVal(r, bwHz);
-      if (v !== null && v !== undefined && isFinite(v)) {
-        pts.push({ x: getX(idx), y: getY(v), v });
-      }
-    });
-
-    if (pts.length >= 2) {
-      let minX = pts[0].x, maxX = pts[0].x, minY = pts[0].y, maxY = pts[0].y;
-      pts.forEach(p => {
-        if (p.x < minX) minX = p.x; if (p.x > maxX) maxX = p.x;
-        if (p.y < minY) minY = p.y; if (p.y > maxY) maxY = p.y;
-      });
-      const tW = Math.max(1, maxX - minX), tH = Math.max(1, maxY - minY);
-      const localPts = pts.map(p => ({
-        x: toInLen(p.x - minX),
-        y: toInLen(maxY - p.y)
-      }));
-      const traceGeom = makeGeometrySection(localPts, 0, true, false);
-      const traceStyle = { stroke: true, strokeColor: m.color, lineWidth: 2.5, linePattern: 1, fill: false };
-      shapesXml += buildShapeXml(nextShapeId++, `Trace ${m.label}`, toInX((minX + maxX) / 2), toInY((minY + maxY) / 2), toInLen(tW), toInLen(tH), traceGeom, traceStyle);
-
-      // Points
-      pts.forEach(p => {
-        const d = 8;
-        const ptGeom = `<Section N="Geometry" IX="0"><Cell N="NoFill" V="0"/><Cell N="NoLine" V="0"/><Row T="Ellipse" IX="1"><Cell N="X" V="${toInLen(d/2)}"/><Cell N="Y" V="${toInLen(d/2)}"/><Cell N="A" V="${toInLen(d)}"/><Cell N="B" V="${toInLen(d/2)}"/><Cell N="C" V="${toInLen(d/2)}"/><Cell N="D" V="${toInLen(d)}"/></Row></Section>`;
-        const ptStyle = { stroke: true, strokeColor: "#ffffff", lineWidth: 1.2, fill: true, fillColor: m.color };
-        shapesXml += buildShapeXml(nextShapeId++, "Marker", toInX(p.x), toInY(p.y), toInLen(d), toInLen(d), ptGeom, ptStyle);
-      });
-    }
-  }
-
-  // Legend
-  let legX = margin.left + 20;
-  for (const mKey of budgetPlotMetrics) {
-    const m = BUDGET_METRICS[mKey];
-    if (!m) continue;
-    const d = 7;
-    const ptGeom = `<Section N="Geometry" IX="0"><Cell N="NoFill" V="0"/><Cell N="NoLine" V="0"/><Row T="Ellipse" IX="1"><Cell N="X" V="${toInLen(d/2)}"/><Cell N="Y" V="${toInLen(d/2)}"/><Cell N="A" V="${toInLen(d)}"/><Cell N="B" V="${toInLen(d/2)}"/><Cell N="C" V="${toInLen(d/2)}"/><Cell N="D" V="${toInLen(d)}"/></Row></Section>`;
-    shapesXml += buildShapeXml(nextShapeId++, "Legend Dot", toInX(legX), toInY(H_px - 20), toInLen(d), toInLen(d), ptGeom, { stroke: false, fill: true, fillColor: m.color });
-    shapesXml += buildTextShapeXml(nextShapeId++, `${m.label} (${m.unit || (m.axis === 'right' ? 'dB' : 'dB/dBm')})`, legX + 50, H_px - 20, 90, 16, 10.5, "#000000", true, "start", dpi, toInX, toInY);
-    legX += 115;
-  }
-
-  const page1Xml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n`
-    + `<PageContents xmlns="http://schemas.microsoft.com/office/visio/2012/main">\n`
-    + `  <Shapes>\n${shapesXml}  </Shapes>\n`
-    + `</PageContents>`;
-
-  const entries = [
-    { name: "[Content_Types].xml", data: getVsdxContentTypesXml() },
-    { name: "_rels/.rels", data: getVsdxRootRelsXml() },
-    { name: "docProps/app.xml", data: getVsdxAppXml() },
-    { name: "docProps/core.xml", data: getVsdxCoreXml() },
-    { name: "visio/document.xml", data: getVsdxDocXml() },
-    { name: "visio/_rels/document.xml.rels", data: getVsdxDocRelsXml() },
-    { name: "visio/pages/pages.xml", data: getVsdxPagesXml(pageWidthIn, pageHeightIn) },
-    { name: "visio/pages/_rels/pages.xml.rels", data: getVsdxPagesRelsXml() },
-    { name: "visio/pages/page1.xml", data: page1Xml },
-    { name: "visio/masters/masters.xml", data: getVsdxMastersXml() },
-    { name: "visio/windows.xml", data: getVsdxWindowsXml() }
-  ];
-
-  if (typeof validateVsdxPackage === "function") validateVsdxPackage(entries);
-  const res = zipStore(entries);
-  const blob = (typeof Blob !== "undefined" && res instanceof Blob) ? res : new Blob([res], { type: "application/vnd.ms-visio.drawing" });
-  downloadFile(blob, "cascade_budget_plot.vsdx", "application/vnd.ms-visio.drawing");
-  hint("Exported Stage Plot as native Microsoft Visio (.vsdx) drawing.");
 }
 
 /* =====================================================================
@@ -913,7 +704,6 @@ if (typeof module !== "undefined" && module.exports) {
     generateBudgetPlotSvg,
     exportBudgetPlotSvg,
     exportBudgetPlotPng,
-    exportBudgetPlotVsdx,
     exportBudgetXlsx,
     exportBudgetCsv,
     BUDGET_METRICS

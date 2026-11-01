@@ -526,16 +526,18 @@ function initEvents() {
 
   window.addEventListener("beforeunload", e => { if (dirty && blocks.length) { e.preventDefault(); e.returnValue = ""; } });
 
-  if ($("btnSvg")) $("btnSvg").onclick = () => {
-    const s = buildExportSVG(1); if (!s) { hint("Nothing to export yet."); return; }
+  function doExportSvg() {
+    const s = (typeof buildExportSVG === "function") ? buildExportSVG(1) : null;
+    if (!s) { hint("Nothing to export yet."); return; }
     downloadFile(s, "rf-chain.svg", "image/svg+xml");
-  };
+  }
 
-  if ($("btnPng")) $("btnPng").onclick = async () => {
+  async function doExportPng() {
     if (document.fonts && document.fonts.ready) {
       try { await document.fonts.ready; } catch (e) {}
     }
-    const s = buildExportSVG(2); if (!s) { hint("Nothing to export yet."); return; }
+    const s = (typeof buildExportSVG === "function") ? buildExportSVG(2) : null;
+    if (!s) { hint("Nothing to export yet."); return; }
     const img = new Image(), url = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(s);
     img.onload = () => {
       const cv = document.createElement("canvas"); cv.width = img.width; cv.height = img.height;
@@ -547,12 +549,11 @@ function initEvents() {
         downloadFile(b, "rf-chain.png", "image/png");
       });
     };
-    img.onerror = () => hint("PNG export failed in this browser — try SVG."); img.src = url;
-  };
+    img.onerror = () => hint("PNG export failed in this browser — try SVG.");
+    img.src = url;
+  }
 
-  if ($("btnVsdx")) $("btnVsdx").onclick = exportVsdx;
-
-  if ($("btnBom")) $("btnBom").onclick = () => {
+  function doExportBom() {
     const rows = [["Ref", "Type", "MPN", "Sheet", "Parameters"]];
     const widths = [12, 18, 24, 14, 40];
     allBlocks().forEach(b => {
@@ -563,7 +564,71 @@ function initEvents() {
     });
     const blob = xlsxBlob(rows, widths, "BOM");
     downloadFile(blob, "bom.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-  };
+  }
+
+  function initDropdownMenu(btnId, panelId, wrapId, defaultWidth, align) {
+    const btn = $(btnId);
+    const panel = $(panelId);
+    const wrap = $(wrapId);
+    if (!btn || !panel || !wrap) return { close: () => {} };
+
+    function positionPanel() {
+      const r = btn.getBoundingClientRect();
+      panel.style.top = (r.bottom + 6) + "px";
+      const panelW = panel.offsetWidth || (defaultWidth || 220);
+      let left = (align === "right") ? (r.right - panelW) : r.left;
+      if (left + panelW > window.innerWidth - 8) left = window.innerWidth - panelW - 8;
+      if (left < 8) left = 8;
+      panel.style.left = left + "px";
+      panel.style.right = "";
+    }
+
+    btn.onclick = e => {
+      e.stopPropagation();
+      const open = panel.classList.toggle("open");
+      btn.classList.toggle("open", open);
+      if (open) positionPanel();
+    };
+
+    const close = () => {
+      panel.classList.remove("open");
+      btn.classList.remove("open");
+    };
+
+    document.addEventListener("click", e => {
+      if (!wrap.contains(e.target) && !panel.contains(e.target)) {
+        close();
+      }
+    });
+
+    window.addEventListener("resize", () => {
+      if (panel.classList.contains("open")) positionPanel();
+    });
+
+    return { close, position: positionPanel };
+  }
+
+  /* Main Toolbar Unified Export Menu */
+  const exportDrop = initDropdownMenu("btnExportMenu", "exportDropPanel", "exportDropWrap", 220, "left");
+  if ($("menuExpSvg")) $("menuExpSvg").onclick = () => { exportDrop.close(); doExportSvg(); };
+  if ($("menuExpEmf")) $("menuExpEmf").onclick = () => { exportDrop.close(); (typeof exportSchematicEmf === "function") && exportSchematicEmf(); };
+  if ($("menuExpPng")) $("menuExpPng").onclick = () => { exportDrop.close(); doExportPng(); };
+  if ($("menuExpVdx")) $("menuExpVdx").onclick = () => { exportDrop.close(); (typeof exportVdx === "function") ? exportVdx() : exportVsdx(); };
+  if ($("menuExpBom")) $("menuExpBom").onclick = () => { exportDrop.close(); doExportBom(); };
+
+  /* Standalone main toolbar export fallback handlers */
+  if ($("btnSvg")) $("btnSvg").onclick = doExportSvg;
+  if ($("btnPng")) $("btnPng").onclick = doExportPng;
+  if ($("btnVsdx")) $("btnVsdx").onclick = () => { (typeof exportVdx === "function") ? exportVdx() : exportVsdx(); };
+  if ($("btnBom")) $("btnBom").onclick = doExportBom;
+
+  /* Budget Drawer Unified Export Menu */
+  const bgExportDrop = initDropdownMenu("btnBgExportMenu", "bgExportDropPanel", "bgExportDropWrap", 220, "right");
+  if ($("bgExpPlotSvg")) $("bgExpPlotSvg").onclick = () => { bgExportDrop.close(); (typeof exportBudgetPlotSvg === "function") && exportBudgetPlotSvg(); };
+  if ($("bgExpPlotEmf")) $("bgExpPlotEmf").onclick = () => { bgExportDrop.close(); (typeof exportBudgetPlotEmf === "function") && exportBudgetPlotEmf(); };
+  if ($("bgExpPlotPng")) $("bgExpPlotPng").onclick = () => { bgExportDrop.close(); (typeof exportBudgetPlotPng === "function") && exportBudgetPlotPng(); };
+  if ($("bgExpDataXlsx")) $("bgExpDataXlsx").onclick = () => { bgExportDrop.close(); (typeof exportBudgetXlsx === "function") && exportBudgetXlsx(); };
+  if ($("bgExpDataCsv")) $("bgExpDataCsv").onclick = () => { bgExportDrop.close(); (typeof exportBudgetCsv === "function") && exportBudgetCsv(); };
 
   if ($("btnBudget")) $("btnBudget").onclick = toggleBudget;
   if ($("bgClose")) $("bgClose").onclick = toggleBudget;

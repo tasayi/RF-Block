@@ -199,14 +199,14 @@ async function openDoc() {
   }
 }
 
-function exportVsdx() {
+function exportVdx() {
   commitSheet();
   if (!blocks.length) {
-    hint("Can't export Visio VSDX — the diagram is empty.");
+    hint("Can't export Visio VDX — the diagram is empty.");
     return;
   }
   if (typeof buildVsdxBlob !== "function") {
-    alert("VSDX Exporter module is not loaded.");
+    alert("Visio Drawing Exporter module is not loaded.");
     return;
   }
   try {
@@ -215,13 +215,18 @@ function exportVsdx() {
     const needNoise = !!(settings.showNF || settings.showNoiseFloor);
     const NFm = needNoise ? computeNoise(P) : null;
     const blob = buildVsdxBlob(blocks, conns, P, NFm, PSecondary, null, settings);
-    const base = (fileName || "rf-chain").replace(/\.(rfbd|json|vsdx|png|svg)$/i, "");
-    const name = `${base}.vsdx`;
-    downloadFile(blob, name, "application/vnd.ms-visio.drawing.main+xml");
+    const base = (fileName || "rf-chain").replace(/\.(rfbd|json|vsdx|vdx|png|svg|emf)$/i, "");
+    const name = `${base}.vdx`;
+    downloadFile(blob, name, "application/vnd.visio");
+    if (typeof hint === "function") hint(`Exported schematic vector drawing as '${name}'`);
   } catch (err) {
     console.error(err);
-    alert("Error generating Visio VSDX file: " + (err.message || err));
+    alert("Error generating Visio VDX drawing: " + (err.message || err));
   }
+}
+
+function exportVsdx() {
+  return exportVdx();
 }
 
 if (typeof module !== "undefined" && module.exports) {
@@ -235,6 +240,7 @@ if (typeof module !== "undefined" && module.exports) {
     saveDoc,
     loadDoc,
     openDoc,
+    exportVdx,
     exportVsdx
   };
 }

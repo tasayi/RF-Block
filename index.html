@@ -34,12 +34,47 @@
     </div>
     <div class="tb-sep"></div>
 
-    <!-- Export group -->
-    <div class="tb-group">
-      <button class="btn" id="btnPng" title="Export PNG image">PNG</button>
-      <button class="btn" id="btnSvg" title="Export SVG vector">SVG</button>
-      <button class="btn primary" id="btnVsdx" title="Export native editable Microsoft Visio (.vsdx) diagram">VSDX</button>
-      <button class="btn" id="btnBom" title="Bill of Materials as Excel workbook">BOM</button>
+    <!-- Export dropdown -->
+    <div class="menu-drop-wrap" id="exportDropWrap">
+      <button class="btn menu-drop-btn" id="btnExportMenu" title="Export schematic figures and reports">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M2.5 10v3a1 1 0 0 0 1 1h9a1 1 0 0 0 1-1v-3"/>
+          <polyline points="5 5 8 2 11 5"/>
+          <line x1="8" y1="2" x2="8" y2="10"/>
+        </svg>
+        Export
+        <svg class="menu-drop-caret" width="9" height="9" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3.5l3 3 3-3"/></svg>
+      </button>
+      <div class="menu-drop-panel" id="exportDropPanel">
+        <div class="menu-drop-section">Drawing Figures</div>
+        <button class="menu-drop-item" id="menuExpSvg" title="Export scalable vector graphic">
+          <span class="mico">📐</span>
+          <span class="mtext">SVG Vector</span>
+          <span class="badge-ext">.svg</span>
+        </button>
+        <button class="menu-drop-item" id="menuExpEmf" title="Export Enhanced Metafile vector graphic">
+          <span class="mico">🎨</span>
+          <span class="mtext">Enhanced Metafile</span>
+          <span class="badge-ext">.emf</span>
+        </button>
+        <button class="menu-drop-item" id="menuExpPng" title="Export high-resolution raster image">
+          <span class="mico">🖼️</span>
+          <span class="mtext">PNG Image</span>
+          <span class="badge-ext">.png</span>
+        </button>
+        <button class="menu-drop-item" id="menuExpVdx" title="Export open XML vector drawing (LibreOffice Draw / Visio)">
+          <span class="mico">📄</span>
+          <span class="mtext">Visio Drawing XML</span>
+          <span class="badge-ext">.vdx</span>
+        </button>
+        <div class="menu-drop-divider"></div>
+        <div class="menu-drop-section">Reports &amp; Data</div>
+        <button class="menu-drop-item" id="menuExpBom" title="Export Bill of Materials to Excel">
+          <span class="mico">📊</span>
+          <span class="mtext">Bill of Materials</span>
+          <span class="badge-ext">.xlsx</span>
+        </button>
+      </div>
     </div>
 
     <div class="tb-spacer"></div>
@@ -204,8 +239,47 @@
       </div>
       <div class="tb-spacer"></div>
       <button class="btn btn-sm" id="bgToggleExpand" title="Expand / Minimize Drawer">⛶ Expand</button>
-      <button class="btn btn-sm primary" id="bgXlsx" title="Export stage budget and plot settings to Excel">📥 Export Excel (.xlsx)</button>
-      <button class="btn btn-sm" id="bgCsv" title="Export CSV">Export CSV</button>
+      <div class="menu-drop-wrap" id="bgExportDropWrap">
+        <button class="btn btn-sm menu-drop-btn" id="btnBgExportMenu" title="Export budget data and stage plots">
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M2.5 10v3a1 1 0 0 0 1 1h9a1 1 0 0 0 1-1v-3"/>
+            <polyline points="5 5 8 2 11 5"/>
+            <line x1="8" y1="2" x2="8" y2="10"/>
+          </svg>
+          Export
+          <svg class="menu-drop-caret" width="8" height="8" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3.5l3 3 3-3"/></svg>
+        </button>
+        <div class="menu-drop-panel" id="bgExportDropPanel">
+          <div class="menu-drop-section">Plot Figures</div>
+          <button class="menu-drop-item" id="bgExpPlotSvg" title="Export stage plot as transparent SVG">
+            <span class="mico">📊</span>
+            <span class="mtext">SVG Vector Plot</span>
+            <span class="badge-ext">.svg</span>
+          </button>
+          <button class="menu-drop-item" id="bgExpPlotEmf" title="Export stage plot as Enhanced Metafile">
+            <span class="mico">🎨</span>
+            <span class="mtext">Enhanced Metafile</span>
+            <span class="badge-ext">.emf</span>
+          </button>
+          <button class="menu-drop-item" id="bgExpPlotPng" title="Export stage plot as high-resolution PNG">
+            <span class="mico">🖼️</span>
+            <span class="mtext">PNG Image</span>
+            <span class="badge-ext">.png</span>
+          </button>
+          <div class="menu-drop-divider"></div>
+          <div class="menu-drop-section">Cascade Data</div>
+          <button class="menu-drop-item" id="bgExpDataXlsx" title="Export stage budget and plot settings to Excel">
+            <span class="mico">📥</span>
+            <span class="mtext">Excel Workbook</span>
+            <span class="badge-ext">.xlsx</span>
+          </button>
+          <button class="menu-drop-item" id="bgExpDataCsv" title="Export stage budget table to CSV">
+            <span class="mico">📄</span>
+            <span class="mtext">CSV Table</span>
+            <span class="badge-ext">.csv</span>
+          </button>
+        </div>
+      </div>
       <button class="btn btn-sm" id="bgClose">Close</button>
     </div>
     <div class="bg-body" id="bgBody"></div>
@@ -274,6 +348,7 @@
 <script src="js/io/vsdx/exporter.js"></script>
 <script src="js/io/document-io.js"></script>
 <script src="js/io/svg-exporter.js"></script>
+<script src="js/io/emf-exporter.js"></script>
 <script src="js/ui/canvas-renderer.js"></script>
 <script src="js/ui/palette-renderer.js"></script>
 <script src="js/ui/inspector-renderer.js"></script>
