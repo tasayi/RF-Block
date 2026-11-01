@@ -6,6 +6,7 @@
 
 let budgetViewMode = "plot"; // "plot" or "table"
 let budgetIsMaximized = false;
+let budgetSelectedPathIdx = 0;
 let budgetPlotMetrics = new Set(["cumG", "cumNF", "lvl", "oip3", "cumP1db"]);
 let budgetCustomScaling = {
   leftAuto: true,
@@ -83,12 +84,15 @@ function toggleBudgetExpand() {
 }
 
 function renderBudget() {
-  const body = $("bgBody"), sel = $("bgStart");
+  const body = $("bgBody"), sel = $("bgStart"), selPath = $("bgPath");
   if (!body || !sel) return;
   const starts = startBlocks();
   const curStart = sel.value;
   sel.innerHTML = starts.map(b => `<option value="${b.id}"${b.id === curStart ? " selected" : ""}>${esc(b.params.label || COMP[b.type].name)}</option>`).join("");
-  sel.onchange = () => renderBudget();
+  sel.onchange = () => {
+    budgetSelectedPathIdx = 0;
+    renderBudget();
+  };
 
   // Bind view switch buttons
   const tabTable = $("bgTabTable"), tabPlot = $("bgTabPlot");
@@ -109,7 +113,28 @@ function renderBudget() {
   if ($("bgClose")) $("bgClose").onclick = toggleBudget;
 
   const startId = sel.value || (starts[0] ? starts[0].id : null);
-  const { rows, P } = buildBudget(startId);
+  const budgetData = buildBudget(startId, budgetSelectedPathIdx);
+  const { rows, P, paths, activePathIdx } = budgetData;
+
+  if (activePathIdx !== undefined && activePathIdx !== budgetSelectedPathIdx) {
+    budgetSelectedPathIdx = activePathIdx;
+  }
+
+  // Populate or hide path selector depending on candidate branch count
+  if (selPath) {
+    if (paths && paths.length > 1) {
+      selPath.style.display = "inline-block";
+      selPath.innerHTML = paths.map((p, idx) => `<option value="${idx}"${idx === budgetSelectedPathIdx ? " selected" : ""}>${esc(p.label)}</option>`).join("");
+      selPath.onchange = () => {
+        budgetSelectedPathIdx = parseInt(selPath.value, 10) || 0;
+        renderBudget();
+      };
+    } else {
+      selPath.style.display = "none";
+      selPath.innerHTML = "";
+    }
+  }
+
   const bwHz = (settings.bandwidthHz && settings.bandwidthHz > 0) ? settings.bandwidthHz : 1e6;
   const bwMHz = bwHz / 1e6;
 
@@ -449,7 +474,7 @@ function renderBudgetPlot(rows, bwHz, bwMHz, P, container) {
 function exportBudgetPlotSvg() {
   const sel = $("bgStart");
   const startId = sel ? sel.value : null;
-  const { rows } = buildBudget(startId);
+  const { rows } = buildBudget(startId, budgetSelectedPathIdx);
   if (!rows || !rows.length) { hint("No budget plot data to export."); return; }
   const bwHz = (settings.bandwidthHz && settings.bandwidthHz > 0) ? settings.bandwidthHz : 1e6;
   const { svg } = generateBudgetPlotSvg(rows, bwHz, true);
@@ -461,7 +486,7 @@ function exportBudgetPlotSvg() {
 function exportBudgetPlotPng() {
   const sel = $("bgStart");
   const startId = sel ? sel.value : null;
-  const { rows } = buildBudget(startId);
+  const { rows } = buildBudget(startId, budgetSelectedPathIdx);
   if (!rows || !rows.length) { hint("No budget plot data to export."); return; }
   const bwHz = (settings.bandwidthHz && settings.bandwidthHz > 0) ? settings.bandwidthHz : 1e6;
   const { svg, W, H } = generateBudgetPlotSvg(rows, bwHz, true);
@@ -490,7 +515,7 @@ function exportBudgetPlotPng() {
 function exportBudgetPlotVsdx() {
   const sel = $("bgStart");
   const startId = sel ? sel.value : null;
-  const { rows } = buildBudget(startId);
+  const { rows } = buildBudget(startId, budgetSelectedPathIdx);
   if (!rows || !rows.length) { hint("No budget plot data to export."); return; }
   if (typeof zipStore !== "function" || typeof getVsdxDocXml !== "function") {
     hint("Visio packager is unavailable.");
@@ -761,13 +786,14 @@ function warnHtml(P) {
 function exportBudgetXlsx() {
   const sel = $("bgStart");
   const startId = sel ? sel.value : null;
-  const { rows } = buildBudget(startId);
+  const { rows, paths } = buildBudget(startId, budgetSelectedPathIdx);
   if (!rows || !rows.length) { hint("No budget data to export."); return; }
 
   const bwHz = (settings.bandwidthHz && settings.bandwidthHz > 0) ? settings.bandwidthHz : 1e6;
   const bwMHz = bwHz / 1e6;
   const startBlock = allBlocks().find(b => b.id === startId);
   const startName = startBlock ? (startBlock.params.label || COMP[startBlock.type].name) : "Source";
+  const selectedPathName = (paths && paths[budgetSelectedPathIdx]) ? paths[budgetSelectedPathIdx].label : "Primary Path";
 
   // --- Sheet 1: Cascade Budget Data ---
   const sheet1Headers = [
@@ -833,6 +859,7 @@ function exportBudgetXlsx() {
   const sheet2Rows = [
     sheet2Headers,
     ["Signal Source", startName, "Chain origin"],
+    ["Signal Path", selectedPathName, "Selected cascade trajectory"],
     ["Analysis Bandwidth", bwHz, "Hz"],
     ["Analysis Bandwidth (MHz)", bwMHz, "MHz"],
     ["Thermal Noise Reference", -173.98, "dBm/Hz (k*T at 290 K)"],
@@ -862,7 +889,7 @@ function exportBudgetXlsx() {
 function exportBudgetCsv() {
   const sel = $("bgStart");
   const startId = sel ? sel.value : null;
-  const { rows } = buildBudget(startId);
+  const { rows } = buildBudget(startId, budgetSelectedPathIdx);
   if (!rows.length) { hint("No budget to export."); return; }
   const bwHz = (typeof settings !== "undefined" && settings.bandwidthHz && settings.bandwidthHz > 0) ? settings.bandwidthHz : 1e6;
   let csv = "Stage,Type,Gain_dB,Level_dBm,NF_stage_dB,NF_cum_dB,Noise_Floor_dBm,OIP3_cum_dBm,P1dB_stage_dBm,P1dB_cum_dBm,Headroom_dB\n";

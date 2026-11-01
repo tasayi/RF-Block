@@ -10,11 +10,11 @@ if (typeof def === "undefined") {
 }
 
 /* Helper for switch state resolution */
-const swState = (p, n) => {
-  if (p.state === "open" || p.state === "0") return 0;
+var swState = (typeof swState !== "undefined") ? swState : ((p, n) => {
+  if (!p || p.state === "open" || p.state === "0") return 0;
   const v = +p.state;
   return (isFinite(v) && v >= 1 && v <= n) ? Math.round(v) : 1;
-};
+});
 
 /* Helper to parse frequency strings like "1.5 GHz", "500 MHz", "100 kHz", or numbers into Hz */
 function parseFreqHz(val) {

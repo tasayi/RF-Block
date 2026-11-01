@@ -97,7 +97,7 @@ function computeNoiseRaw(P) {
   return N;
 }
 
-const nfDb = nn => (nn && isFinite(nn.F) && nn.F > 0) ? 10 * Math.log10(nn.F) : undefined;
+var nfDb = (typeof nfDb !== "undefined") ? nfDb : (nn => (nn && isFinite(nn.F) && nn.F > 0) ? 10 * Math.log10(nn.F) : undefined);
 
 function computeNoiseFloor(nn, lvl, srcLvl, bwHz) {
   if (nn === undefined || nn === null) return undefined;

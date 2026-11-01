@@ -28,7 +28,14 @@ function fmt(n, d) {
 const dsp = n => fmt(n).replace("-", "\u2212");
 const dbm = v => (v === undefined || !isFinite(v)) ? "\u2014 dBm" : dsp(v) + " dBm";
 const gsign = v => (v >= 0 ? "+" : "\u2212") + fmt(Math.abs(v)) + " dB";
+var nfDb = nn => (nn && isFinite(nn.F) && nn.F > 0) ? 10 * Math.log10(nn.F) : (typeof nn === "number" && isFinite(nn) ? nn : undefined);
 const cint = (v, lo, hi) => Math.min(hi, Math.max(lo, Math.round(+v || lo)));
+const cflt = (v, lo, hi) => Math.min(hi, Math.max(lo, +v || lo));
+var swState = (p, n) => {
+  if (!p || p.state === "open" || p.state === "0") return 0;
+  const v = +p.state;
+  return (isFinite(v) && v >= 1 && v <= n) ? Math.round(v) : 1;
+};
 const num = v => {
   if (v === "" || v === null || v === undefined) return undefined;
   const n = +v;
@@ -80,6 +87,12 @@ const isSubTag = t => String(t || "").charAt(0) === "\u00a7";
 const subTagPort = t => {
   const i = String(t).lastIndexOf(".");
   return i < 0 ? "" : String(t).slice(i + 1);
+};
+const subTagOwner = t => {
+  const s = String(t || "");
+  if (s.charAt(0) !== "\u00a7") return "";
+  const dot = s.lastIndexOf(".");
+  return dot > 1 ? s.slice(1, dot) : s.slice(1);
 };
 
 /* Tag text formatting */
@@ -212,7 +225,7 @@ async function downloadFile(content, filename, mimeType = "application/octet-str
 if (typeof module !== "undefined" && module.exports) {
   module.exports = {
     $, uid, clamp, esc, fmt, dsp, dbm, gsign, nfDb, cint, cflt, swState,
-    icSend, isSubTag, subTagPort, icTagFont, icTagText,
+    icSend, isSubTag, subTagPort, subTagOwner, icTagFont, icTagText,
     L, sumDbm, hsl2hex, hex2hsl, normHex, downloadFile
   };
 }
