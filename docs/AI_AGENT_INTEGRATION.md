@@ -73,9 +73,7 @@ Add the following to your `claude_desktop_config.json`:
         "run",
         "--directory",
         "/absolute/path/to/RFBlock",
-        "python",
-        "-m",
-        "rfblock.mcp"
+        "rfblock-mcp"
       ]
     }
   }

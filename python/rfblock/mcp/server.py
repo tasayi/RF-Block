@@ -10,6 +10,8 @@ from mcp.server.mcpserver import MCPServer
 
 from ..physics.budget import calculate_cascade_budget
 from ..physics.cascade import analyze_schematic_cascade
+from ..physics.multi_sheet_solver import MultiSheetSolver, analyze_rfbd_file
+from ..physics.canvas_solver import CanvasSolver, analyze_canvas_file
 from ..api.routes.ws import manager as ws_manager
 
 mcp = MCPServer("rfblock")
@@ -60,6 +62,53 @@ def rf_calculate_cascade(
         input_power_dbm=input_power_dbm,
         bandwidth_hz=bandwidth_mhz * 1.0e6
     )
+    return json.dumps(res, indent=2)
+
+
+@mcp.tool()
+def rf_analyze_file(
+    file_path: str,
+    power_budget: str = "primary",
+    bandwidth_mhz: float = 1.0
+) -> str:
+    """
+    Perform hierarchical multi-sheet RF cascade and noise figure analysis directly on an .rfbd diagram file.
+    Executes the canonical Canvas JavaScript physics solvers (Single Source of Truth) to guarantee 100% exact parity with canvas indicators.
+
+    Args:
+        file_path: Absolute or relative file path to the .rfbd diagram
+        power_budget: 'primary' or 'secondary' budget mode (default: 'primary')
+        bandwidth_mhz: Noise integration bandwidth in MHz (default: 1.0)
+    """
+    res = analyze_canvas_file(
+        file_path=file_path,
+        power_budget=power_budget,
+        bandwidth_hz=bandwidth_mhz * 1.0e6
+    )
+    return json.dumps(res, indent=2)
+
+
+@mcp.tool()
+def rf_analyze_schematic(
+    schematic: Dict[str, Any],
+    power_budget: str = "primary",
+    bandwidth_mhz: float = 1.0
+) -> str:
+    """
+    Perform hierarchical multi-sheet RF cascade and noise figure analysis on a schematic JSON object.
+    Executes the canonical Canvas JavaScript physics solvers (Single Source of Truth) across all sheets and interconnects.
+
+    Args:
+        schematic: Diagram dictionary containing 'sheets' or 'blocks'/'connections'
+        power_budget: 'primary' or 'secondary' budget mode (default: 'primary')
+        bandwidth_mhz: Noise integration bandwidth in MHz (default: 1.0)
+    """
+    solver = CanvasSolver(
+        schematic,
+        power_budget=power_budget,
+        bandwidth_hz=bandwidth_mhz * 1.0e6
+    )
+    res = solver.analyze()
     return json.dumps(res, indent=2)
 
 
