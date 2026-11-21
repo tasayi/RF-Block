@@ -1,0 +1,17 @@
+{
+  "schema_version": "v1",
+  "name_for_human": "RFBlock Diagram & Physics Engine",
+  "name_for_model": "rfblock",
+  "description_for_human": "Design RF block diagrams, synthesize cascades, calculate Friis noise figure, and simulate S-parameters.",
+  "description_for_model": "RFBlock assists in RF system engineering. It synthesizes receiver/transmitter architectures, calculates Friis cascade budgets (Gain, Noise Figure, OIP3, OP1dB, Dynamic Range), runs scikit-rf multi-port linear S-parameter simulations, and streams live updates directly to the RFBlock canvas.",
+  "auth": {
+    "type": "none"
+  },
+  "api": {
+    "type": "openapi",
+    "url": "http://localhost:8000/copilot/openapi.yaml"
+  },
+  "logo_url": "http://localhost:8000/favicon.ico",
+  "contact_email": "support@rfblock.dev",
+  "legal_info_url": "https://rfblock.dev/terms"
+}

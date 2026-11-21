@@ -165,3 +165,77 @@ Refactor the **"Export All Sheets"** dialog to reuse the universal `downloadFile
 4. **Automated Testing & Build**:
    - `node build.js` compiles cleanly.
    - All 45 Python test cases pass with zero regressions.
+
+---
+
+<br>
+<br>
+
+---
+# Refined Specification: AI Agent Integration Layer (MCP Server + M365 Copilot OpenAPI Plugin + Live Canvas Sync)
+
+## 1. Title / High-Level Objective
+Design and implement a unified AI agent integration subsystem for RFBlock. Provide native Model Context Protocol (MCP) tool support for local AI agents (Claude, Cursor, Antigravity, local LLMs) and a compliant OpenAPI 3.0 specification with an M365 Copilot plugin manifest for Microsoft 365 Copilot, ChatGPT, and Gemini.
+
+---
+
+## 2. Context & Scope
+- **Backend Service Layer**:
+  - `python/rfblock/mcp/`: New native Python MCP server package implementing standard JSON-RPC tools.
+  - `python/rfblock/api/routes/agent.py`: New FastAPI router exposing high-level circuit manipulation, solving, and export endpoints.
+  - `python/rfblock/api/routes/ws.py`: WebSocket bridge to stream agent actions live to the user's open UI.
+- **M365 Copilot Integration Artifacts**:
+  - `copilot/ai-plugin.json`: M365 Copilot API plugin manifest.
+  - `copilot/openapi.yaml`: Annotated OpenAPI 3.0 contract compliant with Microsoft Copilot schema requirements.
+- **Frontend Live Sync**:
+  - `js/api/agent-sync.js`: Client-side WebSocket listener that receives agent mutations (add block, update params, change sheet) and invokes `renderAll()`.
+
+---
+
+## 3. Detailed Requirements & Specifications
+
+### 3.1 Python MCP Server (`python/rfblock/mcp/server.py`)
+- Built using the standard Python `mcp` SDK.
+- Runnable as a standalone CLI command: `rfblock-mcp` or `python -m rfblock.mcp`.
+- Exposes tools:
+  - `rf_get_schematic`: Retrieves current blocks, connections, and metadata.
+  - `rf_synthesize_chain`: Creates an RF cascade from a specification list (e.g. LNA -> BPF -> Mixer -> IF Amp).
+  - `rf_calculate_cascade`: Runs cascade budget solver and returns NF, Gain, P1dB, and IP3.
+  - `rf_solve_sparams`: Runs scikit-rf multi-port analysis and returns Touchstone S2P or magnitude/phase vectors.
+  - `rf_export_diagram`: Exports drawings in VDX, EMF, SVG, or PNG format.
+
+### 3.2 M365 Copilot / Generic LLM REST Endpoints (`python/rfblock/api/routes/agent.py`)
+- Expose identical business logic via standard REST endpoints under `/api/v1/agent/`:
+  - `POST /api/v1/agent/synthesize`: Generates and adds blocks to the design.
+  - `GET /api/v1/agent/budget`: Returns JSON cascade table for Word/Excel synthesis.
+  - `POST /api/v1/agent/export`: Generates binary files (VDX, XLSX, EMF, PNG).
+- Provide `/copilot/ai-plugin.json` describing plugin capabilities for M365 Copilot.
+- Provide clean OpenAPI 3.0 schema generation with rich docstrings and parameter descriptions so LLMs reliably generate valid inputs.
+
+### 3.3 Live Canvas WebSocket Gateway (`python/rfblock/api/routes/ws.py`)
+- WebSocket endpoint at `/ws/agent`.
+- In `index.html` / `js/api/agent-sync.js`:
+  - Automatically connects to `ws://localhost:<port>/ws/agent`.
+  - When an AI agent performs an operation (e.g. `add_block`), the server broadcasts `{ type: "BLOCK_ADDED", data: ... }`.
+  - UI updates live without requiring manual page reload.
+
+---
+
+## 4. Constraints & Invariants
+- **No Cloud Lock-in**: The MCP and REST layers must run 100% locally without external cloud dependencies.
+- **Zero-Breakage Guarantee**: Existing standalone single-file distribution (`dist/rf-block-diagram-standalone.html`) and desktop launcher remain fully operational without requiring the agent server to be running.
+- **M365 Copilot Reachability**: Clear documentation and tunnel launcher script (`scripts/copilot_tunnel.sh` using free Azure Dev Tunnels / Cloudflare Tunnel) to expose the local API to M365 Copilot securely.
+
+---
+
+## 5. Acceptance & Verification Criteria
+1. **MCP Verification**:
+   - Launch `python -m rfblock.mcp` via stdio test harness.
+   - Verify tool discovery (`tools/list`) and execution (`rf_calculate_cascade`, `rf_get_schematic`).
+2. **M365 Copilot / OpenAPI Verification**:
+   - Validate `copilot/openapi.yaml` against OpenAPI 3.0 validator.
+   - Verify `/openapi.json` is consumable by ChatGPT / M365 Copilot declarative agents.
+3. **Live Sync Verification**:
+   - Send an agent synthesis call via REST or MCP; verify the diagram canvas in the browser updates immediately.
+4. **Test Suite Integrity**:
+   - All existing 45 unit tests pass with zero regressions.

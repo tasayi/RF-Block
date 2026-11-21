@@ -22,11 +22,13 @@ dependencies = [
     "scipy>=1.10.0",
     "pyinstaller>=6.5.0",
     "pywebview>=5.0.0",
+    "mcp>=2.3.0",
 ]
 
 [project.scripts]
 rfblock = "rfblock.cli:main_app"
 rfblock-build = "rfblock.cli:main_build"
+rfblock-mcp = "rfblock.mcp.server:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["python/rfblock"]

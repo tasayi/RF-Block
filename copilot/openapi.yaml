@@ -1,0 +1,203 @@
+openapi: 3.0.1
+info:
+  title: RFBlock AI Agent Gateway API
+  description: High-performance RF physics solver, Friis cascade budget calculator, and schematic diagram synthesis service for Microsoft 365 Copilot, Claude, ChatGPT, and local LLMs.
+  version: 2.2.0
+servers:
+  - url: http://localhost:8000
+    description: Local RFBlock Engine Server
+paths:
+  /api/v1/agent/status:
+    get:
+      operationId: getRFBlockStatus
+      summary: Get RFBlock Engine Status
+      description: Returns health status, active UI sessions connected to the canvas, and available RF simulation capabilities.
+      responses:
+        "200":
+          description: Operational status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "online"
+                  engine:
+                    type: string
+                  version:
+                    type: string
+                  active_ui_clients:
+                    type: integer
+                  capabilities:
+                    type: array
+                    items:
+                      type: string
+
+  /api/v1/agent/cascade:
+    post:
+      operationId: calculateCascadeBudget
+      summary: Calculate RF Cascade Budget
+      description: Computes Friis noise figure, cumulative gain, output power, OIP3, OP1dB, noise floor, and dynamic range across a chain of RF stages.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - stages
+              properties:
+                stages:
+                  type: array
+                  description: Ordered list of RF stages in the signal path.
+                  items:
+                    type: object
+                    required:
+                      - name
+                      - gain
+                      - nf
+                    properties:
+                      name:
+                        type: string
+                        example: "LNA"
+                      type:
+                        type: string
+                        example: "lna"
+                      gain:
+                        type: number
+                        description: Stage gain in dB (negative for loss).
+                        example: 18.0
+                      nf:
+                        type: number
+                        description: Stage noise figure in dB.
+                        example: 1.5
+                      oip3:
+                        type: number
+                        description: Output IP3 in dBm.
+                        example: 25.0
+                      op1db:
+                        type: number
+                        description: Output 1dB compression point in dBm.
+                        example: 12.0
+                input_power_dbm:
+                  type: number
+                  default: -50.0
+                  description: Input power level in dBm.
+                bandwidth_mhz:
+                  type: number
+                  default: 1.0
+                  description: Channel noise bandwidth in MHz.
+      responses:
+        "200":
+          description: Cascade budget calculation results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total_gain_db:
+                    type: number
+                  total_nf_db:
+                    type: number
+                  output_power_dbm:
+                    type: number
+                  oip3_dbm:
+                    type: number
+                  noise_floor_dbm:
+                    type: number
+                  snr_db:
+                    type: number
+                  stages:
+                    type: array
+                    items:
+                      type: object
+
+  /api/v1/agent/synthesize:
+    post:
+      operationId: synthesizeRFChain
+      summary: Synthesize RF Circuit Chain
+      description: Generates an RF block diagram architecture based on frequency, gain, and noise figure specifications. Optionally pushes the schematic directly to the open RFBlock Web UI.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                architecture:
+                  type: string
+                  enum: [receiver, transmitter, custom]
+                  default: receiver
+                  description: Target RF system architecture.
+                center_freq_ghz:
+                  type: number
+                  default: 2.4
+                  description: Operating frequency in GHz.
+                bandwidth_mhz:
+                  type: number
+                  default: 20.0
+                  description: Channel bandwidth in MHz.
+                target_gain_db:
+                  type: number
+                  default: 30.0
+                  description: Target overall gain in dB.
+                target_nf_db:
+                  type: number
+                  default: 3.0
+                  description: Target maximum noise figure in dB.
+                broadcast_to_canvas:
+                  type: boolean
+                  default: true
+                  description: Whether to immediately render the synthesized diagram on the active user canvas.
+      responses:
+        "200":
+          description: Synthesized schematic and cascade analysis
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  schematic:
+                    type: object
+                  budget:
+                    type: object
+                  broadcasted:
+                    type: boolean
+
+  /api/v1/agent/broadcast:
+    post:
+      operationId: broadcastCanvasAction
+      summary: Send Live Command to Open Canvas
+      description: Pushes an interactive action (such as loading a schematic or showing a notification) to the user's active browser canvas via WebSocket.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - action
+                - payload
+              properties:
+                action:
+                  type: string
+                  example: "SHOW_NOTIFICATION"
+                payload:
+                  type: object
+      responses:
+        "200":
+          description: Broadcast confirmation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  client_count:
+                    type: integer
+                  action:
+                    type: string

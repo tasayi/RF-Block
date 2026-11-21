@@ -32,6 +32,12 @@ Built with modular JavaScript (ES6+), SVG rendering, embedded physics solvers, `
   - **Distinct Color System**: Category-based soft tints optimized for clean white canvas backgrounds.
   - **Multi-Sheet Hierarchy**: Multi-page subsystem folding and drill-down navigation.
 
+- **AI Agent & Copilot Integration (MCP / M365 Copilot / ChatGPT)**:
+  - **Native Model Context Protocol (MCP)**: Run `rfblock-mcp` or `python -m rfblock.mcp` to connect Claude Desktop, Cursor, or Antigravity directly to the RFBlock physics engine.
+  - **Microsoft 365 Copilot & ChatGPT Custom Actions**: Connect M365 Copilot or Custom GPTs via standard OpenAPI 3.0 specs (`copilot/openapi.yaml`, `copilot/ai-plugin.json`).
+  - **Live Bi-Directional Canvas Sync**: AI agents can synthesize receiver/transmitter chains or tune parameters and push changes live to the user's open canvas in real-time over WebSockets (`/ws/canvas`).
+  - See the complete [AI Agent Integration Guide](file:///home/satish/Documents/Code/core/RFBlock/docs/AI_AGENT_INTEGRATION.md) for setup instructions.
+
 - **Export & Single-File Distribution**:
   - **Native Microsoft Visio VSDX Export**: Directly generates fully editable native `.vsdx` drawing packages conforming to OpenXML drawing standards with vector shapes, connection points, and 10 pt typography without third-party dependencies.
   - **Always Tightly Cropped Exports**: SVG, PNG, and Visio VSDX exports always tightly crop to the authored diagram bounding box with clean padding margins ($24\text{ px}$ at 96 DPI), keeping graphics unclipped, distortion-free, and ready for Word or publication embedding, while canvas layout presets (e.g. A4 Portrait) serve as on-screen design guidelines.
