@@ -1072,6 +1072,218 @@ table.bg tr:hover td { background: rgba(255, 255, 255, 0.04); cursor: pointer; }
 }
 .colorpop.open { display: block; }
 
+/* --- Modal Overlay & Dialog Styles --- */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: modal-fade-in 0.15s ease;
+}
+@keyframes modal-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.modal-card {
+  background: var(--chrome-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  width: 90%;
+  max-width: 540px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: modal-card-in 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes modal-card-in {
+  from { opacity: 0; transform: scale(0.96) translateY(-8px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+.modal-hd {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  background: var(--chrome);
+  border-bottom: 1px solid var(--line);
+}
+.modal-body {
+  padding: 18px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  font-size: 13px;
+  color: var(--ink);
+}
+.modal-ft {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 12px 18px;
+  background: var(--chrome);
+  border-top: 1px solid var(--line);
+}
+
+/* Format Pill Selectors */
+.exp-fmt-group {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+.exp-fmt-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 9px 6px;
+  background: var(--chrome);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  color: var(--ink);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-family: inherit;
+}
+.exp-fmt-btn:hover {
+  border-color: var(--accent);
+  background: rgba(245, 158, 11, 0.08);
+}
+.exp-fmt-btn.active {
+  border-color: var(--accent);
+  background: rgba(245, 158, 11, 0.16);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+.exp-fmt-btn .fmt-ico {
+  font-size: 16px;
+}
+.exp-fmt-btn .fmt-title {
+  font-size: 11.5px;
+  font-weight: 600;
+}
+.exp-fmt-btn .fmt-ext {
+  font-size: 10px;
+  font-weight: 700;
+  font-family: var(--mono);
+  color: var(--ink-dim);
+}
+.exp-fmt-btn.active .fmt-ext {
+  color: var(--accent);
+}
+
+/* Delivery options box */
+.exp-delivery-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.exp-delivery-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 10px 14px;
+  background: var(--chrome);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.exp-delivery-card:hover {
+  border-color: var(--accent);
+  background: rgba(245, 158, 11, 0.05);
+}
+.exp-delivery-card.active {
+  border-color: var(--accent);
+  background: rgba(245, 158, 11, 0.10);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+.exp-delivery-card input[type="radio"] {
+  margin-top: 3px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+.exp-delivery-content {
+  flex: 1;
+  min-width: 0;
+}
+.exp-delivery-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  color: var(--ink);
+}
+.exp-delivery-desc {
+  font-size: 11px;
+  color: var(--ink-dim);
+  margin-top: 2px;
+  line-height: 1.4;
+}
+.exp-delivery-desc code {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--accent);
+}
+
+/* Batch Preview Rows */
+.batch-preview-container {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 180px;
+  overflow-y: auto;
+  background: var(--chrome);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: 6px;
+}
+.batch-preview-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.02);
+  font-size: 12px;
+}
+.batch-preview-row:nth-child(even) {
+  background: rgba(255, 255, 255, 0.05);
+}
+.batch-preview-num {
+  font-family: var(--mono);
+  font-weight: 700;
+  color: var(--accent);
+  font-size: 11px;
+}
+.batch-preview-name {
+  font-weight: 600;
+  color: var(--ink);
+  flex: 1;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.batch-preview-blks {
+  font-size: 11px;
+  color: var(--ink-dim);
+}
+.batch-preview-file {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--ink-dim2);
+  background: rgba(0, 0, 0, 0.2);
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid var(--line);
+}
+
 /* Right-Click Desktop / Windows-Style Floating Context Menu */
 .ctxmenu {
   position: fixed;
@@ -1315,6 +1527,13 @@ table.bg tr:hover td { background: rgba(255, 255, 255, 0.04); cursor: pointer; }
           <span class="mtext">Bill of Materials</span>
           <span class="badge-ext">.xlsx</span>
         </button>
+        <div class="menu-drop-divider"></div>
+        <div class="menu-drop-section">Batch Export</div>
+        <button class="menu-drop-item" id="menuExpAllSheets" title="Export all sheets with numbered filenames to a selected folder">
+          <span class="mico">📑</span>
+          <span class="mtext">Export All Sheets...</span>
+          <span class="badge-ext">All</span>
+        </button>
       </div>
     </div>
 
@@ -1557,6 +1776,102 @@ table.bg tr:hover td { background: rgba(255, 255, 255, 0.04); cursor: pointer; }
   </div>
 
   <div id="ctxmenu" class="ctxmenu"></div>
+
+  <!-- Batch Export All Sheets Modal -->
+  <div id="exportAllModal" class="modal-overlay" style="display:none;">
+    <div class="modal-card">
+      <div class="modal-hd">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span style="font-size:16px;">📑</span>
+          <b style="font-size:14px; color:var(--ink);">Export All Sheets</b>
+          <span class="badge-ext" id="expAllSheetCount">0 sheets</span>
+        </div>
+        <button class="btn btn-sm" id="expAllClose" title="Close dialog">✕</button>
+      </div>
+      <div class="modal-body" id="expAllBody">
+        <!-- 1. Format Selection -->
+        <div>
+          <label style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:var(--ink-dim2); display:block; margin-bottom:8px;">
+            1. Target Format
+          </label>
+          <div class="exp-fmt-group">
+            <button type="button" class="exp-fmt-btn active" data-fmt="vdx">
+              <span class="fmt-ico">📄</span>
+              <span class="fmt-title">VDX Drawing</span>
+              <span class="fmt-ext">.vdx</span>
+            </button>
+            <button type="button" class="exp-fmt-btn" data-fmt="png">
+              <span class="fmt-ico">🖼️</span>
+              <span class="fmt-title">PNG Image</span>
+              <span class="fmt-ext">.png</span>
+            </button>
+            <button type="button" class="exp-fmt-btn" data-fmt="svg">
+              <span class="fmt-ico">📐</span>
+              <span class="fmt-title">SVG Vector</span>
+              <span class="fmt-ext">.svg</span>
+            </button>
+            <button type="button" class="exp-fmt-btn" data-fmt="emf">
+              <span class="fmt-ico">🎨</span>
+              <span class="fmt-title">EMF Vector</span>
+              <span class="fmt-ext">.emf</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 2. Destination / Save Option -->
+        <div>
+          <label style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:var(--ink-dim2); display:block; margin-bottom:8px;">
+            2. Save Option
+          </label>
+          <div class="exp-delivery-options">
+            <label class="exp-delivery-card active" id="expCardZip">
+              <input type="radio" name="batchDeliveryMode" id="expModeZip" value="zip" checked />
+              <div class="exp-delivery-content">
+                <div class="exp-delivery-title">
+                  <span>📦</span>
+                  <b>ZIP Archive Package</b>
+                  <span class="badge-ext">Single File Picker</span>
+                </div>
+                <div class="exp-delivery-desc">
+                  Bundles all numbered sheets into a single archive (<code>&lt;project&gt;_all_sheets.zip</code>) using the standard file save location picker.
+                </div>
+              </div>
+            </label>
+            <label class="exp-delivery-card" id="expCardIndiv">
+              <input type="radio" name="batchDeliveryMode" id="expModeIndiv" value="individual" />
+              <div class="exp-delivery-content">
+                <div class="exp-delivery-title">
+                  <span>📑</span>
+                  <b>Individual Files</b>
+                  <span class="badge-ext">Sequential</span>
+                </div>
+                <div class="exp-delivery-desc">
+                  Downloads each numbered sheet (<code>01_...</code>, <code>02_...</code>) directly using the standard file download dialog.
+                </div>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <!-- 3. Detected Sheets & Live Preview -->
+        <div>
+          <label style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:var(--ink-dim2); display:block; margin-bottom:8px;">
+            3. Sheets &amp; Output Filenames Preview
+          </label>
+          <div class="batch-preview-container" id="expAllPreviewList">
+            <!-- Populated dynamically -->
+          </div>
+        </div>
+
+        <!-- Progress message -->
+        <div id="expAllProgress" style="display:none; font-size:12px; color:var(--accent); font-weight:600; text-align:center; padding:4px 0;"></div>
+      </div>
+      <div class="modal-ft">
+        <button class="btn" id="expAllCancel">Cancel</button>
+        <button class="btn primary" id="expAllConfirm">Export All Sheets</button>
+      </div>
+    </div>
+  </div>
 
 <script>
 /* --- File: js/config.js --- */
@@ -9097,6 +9412,396 @@ if (typeof module !== "undefined" && module.exports) {
 });
 
 
+/* --- File: js/io/batch-sheet-exporter.js --- */
+"use strict";
+
+/* =====================================================================
+ * RF Block Diagram Editor - Batch "Export All Sheets" Controller
+ * Exports all project sheets with zero-padded numbering via downloadFile()
+ * ===================================================================== */
+
+(function (root, factory) {
+  if (typeof module !== "undefined" && module.exports) {
+    module.exports = factory();
+  } else {
+    const exports = factory();
+    Object.assign(root, exports);
+  }
+})(typeof globalThis !== "undefined" ? globalThis : this, function () {
+
+  let batchSelectedFormat = "vdx";   // 'vdx' | 'png' | 'svg' | 'emf'
+  let batchDeliveryMode = "zip";     // 'zip' | 'individual'
+
+  function sanitizeSheetFileName(name, idx) {
+    const fallback = `Sheet_${idx + 1}`;
+    if (!name || typeof name !== "string") return fallback;
+    const clean = name.trim().replace(/[/\\?%*:|"<>]/g, "_").replace(/\s+/g, "_");
+    return clean || fallback;
+  }
+
+  function getSheetExportFileName(sheet, idx, ext) {
+    const pad = String(idx + 1).padStart(2, "0");
+    const safeName = sanitizeSheetFileName(sheet ? sheet.name : "", idx);
+    return `${pad}_${safeName}.${ext}`;
+  }
+
+  function getProjectSheets() {
+    if (typeof commitSheet === "function") commitSheet();
+    return (typeof sheets !== "undefined" && Array.isArray(sheets)) ? sheets : [];
+  }
+
+  /* Generate File Content Blob for a Specific Sheet */
+  async function generateSheetBlob(sheetIdx, format) {
+    if (typeof commitSheet === "function") commitSheet();
+    const allSheets = getProjectSheets();
+    const targetSheet = allSheets[sheetIdx];
+    if (!targetSheet) return null;
+
+    // Temporarily adopt target sheet for accurate coordinate & solver resolution
+    if (typeof adoptSheet === "function") adoptSheet(sheetIdx);
+
+    const filename = getSheetExportFileName(targetSheet, sheetIdx, format);
+    let blob = null;
+
+    if (format === "vdx") {
+      if (typeof buildVsdxBlob === "function") {
+        const blks = (targetSheet.blocks && targetSheet.blocks.length)
+          ? targetSheet.blocks
+          : [{ id: "b_empty_1", type: "label", name: "Text note", x: 200, y: 150, params: { label: "", text: `${targetSheet.name || "Sheet"} (Empty)` } }];
+        const conns = (targetSheet.blocks && targetSheet.blocks.length) ? (targetSheet.conns || []) : [];
+        const P = (typeof computePowers === "function") ? computePowers("primary") : {};
+        const PSecondary = (typeof computePowers === "function") ? computePowers("secondary") : {};
+        const needNoise = !!(typeof settings !== "undefined" && (settings.showNF || settings.showNoiseFloor));
+        const NFm = needNoise && (typeof computeNoise === "function") ? computeNoise(P) : null;
+        const vdxRes = buildVsdxBlob(blks, conns, P, NFm, PSecondary, null, typeof settings !== "undefined" ? settings : {});
+        blob = (vdxRes instanceof Blob) ? vdxRes : new Blob([vdxRes], { type: "application/vnd.visio" });
+      } else {
+        throw new Error("VDX export engine is unavailable.");
+      }
+    } else if (format === "svg") {
+      let svgStr = (typeof buildExportSVG === "function") ? buildExportSVG(1) : null;
+      if (!svgStr) {
+        // Safe placeholder for empty canvas
+        const safeTitle = sanitizeSheetFileName(targetSheet.name, sheetIdx);
+        svgStr = `<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600"><rect width="800" height="600" fill="#0d121d"/><text x="400" y="300" fill="#94a3b8" font-family="sans-serif" font-size="16" text-anchor="middle">${safeTitle} (Empty Sheet)</text></svg>`;
+      }
+      blob = new Blob([svgStr], { type: "image/svg+xml" });
+    } else if (format === "png") {
+      let svgStr = (typeof buildExportSVG === "function") ? buildExportSVG(2) : null;
+      if (!svgStr) {
+        const safeTitle = sanitizeSheetFileName(targetSheet.name, sheetIdx);
+        svgStr = `<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600"><rect width="800" height="600" fill="#ffffff"/><text x="400" y="300" fill="#334155" font-family="sans-serif" font-size="16" text-anchor="middle">${safeTitle} (Empty Sheet)</text></svg>`;
+      }
+      blob = await new Promise(resolve => {
+        const img = new Image();
+        const url = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svgStr);
+        img.onload = () => {
+          const cv = document.createElement("canvas");
+          cv.width = img.width || 1200;
+          cv.height = img.height || 800;
+          const g = cv.getContext("2d");
+          g.fillStyle = "#ffffff";
+          g.fillRect(0, 0, cv.width, cv.height);
+          g.imageSmoothingEnabled = true;
+          g.imageSmoothingQuality = "high";
+          g.drawImage(img, 0, 0);
+          cv.toBlob(b => resolve(b), "image/png");
+        };
+        img.onerror = () => {
+          resolve(new Blob([""], { type: "image/png" }));
+        };
+        img.src = url;
+      });
+    } else if (format === "emf") {
+      let svgStr = (typeof buildExportSVG === "function") ? buildExportSVG(1) : null;
+      if (!svgStr) {
+        const safeTitle = sanitizeSheetFileName(targetSheet.name, sheetIdx);
+        svgStr = `<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600"><rect width="800" height="600" fill="#ffffff"/><text x="400" y="300" fill="#000000" font-family="sans-serif" font-size="16" text-anchor="middle">${safeTitle}</text></svg>`;
+      }
+      if (typeof svgToEmf === "function") {
+        const emfBytes = svgToEmf(svgStr);
+        blob = new Blob([emfBytes], { type: "image/emf" });
+      } else {
+        throw new Error("EMF export engine is unavailable.");
+      }
+    }
+
+    return { filename, blob };
+  }
+
+  /* Update Live Filename Preview List in Modal */
+  function updateBatchPreviewList() {
+    const listEl = typeof $ === "function" ? $("expAllPreviewList") : document.getElementById("expAllPreviewList");
+    const countEl = typeof $ === "function" ? $("expAllSheetCount") : document.getElementById("expAllSheetCount");
+    const allSheets = getProjectSheets();
+
+    if (countEl) {
+      countEl.textContent = `${allSheets.length} sheet${allSheets.length === 1 ? "" : "s"}`;
+    }
+
+    if (!listEl) return;
+    if (!allSheets.length) {
+      listEl.innerHTML = `<div style="color:var(--ink-dim); padding:10px; font-style:italic; text-align:center;">No sheets found in design.</div>`;
+      return;
+    }
+
+    let html = "";
+    allSheets.forEach((sh, idx) => {
+      const fileName = getSheetExportFileName(sh, idx, batchSelectedFormat);
+      const blkCount = (sh.blocks && sh.blocks.length) || 0;
+      html += `
+        <div class="batch-preview-row">
+          <span class="batch-preview-num">${String(idx + 1).padStart(2, "0")}</span>
+          <span class="batch-preview-name">${typeof esc === "function" ? esc(sh.name || "Untitled") : sh.name}</span>
+          <span class="batch-preview-blks">${blkCount} block${blkCount === 1 ? "" : "s"}</span>
+          <span class="batch-preview-file">📄 ${typeof esc === "function" ? esc(fileName) : fileName}</span>
+        </div>`;
+    });
+    listEl.innerHTML = html;
+  }
+
+  /* Sync Delivery Option Cards */
+  function updateDeliveryCards() {
+    const cardZip = typeof $ === "function" ? $("expCardZip") : document.getElementById("expCardZip");
+    const cardIndiv = typeof $ === "function" ? $("expCardIndiv") : document.getElementById("expCardIndiv");
+    const radioZip = typeof $ === "function" ? $("expModeZip") : document.getElementById("expModeZip");
+    const radioIndiv = typeof $ === "function" ? $("expModeIndiv") : document.getElementById("expModeIndiv");
+
+    if (cardZip) cardZip.classList.toggle("active", batchDeliveryMode === "zip");
+    if (cardIndiv) cardIndiv.classList.toggle("active", batchDeliveryMode === "individual");
+    if (radioZip) radioZip.checked = (batchDeliveryMode === "zip");
+    if (radioIndiv) radioIndiv.checked = (batchDeliveryMode === "individual");
+  }
+
+  /* Open the "Export All Sheets" Modal Dialog */
+  function openExportAllModal() {
+    if (typeof commitSheet === "function") commitSheet();
+    const modal = typeof $ === "function" ? $("exportAllModal") : document.getElementById("exportAllModal");
+    if (!modal) return;
+
+    // Reset status / progress
+    const progressEl = typeof $ === "function" ? $("expAllProgress") : document.getElementById("expAllProgress");
+    if (progressEl) {
+      progressEl.style.display = "none";
+      progressEl.textContent = "";
+    }
+    const confirmBtn = typeof $ === "function" ? $("expAllConfirm") : document.getElementById("expAllConfirm");
+    if (confirmBtn) {
+      confirmBtn.disabled = false;
+      confirmBtn.textContent = "Export All Sheets";
+    }
+
+    // Set active format radio/pill
+    document.querySelectorAll(".exp-fmt-btn").forEach(btn => {
+      const fmt = btn.getAttribute("data-fmt");
+      btn.classList.toggle("active", fmt === batchSelectedFormat);
+    });
+
+    updateDeliveryCards();
+    updateBatchPreviewList();
+    modal.style.display = "flex";
+  }
+
+  /* Close the Modal Dialog */
+  function closeExportAllModal() {
+    const modal = typeof $ === "function" ? $("exportAllModal") : document.getElementById("exportAllModal");
+    if (modal) modal.style.display = "none";
+  }
+
+  /* Execute Batch Export Across All Sheets */
+  async function executeBatchExport() {
+    const allSheets = getProjectSheets();
+    if (!allSheets.length) {
+      if (typeof hint === "function") hint("Cannot export: project contains no sheets.");
+      return;
+    }
+
+    const confirmBtn = typeof $ === "function" ? $("expAllConfirm") : document.getElementById("expAllConfirm");
+    const progressEl = typeof $ === "function" ? $("expAllProgress") : document.getElementById("expAllProgress");
+
+    if (confirmBtn) {
+      confirmBtn.disabled = true;
+      confirmBtn.textContent = "Exporting...";
+    }
+    if (progressEl) {
+      progressEl.style.display = "block";
+      progressEl.textContent = "Preparing export...";
+    }
+
+    // Save active sheet index to restore state after batch loop
+    const origCur = (typeof cur !== "undefined") ? cur : 0;
+    const format = batchSelectedFormat;
+    const generatedFiles = [];
+
+    try {
+      for (let i = 0; i < allSheets.length; i++) {
+        const shName = allSheets[i].name || `Sheet ${i + 1}`;
+        if (progressEl) {
+          progressEl.textContent = `Rendering sheet ${i + 1} of ${allSheets.length}: ${shName}...`;
+        }
+        // Yield to browser UI thread
+        await new Promise(r => setTimeout(r, 20));
+
+        const res = await generateSheetBlob(i, format);
+        if (res && res.blob) {
+          generatedFiles.push(res);
+        }
+      }
+
+      if (!generatedFiles.length) {
+        throw new Error("No files were generated.");
+      }
+
+      if (batchDeliveryMode === "zip") {
+        if (progressEl) {
+          progressEl.textContent = `Packaging ${generatedFiles.length} sheets into ZIP archive...`;
+        }
+        // Build ZIP using built-in zipStore
+        if (typeof zipStore !== "function") {
+          throw new Error("ZIP packaging engine is unavailable.");
+        }
+        const zipEntries = [];
+        for (const item of generatedFiles) {
+          const arrayBuf = await item.blob.arrayBuffer();
+          zipEntries.push({
+            name: item.filename,
+            data: new Uint8Array(arrayBuf)
+          });
+        }
+        const rawZip = zipStore(zipEntries);
+        const zipBlob = new Blob([rawZip], { type: "application/zip" });
+        const baseName = (typeof fileName !== "undefined" && fileName)
+          ? fileName.replace(/\.[^.]+$/, "")
+          : "rf-project";
+        const zipFileName = `${baseName}_all_sheets_${format}.zip`;
+
+        if (typeof downloadFile === "function") {
+          await downloadFile(zipBlob, zipFileName, "application/zip");
+        } else {
+          throw new Error("File download handler is unavailable.");
+        }
+
+        if (typeof hint === "function") {
+          hint(`Saved all ${generatedFiles.length} sheets in archive '${zipFileName}'.`);
+        }
+      } else {
+        // Individual sequential downloads
+        if (progressEl) {
+          progressEl.textContent = `Downloading ${generatedFiles.length} files...`;
+        }
+        for (let i = 0; i < generatedFiles.length; i++) {
+          const item = generatedFiles[i];
+          if (progressEl) {
+            progressEl.textContent = `Downloading file ${i + 1} of ${generatedFiles.length}: ${item.filename}...`;
+          }
+          if (typeof downloadFile === "function") {
+            await downloadFile(item.blob, item.filename, item.blob.type || "application/octet-stream");
+          }
+          if (i < generatedFiles.length - 1) {
+            await new Promise(r => setTimeout(r, 250)); // throttle to prevent download blockage
+          }
+        }
+        if (typeof hint === "function") {
+          hint(`Exported ${generatedFiles.length} sheet files.`);
+        }
+      }
+
+      closeExportAllModal();
+    } catch (err) {
+      console.error("Batch export error:", err);
+      if (typeof hint === "function") {
+        hint("Batch export failed: " + (err.message || err));
+      }
+    } finally {
+      // Restore original sheet and canvas view state
+      if (typeof adoptSheet === "function") adoptSheet(origCur);
+      if (typeof applyView === "function") applyView();
+      if (typeof renderAll === "function") renderAll();
+      if (typeof renderSheets === "function") renderSheets();
+
+      if (confirmBtn) {
+        confirmBtn.disabled = false;
+        confirmBtn.textContent = "Export All Sheets";
+      }
+      if (progressEl) {
+        progressEl.style.display = "none";
+      }
+    }
+  }
+
+  /* Initialize Event Listeners for Batch Modal */
+  function initBatchExporterUI() {
+    // Format selector buttons
+    document.querySelectorAll(".exp-fmt-btn").forEach(btn => {
+      btn.onclick = () => {
+        batchSelectedFormat = btn.getAttribute("data-fmt") || "vdx";
+        document.querySelectorAll(".exp-fmt-btn").forEach(b => {
+          b.classList.toggle("active", b === btn);
+        });
+        updateBatchPreviewList();
+      };
+    });
+
+    // Delivery mode options
+    const cardZip = typeof $ === "function" ? $("expCardZip") : document.getElementById("expCardZip");
+    if (cardZip) {
+      cardZip.onclick = () => {
+        batchDeliveryMode = "zip";
+        updateDeliveryCards();
+      };
+    }
+
+    const cardIndiv = typeof $ === "function" ? $("expCardIndiv") : document.getElementById("expCardIndiv");
+    if (cardIndiv) {
+      cardIndiv.onclick = () => {
+        batchDeliveryMode = "individual";
+        updateDeliveryCards();
+      };
+    }
+
+    document.querySelectorAll("input[name='batchDeliveryMode']").forEach(radio => {
+      radio.onchange = () => {
+        batchDeliveryMode = radio.value || "zip";
+        updateDeliveryCards();
+      };
+    });
+
+    const closeBtn = typeof $ === "function" ? $("expAllClose") : document.getElementById("expAllClose");
+    if (closeBtn) {
+      closeBtn.onclick = closeExportAllModal;
+    }
+
+    const cancelBtn = typeof $ === "function" ? $("expAllCancel") : document.getElementById("expAllCancel");
+    if (cancelBtn) {
+      cancelBtn.onclick = closeExportAllModal;
+    }
+
+    const confirmBtn = typeof $ === "function" ? $("expAllConfirm") : document.getElementById("expAllConfirm");
+    if (confirmBtn) {
+      confirmBtn.onclick = executeBatchExport;
+    }
+
+    // Close when clicking modal backdrop
+    const modal = typeof $ === "function" ? $("exportAllModal") : document.getElementById("exportAllModal");
+    if (modal) {
+      modal.onclick = e => {
+        if (e.target === modal) closeExportAllModal();
+      };
+    }
+  }
+
+  return {
+    sanitizeSheetFileName,
+    getSheetExportFileName,
+    openExportAllModal,
+    closeExportAllModal,
+    executeBatchExport,
+    initBatchExporterUI,
+    updateBatchPreviewList
+  };
+});
+
+
 /* --- File: js/ui/canvas-renderer.js --- */
 "use strict";
 
@@ -13676,6 +14381,10 @@ function initEvents() {
   if ($("menuExpPng")) $("menuExpPng").onclick = () => { exportDrop.close(); doExportPng(); };
   if ($("menuExpVdx")) $("menuExpVdx").onclick = () => { exportDrop.close(); (typeof exportVdx === "function") ? exportVdx() : exportVsdx(); };
   if ($("menuExpBom")) $("menuExpBom").onclick = () => { exportDrop.close(); doExportBom(); };
+  if ($("menuExpAllSheets")) $("menuExpAllSheets").onclick = () => { exportDrop.close(); (typeof openExportAllModal === "function") && openExportAllModal(); };
+
+  /* Initialize Batch Exporter UI */
+  if (typeof initBatchExporterUI === "function") initBatchExporterUI();
 
   /* Standalone main toolbar export fallback handlers */
   if ($("btnSvg")) $("btnSvg").onclick = doExportSvg;

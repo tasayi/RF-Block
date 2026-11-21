@@ -615,6 +615,10 @@ function initEvents() {
   if ($("menuExpPng")) $("menuExpPng").onclick = () => { exportDrop.close(); doExportPng(); };
   if ($("menuExpVdx")) $("menuExpVdx").onclick = () => { exportDrop.close(); (typeof exportVdx === "function") ? exportVdx() : exportVsdx(); };
   if ($("menuExpBom")) $("menuExpBom").onclick = () => { exportDrop.close(); doExportBom(); };
+  if ($("menuExpAllSheets")) $("menuExpAllSheets").onclick = () => { exportDrop.close(); (typeof openExportAllModal === "function") && openExportAllModal(); };
+
+  /* Initialize Batch Exporter UI */
+  if (typeof initBatchExporterUI === "function") initBatchExporterUI();
 
   /* Standalone main toolbar export fallback handlers */
   if ($("btnSvg")) $("btnSvg").onclick = doExportSvg;

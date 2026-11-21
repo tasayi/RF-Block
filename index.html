@@ -74,6 +74,13 @@
           <span class="mtext">Bill of Materials</span>
           <span class="badge-ext">.xlsx</span>
         </button>
+        <div class="menu-drop-divider"></div>
+        <div class="menu-drop-section">Batch Export</div>
+        <button class="menu-drop-item" id="menuExpAllSheets" title="Export all sheets with numbered filenames to a selected folder">
+          <span class="mico">📑</span>
+          <span class="mtext">Export All Sheets...</span>
+          <span class="badge-ext">All</span>
+        </button>
       </div>
     </div>
 
@@ -317,6 +324,102 @@
 
   <div id="ctxmenu" class="ctxmenu"></div>
 
+  <!-- Batch Export All Sheets Modal -->
+  <div id="exportAllModal" class="modal-overlay" style="display:none;">
+    <div class="modal-card">
+      <div class="modal-hd">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span style="font-size:16px;">📑</span>
+          <b style="font-size:14px; color:var(--ink);">Export All Sheets</b>
+          <span class="badge-ext" id="expAllSheetCount">0 sheets</span>
+        </div>
+        <button class="btn btn-sm" id="expAllClose" title="Close dialog">✕</button>
+      </div>
+      <div class="modal-body" id="expAllBody">
+        <!-- 1. Format Selection -->
+        <div>
+          <label style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:var(--ink-dim2); display:block; margin-bottom:8px;">
+            1. Target Format
+          </label>
+          <div class="exp-fmt-group">
+            <button type="button" class="exp-fmt-btn active" data-fmt="vdx">
+              <span class="fmt-ico">📄</span>
+              <span class="fmt-title">VDX Drawing</span>
+              <span class="fmt-ext">.vdx</span>
+            </button>
+            <button type="button" class="exp-fmt-btn" data-fmt="png">
+              <span class="fmt-ico">🖼️</span>
+              <span class="fmt-title">PNG Image</span>
+              <span class="fmt-ext">.png</span>
+            </button>
+            <button type="button" class="exp-fmt-btn" data-fmt="svg">
+              <span class="fmt-ico">📐</span>
+              <span class="fmt-title">SVG Vector</span>
+              <span class="fmt-ext">.svg</span>
+            </button>
+            <button type="button" class="exp-fmt-btn" data-fmt="emf">
+              <span class="fmt-ico">🎨</span>
+              <span class="fmt-title">EMF Vector</span>
+              <span class="fmt-ext">.emf</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 2. Destination / Save Option -->
+        <div>
+          <label style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:var(--ink-dim2); display:block; margin-bottom:8px;">
+            2. Save Option
+          </label>
+          <div class="exp-delivery-options">
+            <label class="exp-delivery-card active" id="expCardZip">
+              <input type="radio" name="batchDeliveryMode" id="expModeZip" value="zip" checked />
+              <div class="exp-delivery-content">
+                <div class="exp-delivery-title">
+                  <span>📦</span>
+                  <b>ZIP Archive Package</b>
+                  <span class="badge-ext">Single File Picker</span>
+                </div>
+                <div class="exp-delivery-desc">
+                  Bundles all numbered sheets into a single archive (<code>&lt;project&gt;_all_sheets.zip</code>) using the standard file save location picker.
+                </div>
+              </div>
+            </label>
+            <label class="exp-delivery-card" id="expCardIndiv">
+              <input type="radio" name="batchDeliveryMode" id="expModeIndiv" value="individual" />
+              <div class="exp-delivery-content">
+                <div class="exp-delivery-title">
+                  <span>📑</span>
+                  <b>Individual Files</b>
+                  <span class="badge-ext">Sequential</span>
+                </div>
+                <div class="exp-delivery-desc">
+                  Downloads each numbered sheet (<code>01_...</code>, <code>02_...</code>) directly using the standard file download dialog.
+                </div>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <!-- 3. Detected Sheets & Live Preview -->
+        <div>
+          <label style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:var(--ink-dim2); display:block; margin-bottom:8px;">
+            3. Sheets &amp; Output Filenames Preview
+          </label>
+          <div class="batch-preview-container" id="expAllPreviewList">
+            <!-- Populated dynamically -->
+          </div>
+        </div>
+
+        <!-- Progress message -->
+        <div id="expAllProgress" style="display:none; font-size:12px; color:var(--accent); font-weight:600; text-align:center; padding:4px 0;"></div>
+      </div>
+      <div class="modal-ft">
+        <button class="btn" id="expAllCancel">Cancel</button>
+        <button class="btn primary" id="expAllConfirm">Export All Sheets</button>
+      </div>
+    </div>
+  </div>
+
 <!-- JavaScript Core Modules -->
 <script src="js/config.js"></script>
 <script src="js/utils.js"></script>
@@ -349,6 +452,7 @@
 <script src="js/io/document-io.js"></script>
 <script src="js/io/svg-exporter.js"></script>
 <script src="js/io/emf-exporter.js"></script>
+<script src="js/io/batch-sheet-exporter.js"></script>
 <script src="js/ui/canvas-renderer.js"></script>
 <script src="js/ui/palette-renderer.js"></script>
 <script src="js/ui/inspector-renderer.js"></script>
