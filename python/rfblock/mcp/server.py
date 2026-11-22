@@ -12,6 +12,12 @@ from ..physics.budget import calculate_cascade_budget
 from ..physics.cascade import analyze_schematic_cascade
 from ..physics.multi_sheet_solver import MultiSheetSolver, analyze_rfbd_file
 from ..physics.canvas_solver import CanvasSolver, analyze_canvas_file
+from ..physics.advanced_tools import (
+    update_component_parameters,
+    sweep_dynamic_range,
+    optimize_chain_attenuation,
+    export_touchstone
+)
 from ..api.routes.ws import manager as ws_manager
 
 mcp = MCPServer("rfblock")
@@ -23,12 +29,16 @@ def rf_get_status() -> str:
     """
     status = {
         "engine": "RFBlock scikit-rf Physics & Cascade Engine",
-        "version": "2.2.0",
+        "version": "2.3.0",
         "status": "online",
         "active_canvas_clients": len(ws_manager.active_connections),
         "supported_features": [
             "Friis cascade budget analysis (Gain, NF, OIP3, OP1dB, SNR, SFDR)",
             "scikit-rf multi-port linear S-parameter matrix simulation",
+            "Multi-point dynamic range & P1dB bottleneck sweeping",
+            "Goal-oriented automatic DSA & gain optimization",
+            "Component parameter batch-updating and state switching",
+            "Touchstone .s2p / .s4p S-parameter export for ADS/AWR",
             "Automatic RF receiver/transmitter chain synthesis",
             "Live bi-directional canvas push via WebSocket",
             "Visio VDX / EMF / SVG diagram generation"
@@ -214,6 +224,149 @@ def rf_send_canvas_action(
         "action": action,
         "clients_updated": active_count
     })
+
+
+@mcp.tool()
+def rf_update_component_params(
+    file_path: str,
+    updates: List[Dict[str, Any]],
+    re_solve: bool = True,
+    power_budget: str = "primary"
+) -> str:
+    """
+    Safely update component parameters across sheets in an .rfbd diagram file.
+    Preserves schematic structure and enforces component invariants (e.g. DSA loss = intrinsicLoss + attenuation).
+
+    Args:
+        file_path: Absolute or relative path to the .rfbd file
+        updates: List of update dicts, e.g. [{"id": "dsa23_3wq7", "params": {"attenuation": 15.0}}]
+        re_solve: Whether to re-solve the circuit before and after to return output deltas (default: True)
+        power_budget: 'primary' or 'secondary' budget mode (default: 'primary')
+    """
+    try:
+        res = update_component_parameters(
+            file_path=file_path,
+            updates=updates,
+            re_solve=re_solve,
+            power_budget=power_budget
+        )
+        return json.dumps(res, indent=2)
+    except Exception as e:
+        return json.dumps({"success": False, "error": str(e)}, indent=2)
+
+
+@mcp.tool()
+def rf_sweep_dynamic_range(
+    file_path: str,
+    pin_start_dbm: float = -80.0,
+    pin_stop_dbm: float = 20.0,
+    step_db: float = 5.0,
+    antenna_id: Optional[str] = None,
+    monitor_ports: Optional[List[str]] = None,
+    power_budget: str = "primary"
+) -> str:
+    """
+    Perform an automated input power sweep across an .rfbd architecture.
+    Identifies 1dB compression points (IP1dB/OP1dB), first-saturating bottleneck stages,
+    and channel output power and noise figure trajectories.
+
+    Args:
+        file_path: Absolute or relative path to the .rfbd file
+        pin_start_dbm: Starting input power in dBm (default: -80.0)
+        pin_stop_dbm: Stopping input power in dBm (default: +20.0)
+        step_db: Sweep power step in dB (default: 5.0)
+        antenna_id: Optional specific antenna ID to sweep (others isolated at -150 dBm)
+        monitor_ports: List of port keys to track, e.g. ["custom68_djys·o1", "custom69_as8a·o1"]
+        power_budget: 'primary' or 'secondary' budget mode (default: 'primary')
+    """
+    try:
+        res = sweep_dynamic_range(
+            file_path=file_path,
+            pin_start_dbm=pin_start_dbm,
+            pin_stop_dbm=pin_stop_dbm,
+            step_db=step_db,
+            antenna_id=antenna_id,
+            monitor_ports=monitor_ports,
+            power_budget=power_budget
+        )
+        return json.dumps(res, indent=2)
+    except Exception as e:
+        return json.dumps({"success": False, "error": str(e)}, indent=2)
+
+
+@mcp.tool()
+def rf_optimize_chain_attenuation(
+    file_path: str,
+    targets: Optional[Dict[str, List[float]]] = None,
+    adjustable_dsa_ids: Optional[List[str]] = None,
+    objective: str = "max_linearity",
+    apply_to_file: bool = False,
+    power_budget: str = "primary",
+    tolerance_db: float = 0.5
+) -> str:
+    """
+    Automatically solve for optimal DSA attenuation words across sheets to bring
+    channel outputs strictly within target operating windows (e.g. -5 dBm to -45 dBm for the AD9084 ADC).
+
+    Args:
+        file_path: Path to the .rfbd diagram file
+        targets: Mapping of port keys to [min_dbm, max_dbm] thresholds.
+                 Defaults to AD9084 ADC requirements: [-45.0, -5.0] for custom68-71 and rfout blocks.
+        adjustable_dsa_ids: Optional explicit list of DSA block IDs to tune.
+        objective: 'max_linearity' (attenuate early to protect downstream amps) or
+                   'min_noise_figure' (attenuate late to preserve front-end NF).
+        apply_to_file: Whether to save the optimized values directly to the file.
+        power_budget: 'primary' or 'secondary' budget mode (default: 'primary').
+        tolerance_db: Allowable margin in dB around targets (default: 0.5 dB).
+    """
+    try:
+        res = optimize_chain_attenuation(
+            file_path=file_path,
+            targets=targets,
+            adjustable_dsa_ids=adjustable_dsa_ids,
+            objective=objective,
+            apply_to_file=apply_to_file,
+            power_budget=power_budget,
+            tolerance_db=tolerance_db
+        )
+        return json.dumps(res, indent=2)
+    except Exception as e:
+        return json.dumps({"success": False, "error": str(e)}, indent=2)
+
+
+@mcp.tool()
+def rf_export_touchstone(
+    file_path: Optional[str] = None,
+    schematic: Optional[Dict[str, Any]] = None,
+    sheet_id: Optional[str] = None,
+    start_freq_ghz: float = 1.0,
+    stop_freq_ghz: float = 10.0,
+    points: int = 101
+) -> str:
+    """
+    Generate Touchstone .s2p text format from an .rfbd file or schematic object for
+    co-simulation in Keysight ADS, Cadence AWR, or MATLAB RF Toolbox.
+
+    Args:
+        file_path: Optional path to the .rfbd file
+        schematic: Optional schematic dict containing 'blocks' and 'conns'
+        sheet_id: Specific sheet ID to export (if file has multiple sheets)
+        start_freq_ghz: Sweep start frequency in GHz (default: 1.0)
+        stop_freq_ghz: Sweep stop frequency in GHz (default: 10.0)
+        points: Number of frequency points (default: 101)
+    """
+    try:
+        res = export_touchstone(
+            file_path=file_path,
+            schematic=schematic,
+            sheet_id=sheet_id,
+            start_freq_ghz=start_freq_ghz,
+            stop_freq_ghz=stop_freq_ghz,
+            points=points
+        )
+        return res
+    except Exception as e:
+        return f"! Error generating Touchstone: {str(e)}"
 
 
 def main():

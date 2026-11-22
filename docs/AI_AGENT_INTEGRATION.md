@@ -171,6 +171,12 @@ requests.post("http://localhost:8000/api/v1/agent/synthesize", json=synth_payloa
 | :--- | :--- | :--- |
 | `rf_get_status` | `GET /api/v1/agent/status` | Returns engine health, active UI connections, and supported features. |
 | `rf_calculate_cascade` | `POST /api/v1/agent/cascade` | Calculates Friis cascade noise figure, gain, OIP3, OP1dB, and noise floor. |
+| `rf_analyze_file` | — | Canonical Canvas JS engine analysis on an `.rfbd` diagram file (Single Source of Truth). |
+| `rf_analyze_schematic` | — | Canonical Canvas JS engine cascade analysis on in-memory schematic JSON object. |
+| `rf_update_component_params`| — | Safely batch-updates component parameters, bypass states, and DSAs with invariant checking. |
+| `rf_sweep_dynamic_range` | — | Sweeps input power, finds first-saturating bottleneck stages, and computes P1dB/OP1dB/SFDR curves. |
+| `rf_optimize_chain_attenuation`| — | Goal-oriented solver: auto-calculates optimal DSA attenuation to satisfy ADC operating windows. |
+| `rf_export_touchstone` | `POST /export/touchstone` | Exports multi-port Touchstone `.s2p` / `.s4p` files for Keysight ADS / Cadence AWR co-simulation. |
 | `rf_synthesize_chain` | `POST /api/v1/agent/synthesize` | Synthesizes a receiver/transmitter chain and optionally pushes to open canvas. |
 | `rf_solve_sparams` | `POST /api/v1/agent/sparams` | Runs scikit-rf multi-port linear S-parameter matrix simulation over frequency. |
 | `rf_send_canvas_action` | `POST /api/v1/agent/broadcast` | Sends live commands (`LOAD_SCHEMATIC`, `ADD_BLOCK`, `SHOW_NOTIFICATION`) to open browser/desktop window. |

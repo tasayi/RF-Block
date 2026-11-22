@@ -4,6 +4,12 @@ from .path_finder import find_all_signal_paths
 from .touchstone import generate_touchstone_s2p
 from .multi_sheet_solver import MultiSheetSolver, analyze_rfbd_file
 from .canvas_solver import CanvasSolver, analyze_canvas_file
+from .advanced_tools import (
+    update_component_parameters,
+    sweep_dynamic_range,
+    optimize_chain_attenuation,
+    export_touchstone
+)
 from .synthesizer import (
     calculate_pi_resistors,
     synthesize_pi_network,
@@ -23,6 +29,10 @@ __all__ = [
     "analyze_rfbd_file",
     "CanvasSolver",
     "analyze_canvas_file",
+    "update_component_parameters",
+    "sweep_dynamic_range",
+    "optimize_chain_attenuation",
+    "export_touchstone",
     "calculate_pi_resistors",
     "synthesize_pi_network",
     "synthesize_switch_network",
